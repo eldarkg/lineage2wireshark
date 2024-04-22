@@ -28,17 +28,15 @@ local VALSTR_OPCODE = { [0] = "Init", [1] = "LoginFail" }
 
 -- Fields Declaration Section
 local Length = ProtoField.uint16("lineage2_login.Length", "Length", base.DEC)
+local Raw = ProtoField.bytes("lineage2_login.Raw", "Raw", base.NONE)
 local Opcode = ProtoField.uint8("lineage2_login.Opcode", "Opcode", base.HEX, VALSTR_OPCODE)
 local Data = ProtoField.bytes("lineage2_login.Data", "Data", base.NONE)
-local Raw = ProtoField.bytes("lineage2_login.Raw", "Raw", base.NONE)
-local Decrypt = ProtoField.bytes("lineage2_login.Decrypt", "Decrypt", base.NONE)
 
 Lineage2Login.fields = {
     Length,
+	Raw,
 	Opcode,
 	Data,
-	Raw,
-    Decrypt,
 }
 
 -- Dissector Callback Declaration
@@ -56,9 +54,9 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
 
     -- Adds Variables to the subtree
     subtree:add_le(Length, buffer(0, 2))
+	subtree:add_le(Raw, buffer(0))
 	subtree:add_le(Opcode, buffer(2, 1))
-	subtree:add_le(Data, buffer(3, length - 3))
-	subtree:add_le(Raw, buffer(0, length))
+	subtree:add_le(Data, buffer(3))
 
     -- FIXME TEST OK
     -- local b = ByteArray.new("30 31 32")
@@ -75,6 +73,7 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local le_data_raw = le_data:raw()
     -- print(le_data_raw)
 
+    -- TODO key: hex string -> raw string
     local cipher = crypto.decrypt.new("blowfish",
         "\x64\x10\x30\x10\xae\x06\x31\x10\x16\x95\x30\x10\x32\x65\x30\x10\x71\x44\x30\x10\x00")
     local le_dec = cipher:update(le_data_raw)
@@ -96,7 +95,9 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
 
     local tvb = ByteArray.tvb(dec, "Decrypt Data")
     -- local subtree2 = subtree:add(Lineage2Login, tvb(), "Decrypt")
-	subtree:add_le(Decrypt, tvb())
+	subtree:add_le(Raw, tvb()):set_generated()
+	subtree:add_le(Opcode, tvb(0, 1)):set_generated()
+	subtree:add_le(Data, tvb(1)):set_generated()
 
 end
 
