@@ -22,14 +22,20 @@ end
 
 local Lineage2Login = Proto("Lineage2_Login", "Lineage2 Login Protocol")
 
--- ValueString Declaration Section
-local VALSTR_OPCODE = { [0] = "Init", [1] = "LoginFail" }
+local SERVER_OPCODE = {
+    [0x00] = "Init",
+    [0x01] = "LoginFail",
+    [0x02] = "AccountKicked",
+    [0x03] = "LoginOk",
+    [0x04] = "ServerList",
+    [0x06] = "PlayFail",
+    [0x07] = "PlayOk",
+    [0x0B] = "GGAuth",
+}
 
-
--- Fields Declaration Section
 local Length = ProtoField.uint16("lineage2_login.Length", "Length", base.DEC)
 local Raw = ProtoField.bytes("lineage2_login.Raw", "Raw", base.NONE)
-local Opcode = ProtoField.uint8("lineage2_login.Opcode", "Opcode", base.HEX, VALSTR_OPCODE)
+local Opcode = ProtoField.uint8("lineage2_login.Opcode", "Opcode", base.HEX, SERVER_OPCODE)
 local Data = ProtoField.bytes("lineage2_login.Data", "Data", base.NONE)
 
 Lineage2Login.fields = {
@@ -39,7 +45,6 @@ Lineage2Login.fields = {
 	Data,
 }
 
--- Dissector Callback Declaration
 function Lineage2Login.dissector(buffer, pinfo, tree)
     local length = buffer:len()
     if length == 0 then return end
