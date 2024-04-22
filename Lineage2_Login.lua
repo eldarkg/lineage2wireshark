@@ -104,6 +104,11 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
 	subtree:add_le(Opcode, tvb(0, 1)):set_generated()
 	subtree:add_le(Data, tvb(1)):set_generated()
 
+    local opcode = tostring(SERVER_OPCODE[buffer(2, 1):uint()])
+        .. " [" .. tostring(SERVER_OPCODE[tvb(0, 1):uint()]) .. "]"
+    pinfo.cols.info = tostring(pinfo.src_port) .. " → "
+        .. tostring(pinfo.dst_port) .. " Server: " .. opcode
+
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
