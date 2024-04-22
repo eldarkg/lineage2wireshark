@@ -9,17 +9,16 @@ local crypto = require("crypto")
 
 local LOGIN_PORT = 2106
 
--- TODO use raw string instead ByteArray
 local function swap_endian(data, bs)
     local swapped = ""
-    for i = 0, data:len() - 1, bs do
+    for i = 1, data:len(), bs do
         for j = i + bs - 1, i, -1 do
-            local b = (j < data:len()) and data(j, 1):tohex() or "00"
+            local b = (j <= data:len()) and string.char(data:byte(j)) or "\x00"
             swapped = swapped .. b
         end
     end
 
-    return ByteArray.new(swapped)
+    return swapped
 end
 
 local Lineage2Login = Proto("Lineage2_Login", "Lineage2 Login Protocol")
@@ -80,13 +79,19 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     -- print(r)
     -- local br = ByteArray.new(r, true)
     -- print(br)
+    -- local s = "a\x04\x05\x00\x01\x02\x00"
+    -- s = s .. "\x00" .. string.char(0x10)
+    -- print(Struct.tohex(s))
+    -- print("len: " .. tostring(s:len()))
+    -- print(Struct.fromhex(s:sub(2, 1)))
+    -- print(s:byte(1))
     -- FIXME TEST OK
 
     local bs = 4
-    local le_data = swap_endian(buffer(2, length - 2):bytes(), bs)
-    -- print(le_data)
-    local le_data_raw = le_data:raw()
-    -- print(le_data_raw)
+    local raw = buffer(2):bytes():raw()
+    -- print(Struct.tohex(raw))
+    local le_data_raw = swap_endian(raw, bs)
+    -- print(Struct.tohex(le_data_raw))
 
     -- TODO key: hex string -> raw string
     local cipher = crypto.decrypt.new("blowfish",
@@ -95,16 +100,18 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local le_dec2 = cipher:final()
     if le_dec2 == nil then le_dec2 = "" end
 
+    -- TODO check output len. Should I align to 8 bytes blocks?
     le_dec = le_dec .. le_dec2
+    -- print(Struct.tohex(le_dec))
 
     -- local le_dec = crypto.decrypt("blowfish", le_data_raw,
     --     "\x64\x10\x30\x10\xae\x06\x31\x10\x16\x95\x30\x10\x32\x65\x30\x10\x71\x44\x30\x10\x00")
     -- print(le_dec)
 
-    local dec = swap_endian(ByteArray.new(le_dec, true), bs)
+    local dec_raw = swap_endian(le_dec, bs)
+    -- print(Struct.tohex(dec_raw))
+    local dec = ByteArray.new(dec_raw, true)
     -- print(dec)
-    local dec_raw = le_data:raw()
-    -- print(dec_raw)
 
     -- print("NEXT")
 
