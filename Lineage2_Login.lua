@@ -73,14 +73,12 @@ local CLIENT_OPCODE = {
 }
 
 local Length = ProtoField.uint16("lineage2_login.Length", "Length", base.DEC)
-local Raw = ProtoField.bytes("lineage2_login.Raw", "Raw", base.NONE)
 local ServerOpcode = ProtoField.uint8("lineage2_login.ServerOpcode", "Opcode", base.HEX, SERVER_OPCODE)
 local ClientOpcode = ProtoField.uint8("lineage2_login.ClientOpcode", "Opcode", base.HEX, CLIENT_OPCODE)
 local Data = ProtoField.bytes("lineage2_login.Data", "Data", base.NONE)
 
 Lineage2Login.fields = {
     Length,
-	Raw,
 	ServerOpcode,
 	ClientOpcode,
 	Data,
@@ -95,7 +93,6 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local subtree = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
 
     subtree:add_le(Length, buffer(0, 2))
-    subtree:add_le(Raw, buffer(0))
     if pinfo.src_port == LOGIN_PORT then
         subtree:add_le(ServerOpcode, buffer(2, 1))
     else
@@ -107,7 +104,6 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
 
     local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypt Data")
     -- local subtree2 = subtree:add(Lineage2Login, tvb(), "Decrypt")
-    subtree:add_le(Raw, tvb()):set_generated()
 
     if pinfo.src_port == LOGIN_PORT then
         subtree:add_le(ServerOpcode, tvb(0, 1)):set_generated()
