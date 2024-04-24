@@ -102,8 +102,8 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
 
     local dec = decrypt(buffer(2):bytes():raw())
 
-    local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypt Data")
-    -- local subtree2 = subtree:add(Lineage2Login, tvb(), "Decrypt")
+    local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted Data")
+    -- local subtree2 = subtree:add(Lineage2Login, tvb(), "Decrypted Data")
 
     if pinfo.src_port == LOGIN_PORT then
         subtree:add_le(ServerOpcode, tvb(0, 1)):set_generated()
