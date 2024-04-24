@@ -10,6 +10,16 @@ local crypto = require("crypto")
 local LOGIN_PORT = 2106
 local BLOWFISH_PK = "64 10 30 10 ae 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
 
+-- TODO is it need?
+local function align_size(data, bs)
+    alen = (bs - #data % bs) % bs
+    for i = 1, alen do
+        data = data .. "\x00"
+    end
+
+    return data
+end
+
 local function swap_endian(data, bs)
     local swapped = ""
     for i = 1, data:len(), bs do
@@ -90,6 +100,8 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
 
     local bs = 4
     local raw = buffer(2):bytes():raw()
+    -- print(Struct.tohex(raw))
+    -- raw = align_size(raw, 8)
     -- print(Struct.tohex(raw))
     local le_data_raw = swap_endian(raw, bs)
     -- print(Struct.tohex(le_data_raw))
