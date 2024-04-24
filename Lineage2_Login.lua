@@ -8,6 +8,7 @@
 local crypto = require("crypto")
 
 local LOGIN_PORT = 2106
+local BLOWFISH_PK = "64 10 30 10 ae 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
 
 local function swap_endian(data, bs)
     local swapped = ""
@@ -93,9 +94,7 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local le_data_raw = swap_endian(raw, bs)
     -- print(Struct.tohex(le_data_raw))
 
-    -- TODO key: hex string -> raw string
-    local cipher = crypto.decrypt.new("blowfish",
-        "\x64\x10\x30\x10\xae\x06\x31\x10\x16\x95\x30\x10\x32\x65\x30\x10\x71\x44\x30\x10\x00")
+    local cipher = crypto.decrypt.new("blowfish", Struct.fromhex(BLOWFISH_PK, " "))
     local le_dec = cipher:update(le_data_raw)
     local le_dec2 = cipher:final()
     if le_dec2 == nil then le_dec2 = "" end
@@ -104,8 +103,7 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     le_dec = le_dec .. le_dec2
     -- print(Struct.tohex(le_dec))
 
-    -- local le_dec = crypto.decrypt("blowfish", le_data_raw,
-    --     "\x64\x10\x30\x10\xae\x06\x31\x10\x16\x95\x30\x10\x32\x65\x30\x10\x71\x44\x30\x10\x00")
+    -- local le_dec = crypto.decrypt("blowfish", le_data_raw, BLOWFISH_PK)
     -- print(le_dec)
 
     local dec_raw = swap_endian(le_dec, bs)
