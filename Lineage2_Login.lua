@@ -32,6 +32,26 @@ local function swap_endian(data, bs)
     return swapped
 end
 
+local function decrypt(enc)
+    local bs = 4
+    -- TODO is it need?
+    -- data = align_size(data, 8)
+    local enc_be = swap_endian(enc, bs)
+
+    local cipher =
+        crypto.decrypt.new("blowfish", Struct.fromhex(BLOWFISH_PK, " "))
+
+    local dec_be = cipher:update(enc_be)
+    local dec_be_next = cipher:final()
+    dec_be = dec_be .. (dec_be_next and dec_be_next or "")
+
+    -- FIXME not work?
+    -- local dec_be = crypto.decrypt("blowfish", enc_be, BLOWFISH_PK)
+
+    local dec = swap_endian(dec_be, bs)
+    return dec
+end
+
 local Lineage2Login = Proto("Lineage2_Login", "Lineage2 Login Protocol")
 
 local SERVER_OPCODE = {
@@ -83,49 +103,9 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     end
     subtree:add_le(Data, buffer(3))
 
-    -- FIXME TEST OK
-    -- local b = ByteArray.new("30 31 32")
-    -- print(b)
-    -- local r = b:raw()
-    -- print(r)
-    -- local br = ByteArray.new(r, true)
-    -- print(br)
-    -- local s = "a\x04\x05\x00\x01\x02\x00"
-    -- s = s .. "\x00" .. string.char(0x10)
-    -- print(Struct.tohex(s))
-    -- print("len: " .. tostring(s:len()))
-    -- print(Struct.fromhex(s:sub(2, 1)))
-    -- print(s:byte(1))
-    -- FIXME TEST OK
+    local dec = decrypt(buffer(2):bytes():raw())
 
-    local bs = 4
-    local raw = buffer(2):bytes():raw()
-    -- print(Struct.tohex(raw))
-    -- raw = align_size(raw, 8)
-    -- print(Struct.tohex(raw))
-    local le_data_raw = swap_endian(raw, bs)
-    -- print(Struct.tohex(le_data_raw))
-
-    local cipher = crypto.decrypt.new("blowfish", Struct.fromhex(BLOWFISH_PK, " "))
-    local le_dec = cipher:update(le_data_raw)
-    local le_dec2 = cipher:final()
-    if le_dec2 == nil then le_dec2 = "" end
-
-    -- TODO check output len. Should I align to 8 bytes blocks?
-    le_dec = le_dec .. le_dec2
-    -- print(Struct.tohex(le_dec))
-
-    -- local le_dec = crypto.decrypt("blowfish", le_data_raw, BLOWFISH_PK)
-    -- print(le_dec)
-
-    local dec_raw = swap_endian(le_dec, bs)
-    -- print(Struct.tohex(dec_raw))
-    local dec = ByteArray.new(dec_raw, true)
-    -- print(dec)
-
-    -- print("NEXT")
-
-    local tvb = ByteArray.tvb(dec, "Decrypt Data")
+    local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypt Data")
     -- local subtree2 = subtree:add(Lineage2Login, tvb(), "Decrypt")
     subtree:add_le(Raw, tvb()):set_generated()
 
