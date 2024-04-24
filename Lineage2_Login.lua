@@ -93,11 +93,9 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local subtree = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
 
     subtree:add_le(Length, buffer(0, 2))
-    if pinfo.src_port == LOGIN_PORT then
-        subtree:add_le(ServerOpcode, buffer(2, 1))
-    else
-        subtree:add_le(ClientOpcode, buffer(2, 1))
-    end
+    subtree:add_le(
+        (pinfo.src_port == LOGIN_PORT) and ServerOpcode or ClientOpcode,
+        buffer(2, 1))
     subtree:add_le(Data, buffer(3))
 
     local dec = decrypt(buffer(2):bytes():raw())
