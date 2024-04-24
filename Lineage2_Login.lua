@@ -10,7 +10,6 @@ local crypto = require("crypto")
 local LOGIN_PORT = 2106
 local BLOWFISH_PK = "64 10 30 10 ae 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
 
--- TODO is it need?
 local function align_size(data, bs)
     alen = (bs - #data % bs) % bs
     for i = 1, alen do
@@ -22,9 +21,9 @@ end
 
 local function swap_endian(data, bs)
     local swapped = ""
-    for i = 1, data:len(), bs do
+    for i = 1, #data, bs do
         for j = i + bs - 1, i, -1 do
-            local b = (j <= data:len()) and string.char(data:byte(j)) or "\x00"
+            local b = (j <= #data) and string.char(data:byte(j)) or "\x00"
             swapped = swapped .. b
         end
     end
