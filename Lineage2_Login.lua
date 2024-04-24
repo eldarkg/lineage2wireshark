@@ -33,20 +33,21 @@ local function swap_endian(data, bs)
 end
 
 local function decrypt(enc)
+    local bf_bs = 8
+    enc = align_size(enc, bf_bs)
+
     local bs = 4
-    -- TODO is it need?
-    -- data = align_size(data, 8)
     local enc_be = swap_endian(enc, bs)
 
     local cipher =
-        crypto.decrypt.new("blowfish", Struct.fromhex(BLOWFISH_PK, " "))
+        crypto.decrypt.new("bf-ecb", Struct.fromhex(BLOWFISH_PK, " "))
 
     local dec_be = cipher:update(enc_be)
     local dec_be_next = cipher:final()
     dec_be = dec_be .. (dec_be_next and dec_be_next or "")
 
     -- FIXME not work?
-    -- local dec_be = crypto.decrypt("blowfish", enc_be, BLOWFISH_PK)
+    -- local dec_be = crypto.decrypt("bf-ecb", enc_be, Struct.fromhex(BLOWFISH_PK, " "))
 
     local dec = swap_endian(dec_be, bs)
     return dec
