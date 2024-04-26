@@ -78,6 +78,19 @@ local CLIENT_OPCODE = {
     [0x07] = "RequestGGAuth",
 }
 
+local LOGIN_FAIL_REASON = {
+    [0x01] = "System error",
+    [0x02] = "Invalid password",
+    [0x03] = "Invalid login or password",
+    [0x04] = "Access denied",
+    [0x05] = "Invalid account",
+    [0x07] = "Account is used",
+    [0x09] = "Account is banned",
+    [0x10] = "Server is service",
+    [0x12] = "Validity period expired",
+    [0x13] = "Account time is over",
+}
+
 local Length = ProtoField.uint16("lineage2_login.Length", "Length", base.DEC)
 local ServerOpcode = ProtoField.uint8("lineage2_login.ServerOpcode", "Opcode",
                                       base.HEX, SERVER_OPCODE)
@@ -87,6 +100,9 @@ local Data = ProtoField.bytes("lineage2_login.Data", "Data", base.NONE)
 local Dword = ProtoField.uint32("lineage2_login.Dword", " ", base.HEX)
 local String = ProtoField.string("lineage2_login.String", " ", base.ASCII)
 local Stringz = ProtoField.stringz("lineage2_login.Stringz", " ", base.ASCII)
+local LoginFailReason = ProtoField.uint32("lineage2_login.LoginFailReason",
+                                          "Reason", base.HEX, LOGIN_FAIL_REASON)
+
 
 Lineage2Login.fields = {
     Length,
@@ -96,12 +112,15 @@ Lineage2Login.fields = {
     Dword,
     String,
     Stringz,
+    LoginFailReason,
 }
 
 local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, subtree)
     if dec_opcode == 0x00 then
         subtree:add_le(Dword, dec_data(0, 4)):prepend_text(" Session ID")
         subtree:add_le(Dword, dec_data(4)):prepend_text(" Protocol version")
+    elseif enc_opcode == 0x01 then
+        subtree:add_le(LoginFailReason, enc_data(0, 4))
     end
     -- TODO
 end
