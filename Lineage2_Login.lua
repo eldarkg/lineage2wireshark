@@ -54,6 +54,10 @@ local function decrypt(enc)
     return dec
 end
 
+local function get_opcode(table, id)
+    return table[id] and table[id] or ""
+end
+
 local Lineage2Login = Proto("Lineage2_Login", "Lineage2 Login Protocol")
 
 local SERVER_OPCODE = {
@@ -75,8 +79,10 @@ local CLIENT_OPCODE = {
 }
 
 local Length = ProtoField.uint16("lineage2_login.Length", "Length", base.DEC)
-local ServerOpcode = ProtoField.uint8("lineage2_login.ServerOpcode", "Opcode", base.HEX, SERVER_OPCODE)
-local ClientOpcode = ProtoField.uint8("lineage2_login.ClientOpcode", "Opcode", base.HEX, CLIENT_OPCODE)
+local ServerOpcode = ProtoField.uint8("lineage2_login.ServerOpcode", "Opcode",
+                                      base.HEX, SERVER_OPCODE)
+local ClientOpcode = ProtoField.uint8("lineage2_login.ClientOpcode", "Opcode",
+                                      base.HEX, CLIENT_OPCODE)
 local Data = ProtoField.bytes("lineage2_login.Data", "Data", base.NONE)
 
 Lineage2Login.fields = {
@@ -91,13 +97,15 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     if length == 0 then return end
 
     pinfo.cols.protocol = Lineage2Login.name
+    local isserver = (pinfo.src_port == LOGIN_PORT)
+    local opcode_field = isserver and ServerOpcode or ClientOpcode
+    local opcode_tbl = isserver and SERVER_OPCODE or CLIENT_OPCODE
+    local src_role = isserver and "Server" or "Client"
 
     local subtree = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
 
     subtree:add_le(Length, buffer(0, 2))
-    subtree:add_le(
-        (pinfo.src_port == LOGIN_PORT) and ServerOpcode or ClientOpcode,
-        buffer(2, 1))
+    subtree:add_le(opcode_field, buffer(2, 1))
     subtree:add_le(Data, buffer(3))
 
     local dec = decrypt(buffer(2):bytes():raw())
@@ -105,24 +113,15 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted Data")
     -- local subtree2 = subtree:add(Lineage2Login, tvb(), "Decrypted Data")
 
-    if pinfo.src_port == LOGIN_PORT then
-        subtree:add_le(ServerOpcode, tvb(0, 1)):set_generated()
+    subtree:add_le(opcode_field, tvb(0, 1)):set_generated()
 
-        local opcode = tostring(SERVER_OPCODE[buffer(2, 1):uint()])
-            .. " [" .. tostring(SERVER_OPCODE[tvb(0, 1):uint()]) .. "]"
-        pinfo.cols.info = tostring(pinfo.src_port) .. " → "
-            .. tostring(pinfo.dst_port) .. " Server: " .. opcode
-    else
-        subtree:add_le(ClientOpcode, tvb(0, 1)):set_generated()
-
-        local opcode = tostring(CLIENT_OPCODE[buffer(2, 1):uint()])
-            .. " [" .. tostring(CLIENT_OPCODE[tvb(0, 1):uint()]) .. "]"
-        pinfo.cols.info = tostring(pinfo.src_port) .. " → "
-            .. tostring(pinfo.dst_port) .. " Client: " .. opcode
-    end
+    local dec_opcode = get_opcode(opcode_tbl, buffer(2, 1):uint())
+    local enc_opcode = get_opcode(opcode_tbl, tvb(0, 1):uint())
+    pinfo.cols.info =
+        tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
+        " " ..  src_role .. ": " .. dec_opcode .. " [" .. enc_opcode .. "]"
 
     subtree:add_le(Data, tvb(1)):set_generated()
-
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
