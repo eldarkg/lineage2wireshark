@@ -84,13 +84,27 @@ local ServerOpcode = ProtoField.uint8("lineage2_login.ServerOpcode", "Opcode",
 local ClientOpcode = ProtoField.uint8("lineage2_login.ClientOpcode", "Opcode",
                                       base.HEX, CLIENT_OPCODE)
 local Data = ProtoField.bytes("lineage2_login.Data", "Data", base.NONE)
+local Dword = ProtoField.uint32("lineage2_login.Dword", " ", base.HEX)
 
 Lineage2Login.fields = {
     Length,
-	ServerOpcode,
-	ClientOpcode,
-	Data,
+    ServerOpcode,
+    ClientOpcode,
+    Data,
+    Dword,
 }
+
+local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, subtree)
+    if dec_opcode == 0 then
+        subtree:add_le(Dword, dec_data(0, 4)):prepend_text(" Session ID")
+        subtree:add_le(Dword, dec_data(4)):prepend_text(" Protocol version")
+    end
+    -- TODO
+end
+
+local function decode_client_data(dec_opcode, enc_opcode, dec_data, enc_data, subtree)
+    -- TODO
+end
 
 function Lineage2Login.dissector(buffer, pinfo, tree)
     local length = buffer:len()
@@ -114,11 +128,16 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     subtree:add_le(opcode_field, tvb(0, 1)):set_generated()
     subtree:add_le(Data, tvb(1)):set_generated()
 
-    local dec_opcode = get_opcode(opcode_tbl, buffer(2, 1):uint())
-    local enc_opcode = get_opcode(opcode_tbl, tvb(0, 1):uint())
+    local dec_opcode = buffer(2, 1):uint()
+    local enc_opcode = tvb(0, 1):uint()
+    local decode_data = isserver and decode_server_data or decode_client_data
+    decode_data(dec_opcode, enc_opcode, buffer(3), tvb(1), subtree)
+
+    local dec_opcode_name = get_opcode(opcode_tbl, dec_opcode)
+    local enc_opcode_name = get_opcode(opcode_tbl, enc_opcode)
     pinfo.cols.info =
         tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
-        " " ..  src_role .. ": " .. dec_opcode .. " [" .. enc_opcode .. "]"
+        " " ..  src_role .. ": " .. dec_opcode_name .. " [" .. enc_opcode_name .. "]"
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
