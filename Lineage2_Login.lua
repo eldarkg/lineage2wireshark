@@ -1,8 +1,10 @@
 --[[
+    License: GPL3
     Author: Eldar Khayrullin
     Email: eldar.khayrullin@mail.ru
-    Date: 2024-04-20 18:32:30
+    Date: 2024
     Description: Wireshark Dissector for "Lineage2_Login"
+    Protocol: 785a
 ]]--
 
 local crypto = require("crypto")
