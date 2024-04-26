@@ -85,6 +85,8 @@ local ClientOpcode = ProtoField.uint8("lineage2_login.ClientOpcode", "Opcode",
                                       base.HEX, CLIENT_OPCODE)
 local Data = ProtoField.bytes("lineage2_login.Data", "Data", base.NONE)
 local Dword = ProtoField.uint32("lineage2_login.Dword", " ", base.HEX)
+local String = ProtoField.string("lineage2_login.String", " ", base.ASCII)
+local Stringz = ProtoField.stringz("lineage2_login.Stringz", " ", base.ASCII)
 
 Lineage2Login.fields = {
     Length,
@@ -92,10 +94,12 @@ Lineage2Login.fields = {
     ClientOpcode,
     Data,
     Dword,
+    String,
+    Stringz,
 }
 
 local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, subtree)
-    if dec_opcode == 0 then
+    if dec_opcode == 0x00 then
         subtree:add_le(Dword, dec_data(0, 4)):prepend_text(" Session ID")
         subtree:add_le(Dword, dec_data(4)):prepend_text(" Protocol version")
     end
@@ -103,6 +107,10 @@ local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, su
 end
 
 local function decode_client_data(dec_opcode, enc_opcode, dec_data, enc_data, subtree)
+    if enc_opcode == 0x00 then
+        subtree:add_le(String, enc_data(0, 14)):prepend_text(" Login")
+        subtree:add_le(String, enc_data(14, 16)):prepend_text(" Password")
+    end
     -- TODO
 end
 
