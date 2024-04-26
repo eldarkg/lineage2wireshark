@@ -122,8 +122,8 @@ local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, su
     elseif enc_opcode == 0x01 then
         subtree:add_le(LoginFailReason, enc_data(0, 4)):prepend_text(" ")
     elseif enc_opcode == 0x03 then
-        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1")
-        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 2")
+        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1")
+        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2")
     end
     -- TODO
 end
@@ -132,6 +132,9 @@ local function decode_client_data(dec_opcode, enc_opcode, dec_data, enc_data, su
     if enc_opcode == 0x00 then
         subtree:add_le(String, enc_data(0, 14)):prepend_text(" Login")
         subtree:add_le(String, enc_data(14, 16)):prepend_text(" Password")
+    elseif enc_opcode == 0x05 then
+        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1")
+        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2")
     end
     -- TODO
 end
