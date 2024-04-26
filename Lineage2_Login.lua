@@ -128,7 +128,7 @@ Lineage2Login.fields = {
 local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, subtree)
     if dec_opcode == 0x00 then
         subtree:add_le(Dword, dec_data(0, 4)):prepend_text(" Session ID")
-        subtree:add_le(Dword, dec_data(4, 4)):prepend_text(" Protocol version")
+        subtree:add_le(Dword, dec_data(4, 4)):prepend_text(" Protocol ver.")
     elseif enc_opcode == 0x01 then
         subtree:add_le(LoginFailReason, enc_data(0, 4)):prepend_text(" ")
     elseif enc_opcode == 0x03 then
@@ -150,6 +150,9 @@ local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, su
             subtree2:add_le(Uint16, enc_data(b + 15, 2)):prepend_text("Max")
             subtree2:add_le(Bool, enc_data(b + 17, 1)):prepend_text("Test server")
         end
+    elseif enc_opcode == 0x07 then
+        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 2.1")
+        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 2.2")
     end
     -- TODO
 end
