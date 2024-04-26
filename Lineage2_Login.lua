@@ -103,7 +103,6 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local src_role = isserver and "Server" or "Client"
 
     local subtree = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
-
     subtree:add_le(Length, buffer(0, 2))
     subtree:add_le(opcode_field, buffer(2, 1))
     subtree:add_le(Data, buffer(3))
@@ -112,7 +111,6 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
 
     local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted Data")
     -- local subtree2 = subtree:add(Lineage2Login, tvb(), "Decrypted Data")
-
     subtree:add_le(opcode_field, tvb(0, 1)):set_generated()
     subtree:add_le(Data, tvb(1)):set_generated()
 
