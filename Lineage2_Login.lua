@@ -158,6 +158,10 @@ local function decode_client_data(dec_opcode, enc_opcode, dec_data, enc_data, su
     if enc_opcode == 0x00 then
         subtree:add_le(String, enc_data(0, 14)):prepend_text(" Login")
         subtree:add_le(String, enc_data(14, 16)):prepend_text(" Password")
+    elseif enc_opcode == 0x02 then
+        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1")
+        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2")
+        subtree:add_le(Uint8, enc_data(8, 1)):prepend_text(" Server ID")
     elseif enc_opcode == 0x05 then
         subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1")
         subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2")
@@ -175,6 +179,7 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local opcode_tbl = isserver and SERVER_OPCODE or CLIENT_OPCODE
     local src_role = isserver and "Server" or "Client"
 
+    -- TODO subtree raw enc and dec data
     local subtree = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
     subtree:add_le(Length, buffer(0, 2))
     subtree:add_le(opcode_field, buffer(2, 1))
