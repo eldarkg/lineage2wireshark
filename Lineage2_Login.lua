@@ -97,9 +97,14 @@ local ServerOpcode = ProtoField.uint8("lineage2_login.ServerOpcode", "Opcode",
 local ClientOpcode = ProtoField.uint8("lineage2_login.ClientOpcode", "Opcode",
                                       base.HEX, CLIENT_OPCODE)
 local Data = ProtoField.bytes("lineage2_login.Data", "Data", base.NONE)
+local Bool = ProtoField.bool("lineage2_login.Bool", " ")
+local Uint8 = ProtoField.uint8("lineage2_login.Uint8", " ", base.DEC)
+local Uint16 = ProtoField.uint16("lineage2_login.Uint16", " ", base.DEC)
+local Uint32 = ProtoField.uint32("lineage2_login.Uint32", " ", base.DEC)
 local Dword = ProtoField.uint32("lineage2_login.Dword", " ", base.HEX)
 local String = ProtoField.string("lineage2_login.String", " ", base.ASCII)
 local Stringz = ProtoField.stringz("lineage2_login.Stringz", " ", base.ASCII)
+local IPv4 = ProtoField.ipv4("lineage2_login.IPv4", " ")
 local LoginFailReason = ProtoField.uint32("lineage2_login.LoginFailReason",
                                           "Reason", base.HEX, LOGIN_FAIL_REASON)
 
@@ -109,9 +114,14 @@ Lineage2Login.fields = {
     ServerOpcode,
     ClientOpcode,
     Data,
+    Bool,
+    Uint8,
+    Uint16,
+    Uint32,
     Dword,
     String,
     Stringz,
+    IPv4,
     LoginFailReason,
 }
 
@@ -124,6 +134,22 @@ local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, su
     elseif enc_opcode == 0x03 then
         subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1")
         subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2")
+    elseif enc_opcode == 0x04 then
+        subtree:add_le(Uint8, enc_data(0, 1)):prepend_text(" Servers count")
+        local blk_sz = 21
+        for i = 0, enc_data(0, 1):uint() - 1 do
+            local b = blk_sz * i
+            local subtree2 = subtree:add(Lineage2Login, enc_data(b + 2, blk_sz),
+                                         "Server " .. (i + 1))
+            subtree2:add_le(Uint8, enc_data(b + 2, 1)):prepend_text("Server ID")
+            subtree2:add(IPv4, enc_data(b + 3, 4)):prepend_text("Game Server IP")
+            subtree2:add_le(Uint32, enc_data(b + 7, 4)):prepend_text("Port")
+            subtree2:add_le(Uint8, enc_data(b + 11, 1)):prepend_text("Age limit")
+            subtree2:add_le(Bool, enc_data(b + 12, 1)):prepend_text("PVP server")
+            subtree2:add_le(Uint16, enc_data(b + 13, 2)):prepend_text("Online")
+            subtree2:add_le(Uint16, enc_data(b + 15, 2)):prepend_text("Max")
+            subtree2:add_le(Bool, enc_data(b + 17, 1)):prepend_text("Test server")
+        end
     end
     -- TODO
 end
@@ -157,6 +183,7 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local dec = decrypt(buffer(2):bytes():raw())
 
     local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted Data")
+    -- FIXME
     -- local subtree2 = subtree:add(Lineage2Login, tvb(), "Decrypted Data")
     subtree:add_le(opcode_field, tvb(0, 1)):set_generated()
     subtree:add_le(Data, tvb(1)):set_generated()
