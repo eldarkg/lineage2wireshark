@@ -114,14 +114,13 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     -- local subtree2 = subtree:add(Lineage2Login, tvb(), "Decrypted Data")
 
     subtree:add_le(opcode_field, tvb(0, 1)):set_generated()
+    subtree:add_le(Data, tvb(1)):set_generated()
 
     local dec_opcode = get_opcode(opcode_tbl, buffer(2, 1):uint())
     local enc_opcode = get_opcode(opcode_tbl, tvb(0, 1):uint())
     pinfo.cols.info =
         tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
         " " ..  src_role .. ": " .. dec_opcode .. " [" .. enc_opcode .. "]"
-
-    subtree:add_le(Data, tvb(1)):set_generated()
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
