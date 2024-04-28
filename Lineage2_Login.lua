@@ -179,9 +179,10 @@ local function decode_client_data(opcode, data, isencrypted, subtree)
 end
 
 function Lineage2Login.dissector(buffer, pinfo, tree)
+    pinfo.cols.protocol = Lineage2Login.name
+
     if buffer:len() == 0 then return end
 
-    pinfo.cols.protocol = Lineage2Login.name
     local isserver = (pinfo.src_port == LOGIN_PORT)
     local opcode_field = isserver and ServerOpcode or ClientOpcode
     local opcode_tbl = isserver and SERVER_OPCODE or CLIENT_OPCODE
