@@ -71,14 +71,12 @@ local GG_AUTH_RESPONSE = {
     [0x0B] = "Skip authorization",
 }
 
-local pf_length = ProtoField.uint16("lineage2login.length", "Length", base.DEC)
 local pf_bool = ProtoField.bool("lineage2login.bool", " ")
 local pf_uint8 = ProtoField.uint8("lineage2login.uint8", " ", base.DEC)
 local pf_uint16 = ProtoField.uint16("lineage2login.uint16", " ", base.DEC)
 local pf_uint32 = ProtoField.uint32("lineage2login.uint32", " ", base.DEC)
 local pf_dword = ProtoField.uint32("lineage2login.dword", " ", base.HEX)
 local pf_string = ProtoField.string("lineage2login.string", " ", base.ASCII)
-local pf_stringz = ProtoField.stringz("lineage2login.stringz", " ", base.ASCII)
 local pf_ipv4 = ProtoField.ipv4("lineage2login.ipv4", " ")
 local pf_server_opcode = ProtoField.uint8("lineage2login.server_opcode",
                                           "Opcode", base.HEX, SERVER_OPCODE)
@@ -99,17 +97,15 @@ local pf_gg_auth_response = ProtoField.uint32("lineage2login.gg_auth_response",
 
 local lineage2login = Proto("lineage2login", "Lineage2 Login Protocol")
 lineage2login.fields = {
-    pf_length,
-    pf_server_opcode,
-    pf_client_opcode,
     pf_bool,
     pf_uint8,
     pf_uint16,
     pf_uint32,
     pf_dword,
     pf_string,
-    pf_stringz,
     pf_ipv4,
+    pf_server_opcode,
+    pf_client_opcode,
     pf_login_fail_reason,
     pf_account_kicked_reason,
     pf_play_fail_reason,
@@ -185,7 +181,7 @@ function lineage2login.dissector(buffer, pinfo, tree)
     local isencrypted = is_encrypted_packet(buffer, isserver)
 
     local subtree = tree:add(lineage2login, buffer(), "Lineage2 Login Protocol")
-    subtree:add_le(pf_length, buffer(0, 2))
+    cmn.add_le(subtree, pf_uint16, buffer(0, 2), "Length", false)
 
     local opcode_p = nil
     local data_p = nil
