@@ -125,6 +125,10 @@ local PLAY_FAIL_REASON = {
     [0x0f] = "Server overloaded",
 }
 
+local GG_AUTH_RESPONSE = {
+    [0x0b] = "Skip authorization",
+}
+
 local Length = ProtoField.uint16("lineage2_login.Length", "Length", base.DEC)
 local ServerOpcode = ProtoField.uint8("lineage2_login.ServerOpcode", "Opcode",
                                       base.HEX, SERVER_OPCODE)
@@ -146,6 +150,8 @@ local AccountKickedReason = ProtoField.uint32("lineage2_login.AccountKickedReaso
                                               ACCOUNT_KICKED_REASON)
 local PlayFailReason = ProtoField.uint32("lineage2_login.PlayFailReason",
                                          "Reason", base.HEX, PLAY_FAIL_REASON)
+local GGAuthResponse = ProtoField.uint32("lineage2_login.GGAuthResponse",
+                                         "Response", base.HEX, GG_AUTH_RESPONSE)
 
 
 Lineage2Login.fields = {
@@ -164,6 +170,7 @@ Lineage2Login.fields = {
     LoginFailReason,
     AccountKickedReason,
     PlayFailReason,
+    GGAuthResponse,
 }
 
 local function decode_server_data(opcode, data, isencrypted, tree)
@@ -199,8 +206,9 @@ local function decode_server_data(opcode, data, isencrypted, tree)
     elseif opcode == 0x07 then
         add_le(tree, Dword, data(0, 4), "Session Key 2.1", isencrypted)
         add_le(tree, Dword, data(4, 4), "Session Key 2.2", isencrypted)
+    elseif opcode == 0x0b then
+        add_le(tree, GGAuthResponse, data(0, 4), nil, isencrypted)
     end
-    -- TODO
 end
 
 local function decode_client_data(opcode, data, isencrypted, tree)
