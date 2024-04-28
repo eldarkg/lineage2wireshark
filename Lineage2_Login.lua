@@ -176,7 +176,7 @@ Lineage2Login.fields = {
 local function decode_server_data(opcode, data, isencrypted, tree)
     if opcode == 0x00 then
         add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
-        add_le(tree, Dword, data(4, 4), "Protocol ver.", isencrypted)
+        add_le(tree, Dword, data(4, 4), "Protocol version", isencrypted)
     elseif opcode == 0x01 then
         add_le(tree, LoginFailReason, data(0, 4), nil, isencrypted)
     elseif opcode == 0x02 then
