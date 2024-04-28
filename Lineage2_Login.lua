@@ -190,27 +190,26 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local opcode_p = buffer(2, 1)
     local data_p = buffer(3)
 
-    local subtree_main = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
-    local subtree = subtree_main:add(Lineage2Login, buffer(), "Packet")
+    local subtree = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
     subtree:add_le(Length, buffer(0, 2))
-    subtree:add_le(Data, data_p)
 
     if isencrypted then
         local dec = decrypt(buffer(2):bytes():raw())
-
         local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted Data")
-        data_p = tvb(1)
-        subtree:add_le(Data, data_p):set_generated()
 
         opcode_p = tvb(0, 1)
-        subtree_main:add_le(opcode_field, opcode_p):set_generated()
+        subtree:add_le(opcode_field, opcode_p):set_generated()
+        data_p = tvb(1)
     else
-        subtree_main:add_le(opcode_field, opcode_p)
+        subtree:add_le(opcode_field, opcode_p)
     end
+
+    local subtree_data = subtree:add(Lineage2Login, data_p, "Data")
+    subtree_data = isencrypted and subtree_data:set_generated() or subtree_data
 
     local opcode = opcode_p:uint()
     local decode_data = isserver and decode_server_data or decode_client_data
-    decode_data(opcode, data_p, isencrypted, subtree_main)
+    decode_data(opcode, data_p, isencrypted, subtree_data)
 
     local src_role = isserver and "Server" or "Client"
     local opcode_str = get_opcode_str(opcode_tbl, opcode)
