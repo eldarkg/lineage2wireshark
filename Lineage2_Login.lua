@@ -179,42 +179,39 @@ local function decode_client_data(opcode, data, isencrypted, subtree)
 end
 
 function Lineage2Login.dissector(buffer, pinfo, tree)
-    local length = buffer:len()
-    if length == 0 then return end
+    if buffer:len() == 0 then return end
 
     pinfo.cols.protocol = Lineage2Login.name
     local isserver = (pinfo.src_port == LOGIN_PORT)
-    local src_role = isserver and "Server" or "Client"
     local opcode_field = isserver and ServerOpcode or ClientOpcode
     local opcode_tbl = isserver and SERVER_OPCODE or CLIENT_OPCODE
     local isencrypted = is_encrypted_packet(buffer, isserver)
+    local opcode_p = buffer(2, 1)
+    local data_p = buffer(3)
 
     local subtree_main = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
     local subtree = subtree_main:add(Lineage2Login, buffer(), "Packet")
     subtree:add_le(Length, buffer(0, 2))
-    subtree:add_le(opcode_field, buffer(2, 1))
-    subtree:add_le(Data, buffer(3))
+    subtree:add_le(Data, data_p)
 
-    -- TODO only isencrypted
-    local dec = decrypt(buffer(2):bytes():raw())
-
-    local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted Data")
-    subtree:add_le(opcode_field, tvb(0, 1)):set_generated()
-    subtree:add_le(Data, tvb(1)):set_generated()
-
-    local opcode_p = isencrypted and tvb(0, 1) or buffer(2, 1)
-    local opcode = opcode_p:uint()
     if isencrypted then
+        local dec = decrypt(buffer(2):bytes():raw())
+
+        local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted Data")
+        data_p = tvb(1)
+        subtree:add_le(Data, data_p):set_generated()
+
+        opcode_p = tvb(0, 1)
         subtree_main:add_le(opcode_field, opcode_p):set_generated()
     else
         subtree_main:add_le(opcode_field, opcode_p)
     end
 
-    local data = isencrypted and tvb(1) or buffer(3)
-
+    local opcode = opcode_p:uint()
     local decode_data = isserver and decode_server_data or decode_client_data
-    decode_data(opcode, data, isencrypted, subtree_main)
+    decode_data(opcode, data_p, isencrypted, subtree_main)
 
+    local src_role = isserver and "Server" or "Client"
     local opcode_str = get_opcode_str(opcode_tbl, opcode)
     pinfo.cols.info =
         tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
