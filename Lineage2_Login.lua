@@ -62,6 +62,23 @@ local function is_encrypted_packet(buffer, isserver)
     return not (isserver and buffer:len() == 11 and buffer(2, 1):uint() == 0x00)
 end
 
+local function generated(obj, isencrypted)
+    return isencrypted and obj:set_generated() or obj
+end
+
+local function add_generic(add, obj, protofield, tvbrange, label, isencrypted)
+    obj = generated(add(obj, protofield, tvbrange), isencrypted)
+    obj = label and obj:prepend_text(label) or obj
+end
+
+local function add_le(obj, protofield, tvbrange, label, isencrypted)
+    add_generic(obj.add_le, obj, protofield, tvbrange, label, isencrypted)
+end
+
+local function add_be(obj, protofield, tvbrange, label, isencrypted)
+    add_generic(obj.add, obj, protofield, tvbrange, label, isencrypted)
+end
+
 local Lineage2Login = Proto("Lineage2_Login", "Lineage2 Login Protocol")
 
 local SERVER_OPCODE = {
@@ -129,51 +146,50 @@ Lineage2Login.fields = {
     LoginFailReason,
 }
 
--- TODO use isencrypted
-local function decode_server_data(opcode, data, isencrypted, subtree)
+local function decode_server_data(opcode, data, isencrypted, tree)
     if opcode == 0x00 then
-        subtree:add_le(Dword, data(0, 4)):prepend_text("Session ID")
-        subtree:add_le(Dword, data(4, 4)):prepend_text("Protocol ver.")
+        add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
+        add_le(tree, Dword, data(4, 4), "Protocol ver.", isencrypted)
     elseif opcode == 0x01 then
-        subtree:add_le(LoginFailReason, data(0, 4)):set_generated()
+        add_le(tree, LoginFailReason, data(0, 4), nil, isencrypted)
     elseif opcode == 0x03 then
-        subtree:add_le(Dword, data(0, 4)):prepend_text("Session Key 1.1"):set_generated()
-        subtree:add_le(Dword, data(4, 4)):prepend_text("Session Key 1.2"):set_generated()
+        add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
+        add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
     elseif opcode == 0x04 then
-        subtree:add_le(Uint8, data(0, 1)):prepend_text("Servers count"):set_generated()
+        add_le(tree, Uint8, data(0, 1), "Count", isencrypted)
         local blk_sz = 21
         for i = 0, data(0, 1):uint() - 1 do
             local b = blk_sz * i
-            local subtree2 = subtree:add(Lineage2Login, data(b + 2, blk_sz),
-                                         "Server " .. (i + 1)):set_generated()
-            subtree2:add_le(Uint8, data(b + 2, 1)):prepend_text("Server ID")
-            subtree2:add(IPv4, data(b + 3, 4)):prepend_text("Game Server IP")
-            subtree2:add_le(Uint32, data(b + 7, 4)):prepend_text("Port")
-            subtree2:add_le(Uint8, data(b + 11, 1)):prepend_text("Age limit")
-            subtree2:add_le(Bool, data(b + 12, 1)):prepend_text("PVP server")
-            subtree2:add_le(Uint16, data(b + 13, 2)):prepend_text("Online")
-            subtree2:add_le(Uint16, data(b + 15, 2)):prepend_text("Max")
-            subtree2:add_le(Bool, data(b + 17, 1)):prepend_text("Test server")
+            local serv_st = generated(tree:add(Lineage2Login,
+                                      data(b + 2, blk_sz),
+                                      "Server " .. (i + 1)), isencrypted)
+            add_le(serv_st, Uint8, data(b + 2, 1), "Server ID", isencrypted)
+            add_be(serv_st, IPv4, data(b + 3, 4), "Game Server IP", isencrypted)
+            add_le(serv_st, Uint32, data(b + 7, 4), "Port", isencrypted)
+            add_le(serv_st, Uint8, data(b + 11, 1), "Age limit", isencrypted)
+            add_le(serv_st, Bool, data(b + 12, 1), "PVP server", isencrypted)
+            add_le(serv_st, Uint16, data(b + 13, 2), "Online", isencrypted)
+            add_le(serv_st, Uint16, data(b + 15, 2), "Max", isencrypted)
+            add_le(serv_st, Bool, data(b + 17, 1), "Test server", isencrypted)
         end
     elseif opcode == 0x07 then
-        subtree:add_le(Dword, data(0, 4)):prepend_text("Session Key 2.1"):set_generated()
-        subtree:add_le(Dword, data(4, 4)):prepend_text("Session Key 2.2"):set_generated()
+        add_le(tree, Dword, data(0, 4), "Session Key 2.1", isencrypted)
+        add_le(tree, Dword, data(4, 4), "Session Key 2.2", isencrypted)
     end
     -- TODO
 end
 
--- TODO use isencrypted
-local function decode_client_data(opcode, data, isencrypted, subtree)
+local function decode_client_data(opcode, data, isencrypted, tree)
     if opcode == 0x00 then
-        subtree:add_le(String, data(0, 14)):prepend_text("Login"):set_generated()
-        subtree:add_le(String, data(14, 16)):prepend_text("Password"):set_generated()
+        add_le(tree, String, data(0, 14), "Login", isencrypted)
+        add_le(tree, String, data(14, 16), "Password", isencrypted)
     elseif opcode == 0x02 then
-        subtree:add_le(Dword, data(0, 4)):prepend_text("Session Key 1.1"):set_generated()
-        subtree:add_le(Dword, data(4, 4)):prepend_text("Session Key 1.2"):set_generated()
-        subtree:add_le(Uint8, data(8, 1)):prepend_text("Server ID"):set_generated()
+        add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
+        add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
+        add_le(tree, Uint8, data(8, 1), "Server ID", isencrypted)
     elseif opcode == 0x05 then
-        subtree:add_le(Dword, data(0, 4)):prepend_text("Session Key 1.1"):set_generated()
-        subtree:add_le(Dword, data(4, 4)):prepend_text("Session Key 1.2"):set_generated()
+        add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
+        add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
     end
     -- TODO
 end
@@ -198,20 +214,20 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
         opcode_p = dec_tvb(0, 1)
-        subtree:add_le(opcode_field, opcode_p):set_generated()
         data_p = dec_tvb(1)
     else
         opcode_p = buffer(2, 1)
-        subtree:add_le(opcode_field, opcode_p)
         data_p = buffer(3)
     end
 
-    local subtree_data = subtree:add(Lineage2Login, data_p, "Data")
-    subtree_data = isencrypted and subtree_data:set_generated() or subtree_data
+    add_le(subtree, opcode_field, opcode_p, nil, isencrypted)
+
+    local data_st = generated(subtree:add(Lineage2Login, data_p, "Data"),
+                              isencrypted)
 
     local opcode = opcode_p:uint()
     local decode_data = isserver and decode_server_data or decode_client_data
-    decode_data(opcode, data_p, isencrypted, subtree_data)
+    decode_data(opcode, data_p, isencrypted, data_st)
 
     local src_role = isserver and "Server" or "Client"
     local opcode_str = get_opcode_str(opcode_tbl, opcode)
