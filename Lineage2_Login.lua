@@ -180,7 +180,7 @@ function lineage2login.dissector(buffer, pinfo, tree)
     if buffer:len() == 0 then return end
 
     local isserver = (pinfo.src_port == LOGIN_PORT)
-    local opcode_field = isserver and pf_server_opcode or pf_client_opcode
+    local pf_opcode = isserver and pf_server_opcode or pf_client_opcode
     local opcode_tbl = isserver and SERVER_OPCODE or CLIENT_OPCODE
     local isencrypted = is_encrypted_packet(buffer, isserver)
 
@@ -200,7 +200,7 @@ function lineage2login.dissector(buffer, pinfo, tree)
         data_p = buffer(3)
     end
 
-    cmn.add_le(subtree, opcode_field, opcode_p, nil, isencrypted)
+    cmn.add_le(subtree, pf_opcode, opcode_p, nil, isencrypted)
 
     local data_st = cmn.generated(tree:add(lineage2login, data_p, "Data"),
                                   isencrypted)
