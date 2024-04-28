@@ -11,10 +11,6 @@ local cmn = require("common")
 
 local LOGIN_PORT = 2106
 
-local function is_encrypted_packet(buffer, isserver)
-    return not (isserver and buffer:len() == 11 and buffer(2, 1):uint() == 0x00)
-end
-
 local Lineage2Login = Proto("Lineage2_Login", "Lineage2 Login Protocol")
 
 local INIT = 0x00
@@ -101,7 +97,6 @@ local PlayFailReason = ProtoField.uint32("lineage2_login.PlayFailReason",
 local GGAuthResponse = ProtoField.uint32("lineage2_login.GGAuthResponse",
                                          "Response", base.HEX, GG_AUTH_RESPONSE)
 
-
 Lineage2Login.fields = {
     Length,
     ServerOpcode,
@@ -120,6 +115,10 @@ Lineage2Login.fields = {
     PlayFailReason,
     GGAuthResponse,
 }
+
+local function is_encrypted_packet(buffer, isserver)
+    return not (isserver and buffer:len() == 11 and buffer(2, 1):uint() == 0x00)
+end
 
 local function decode_server_data(opcode, data, isencrypted, tree)
     if opcode == INIT then
@@ -210,12 +209,7 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local decode_data = isserver and decode_server_data or decode_client_data
     decode_data(opcode, data_p, isencrypted, data_st)
 
-    local src_role = isserver and "Server" or "Client"
-    local opcode_str = cmn.get_opcode_str(opcode_tbl, opcode)
-    pinfo.cols.info =
-        tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
-        " " ..  src_role .. ": " ..
-        (isencrypted and ("[" .. opcode_str .. "]") or opcode_str)
+    cmn.set_info_field(isserver, isencrypted, opcode_tbl[opcode], pinfo)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")

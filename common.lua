@@ -57,10 +57,6 @@ function _M.decrypt(enc)
     return dec
 end
 
-function _M.get_opcode_str(table, id)
-    return table[id] and table[id] or ""
-end
-
 function _M.generated(obj, isencrypted)
     return isencrypted and obj:set_generated() or obj
 end
@@ -76,6 +72,15 @@ end
 
 function _M.add_be(obj, protofield, tvbrange, label, isencrypted)
     add_generic(obj.add, obj, protofield, tvbrange, label, isencrypted)
+end
+
+function _M.set_info_field(isserver, isencrypted, opcode_str, pinfo)
+    local src_role = isserver and "Server" or "Client"
+    if not opcode_str then opcode_str = "" end
+    pinfo.cols.info =
+        tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
+        " " ..  src_role .. ": " ..
+        (isencrypted and ("[" .. opcode_str .. "]") or opcode_str)
 end
 
 return _M
