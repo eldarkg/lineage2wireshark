@@ -112,6 +112,13 @@ local LOGIN_FAIL_REASON = {
     [0x13] = "Account time is over",
 }
 
+local ACCOUNT_KICKED_REASON = {
+    [0x01] = "Data stealer",
+    [0x08] = "Generic violation",
+    [0x10] = "7 days suspended",
+    [0x20] = "permanently banned",
+}
+
 local Length = ProtoField.uint16("lineage2_login.Length", "Length", base.DEC)
 local ServerOpcode = ProtoField.uint8("lineage2_login.ServerOpcode", "Opcode",
                                       base.HEX, SERVER_OPCODE)
@@ -128,6 +135,9 @@ local Stringz = ProtoField.stringz("lineage2_login.Stringz", " ", base.ASCII)
 local IPv4 = ProtoField.ipv4("lineage2_login.IPv4", " ")
 local LoginFailReason = ProtoField.uint32("lineage2_login.LoginFailReason",
                                           "Reason", base.HEX, LOGIN_FAIL_REASON)
+local AccountKickedReason = ProtoField.uint32("lineage2_login.AccountKickedReason",
+                                              "Reason", base.HEX,
+                                              ACCOUNT_KICKED_REASON)
 
 
 Lineage2Login.fields = {
@@ -144,6 +154,7 @@ Lineage2Login.fields = {
     Stringz,
     IPv4,
     LoginFailReason,
+    AccountKickedReason,
 }
 
 local function decode_server_data(opcode, data, isencrypted, tree)
@@ -152,6 +163,8 @@ local function decode_server_data(opcode, data, isencrypted, tree)
         add_le(tree, Dword, data(4, 4), "Protocol ver.", isencrypted)
     elseif opcode == 0x01 then
         add_le(tree, LoginFailReason, data(0, 4), nil, isencrypted)
+    elseif opcode == 0x02 then
+        add_le(tree, AccountKickedReason, data(0, 4), nil, isencrypted)
     elseif opcode == 0x03 then
         add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
         add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
