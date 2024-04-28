@@ -187,21 +187,23 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local opcode_field = isserver and ServerOpcode or ClientOpcode
     local opcode_tbl = isserver and SERVER_OPCODE or CLIENT_OPCODE
     local isencrypted = is_encrypted_packet(buffer, isserver)
-    local opcode_p = buffer(2, 1)
-    local data_p = buffer(3)
 
     local subtree = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
     subtree:add_le(Length, buffer(0, 2))
 
+    local opcode_p = nil
+    local data_p = nil
     if isencrypted then
         local dec = decrypt(buffer(2):bytes():raw())
-        local tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted Data")
+        local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
-        opcode_p = tvb(0, 1)
+        opcode_p = dec_tvb(0, 1)
         subtree:add_le(opcode_field, opcode_p):set_generated()
-        data_p = tvb(1)
+        data_p = dec_tvb(1)
     else
+        opcode_p = buffer(2, 1)
         subtree:add_le(opcode_field, opcode_p)
+        data_p = buffer(3)
     end
 
     local subtree_data = subtree:add(Lineage2Login, data_p, "Data")
