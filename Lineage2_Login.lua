@@ -81,22 +81,34 @@ end
 
 local Lineage2Login = Proto("Lineage2_Login", "Lineage2 Login Protocol")
 
+local INIT = 0x00
+local LOGIN_FAIL = 0x01
+local ACCOUNT_KICKED = 0x02
+local LOGIN_OK = 0x03
+local SERVER_LIST = 0x04
+local PLAY_FAIL = 0x06
+local PLAY_OK = 0x07
+local GG_AUTH = 0x0B
 local SERVER_OPCODE = {
-    [0x00] = "Init",
-    [0x01] = "LoginFail",
-    [0x02] = "AccountKicked",
-    [0x03] = "LoginOk",
-    [0x04] = "ServerList",
-    [0x06] = "PlayFail",
-    [0x07] = "PlayOk",
-    [0x0B] = "GGAuth",
+    [INIT] = "Init",
+    [LOGIN_FAIL] = "LoginFail",
+    [ACCOUNT_KICKED] = "AccountKicked",
+    [LOGIN_OK] = "LoginOk",
+    [SERVER_LIST] = "ServerList",
+    [PLAY_FAIL] = "PlayFail",
+    [PLAY_OK] = "PlayOk",
+    [GG_AUTH] = "GGAuth",
 }
 
+local REQUEST_AUTH_LOGIN = 0x00
+local REQUEST_SERVER_LOGIN = 0x02
+local REQUEST_SERVER_LIST = 0x05
+local REQUEST_GG_AUTH = 0x07
 local CLIENT_OPCODE = {
-    [0x00] = "RequestAuthLogin",
-    [0x02] = "RequestServerLogin",
-    [0x05] = "RequestServerList",
-    [0x07] = "RequestGGAuth",
+    [REQUEST_AUTH_LOGIN] = "RequestAuthLogin",
+    [REQUEST_SERVER_LOGIN] = "RequestServerLogin",
+    [REQUEST_SERVER_LIST] = "RequestServerList",
+    [REQUEST_GG_AUTH] = "RequestGGAuth",
 }
 
 local LOGIN_FAIL_REASON = {
@@ -122,11 +134,11 @@ local ACCOUNT_KICKED_REASON = {
 local PLAY_FAIL_REASON = {
     [0x03] = "Invalid password",
     [0x04] = "Access failed. Please try again later",
-    [0x0f] = "Server overloaded",
+    [0x0F] = "Server overloaded",
 }
 
 local GG_AUTH_RESPONSE = {
-    [0x0b] = "Skip authorization",
+    [0x0B] = "Skip authorization",
 }
 
 local Length = ProtoField.uint16("lineage2_login.Length", "Length", base.DEC)
@@ -174,17 +186,17 @@ Lineage2Login.fields = {
 }
 
 local function decode_server_data(opcode, data, isencrypted, tree)
-    if opcode == 0x00 then
+    if opcode == INIT then
         add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
         add_le(tree, Dword, data(4, 4), "Protocol version", isencrypted)
-    elseif opcode == 0x01 then
+    elseif opcode == LOGIN_FAIL then
         add_le(tree, LoginFailReason, data(0, 4), nil, isencrypted)
-    elseif opcode == 0x02 then
+    elseif opcode == ACCOUNT_KICKED then
         add_le(tree, AccountKickedReason, data(0, 4), nil, isencrypted)
-    elseif opcode == 0x03 then
+    elseif opcode == LOGIN_OK then
         add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
         add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
-    elseif opcode == 0x04 then
+    elseif opcode == SERVER_LIST then
         add_le(tree, Uint8, data(0, 1), "Count", isencrypted)
         local blk_sz = 21
         for i = 0, data(0, 1):uint() - 1 do
@@ -201,28 +213,28 @@ local function decode_server_data(opcode, data, isencrypted, tree)
             add_le(serv_st, Uint16, data(b + 15, 2), "Max", isencrypted)
             add_le(serv_st, Bool, data(b + 17, 1), "Test server", isencrypted)
         end
-    elseif opcode == 0x06 then
+    elseif opcode == PLAY_FAIL then
         add_le(tree, PlayFailReason, data(0, 4), nil, isencrypted)
-    elseif opcode == 0x07 then
+    elseif opcode == PLAY_OK then
         add_le(tree, Dword, data(0, 4), "Session Key 2.1", isencrypted)
         add_le(tree, Dword, data(4, 4), "Session Key 2.2", isencrypted)
-    elseif opcode == 0x0b then
+    elseif opcode == GG_AUTH then
         add_le(tree, GGAuthResponse, data(0, 4), nil, isencrypted)
     end
 end
 
 local function decode_client_data(opcode, data, isencrypted, tree)
-    if opcode == 0x00 then
+    if opcode == REQUEST_AUTH_LOGIN then
         add_le(tree, String, data(0, 14), "Login", isencrypted)
         add_le(tree, String, data(14, 16), "Password", isencrypted)
-    elseif opcode == 0x02 then
+    elseif opcode == REQUEST_SERVER_LOGIN then
         add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
         add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
         add_le(tree, Uint8, data(8, 1), "Server ID", isencrypted)
-    elseif opcode == 0x05 then
+    elseif opcode == REQUEST_SERVER_LIST then
         add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
         add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
-    elseif opcode == 0x07 then
+    elseif opcode == REQUEST_GG_AUTH then
         add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
     end
 end
