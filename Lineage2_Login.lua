@@ -8,6 +8,7 @@
 ]]--
 
 local cmn = require("common")
+local pf = require("protofields")
 
 local LOGIN_PORT = 2106
 
@@ -73,20 +74,10 @@ local GG_AUTH_RESPONSE = {
     [0x0B] = "Skip authorization",
 }
 
-local Length = ProtoField.uint16("lineage2_login.Length", "Length", base.DEC)
 local ServerOpcode = ProtoField.uint8("lineage2_login.ServerOpcode", "Opcode",
                                       base.HEX, SERVER_OPCODE)
 local ClientOpcode = ProtoField.uint8("lineage2_login.ClientOpcode", "Opcode",
                                       base.HEX, CLIENT_OPCODE)
-local Data = ProtoField.bytes("lineage2_login.Data", "Data", base.NONE)
-local Bool = ProtoField.bool("lineage2_login.Bool", " ")
-local Uint8 = ProtoField.uint8("lineage2_login.Uint8", " ", base.DEC)
-local Uint16 = ProtoField.uint16("lineage2_login.Uint16", " ", base.DEC)
-local Uint32 = ProtoField.uint32("lineage2_login.Uint32", " ", base.DEC)
-local Dword = ProtoField.uint32("lineage2_login.Dword", " ", base.HEX)
-local String = ProtoField.string("lineage2_login.String", " ", base.ASCII)
-local Stringz = ProtoField.stringz("lineage2_login.Stringz", " ", base.ASCII)
-local IPv4 = ProtoField.ipv4("lineage2_login.IPv4", " ")
 local LoginFailReason = ProtoField.uint32("lineage2_login.LoginFailReason",
                                           "Reason", base.HEX, LOGIN_FAIL_REASON)
 local AccountKickedReason = ProtoField.uint32("lineage2_login.AccountKickedReason",
@@ -98,18 +89,18 @@ local GGAuthResponse = ProtoField.uint32("lineage2_login.GGAuthResponse",
                                          "Response", base.HEX, GG_AUTH_RESPONSE)
 
 Lineage2Login.fields = {
-    Length,
+    pf.Length,
     ServerOpcode,
     ClientOpcode,
-    Data,
-    Bool,
-    Uint8,
-    Uint16,
-    Uint32,
-    Dword,
-    String,
-    Stringz,
-    IPv4,
+    pf.Data,
+    pf.Bool,
+    pf.Uint8,
+    pf.Uint16,
+    pf.Uint32,
+    pf.Dword,
+    pf.String,
+    pf.Stringz,
+    pf.IPv4,
     LoginFailReason,
     AccountKickedReason,
     PlayFailReason,
@@ -122,37 +113,37 @@ end
 
 local function decode_server_data(opcode, data, isencrypted, tree)
     if opcode == INIT then
-        cmn.add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
-        cmn.add_le(tree, Dword, data(4, 4), "Protocol version", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(0, 4), "Session ID", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(4, 4), "Protocol version", isencrypted)
     elseif opcode == LOGIN_FAIL then
         cmn.add_le(tree, LoginFailReason, data(0, 4), nil, isencrypted)
     elseif opcode == ACCOUNT_KICKED then
         cmn.add_le(tree, AccountKickedReason, data(0, 4), nil, isencrypted)
     elseif opcode == LOGIN_OK then
-        cmn.add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
-        cmn.add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(4, 4), "Session Key 1.2", isencrypted)
     elseif opcode == SERVER_LIST then
-        cmn.add_le(tree, Uint8, data(0, 1), "Count", isencrypted)
+        cmn.add_le(tree, pf.Uint8, data(0, 1), "Count", isencrypted)
         local blk_sz = 21
         for i = 0, data(0, 1):uint() - 1 do
             local b = blk_sz * i
             local serv_st = cmn.generated(tree:add(Lineage2Login,
                                           data(b + 2, blk_sz),
                                           "Server " .. (i + 1)), isencrypted)
-            cmn.add_le(serv_st, Uint8, data(b + 2, 1), "Server ID", isencrypted)
-            cmn.add_be(serv_st, IPv4, data(b + 3, 4), "Game Server IP", isencrypted)
-            cmn.add_le(serv_st, Uint32, data(b + 7, 4), "Port", isencrypted)
-            cmn.add_le(serv_st, Uint8, data(b + 11, 1), "Age limit", isencrypted)
-            cmn.add_le(serv_st, Bool, data(b + 12, 1), "PVP server", isencrypted)
-            cmn.add_le(serv_st, Uint16, data(b + 13, 2), "Online", isencrypted)
-            cmn.add_le(serv_st, Uint16, data(b + 15, 2), "Max", isencrypted)
-            cmn.add_le(serv_st, Bool, data(b + 17, 1), "Test server", isencrypted)
+            cmn.add_le(serv_st, pf.Uint8, data(b + 2, 1), "Server ID", isencrypted)
+            cmn.add_be(serv_st, pf.IPv4, data(b + 3, 4), "Game Server IP", isencrypted)
+            cmn.add_le(serv_st, pf.Uint32, data(b + 7, 4), "Port", isencrypted)
+            cmn.add_le(serv_st, pf.Uint8, data(b + 11, 1), "Age limit", isencrypted)
+            cmn.add_le(serv_st, pf.Bool, data(b + 12, 1), "PVP server", isencrypted)
+            cmn.add_le(serv_st, pf.Uint16, data(b + 13, 2), "Online", isencrypted)
+            cmn.add_le(serv_st, pf.Uint16, data(b + 15, 2), "Max", isencrypted)
+            cmn.add_le(serv_st, pf.Bool, data(b + 17, 1), "Test server", isencrypted)
         end
     elseif opcode == PLAY_FAIL then
         cmn.add_le(tree, PlayFailReason, data(0, 4), nil, isencrypted)
     elseif opcode == PLAY_OK then
-        cmn.add_le(tree, Dword, data(0, 4), "Session Key 2.1", isencrypted)
-        cmn.add_le(tree, Dword, data(4, 4), "Session Key 2.2", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(0, 4), "Session Key 2.1", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(4, 4), "Session Key 2.2", isencrypted)
     elseif opcode == GG_AUTH then
         cmn.add_le(tree, GGAuthResponse, data(0, 4), nil, isencrypted)
     end
@@ -160,17 +151,17 @@ end
 
 local function decode_client_data(opcode, data, isencrypted, tree)
     if opcode == REQUEST_AUTH_LOGIN then
-        cmn.add_le(tree, String, data(0, 14), "Login", isencrypted)
-        cmn.add_le(tree, String, data(14, 16), "Password", isencrypted)
+        cmn.add_le(tree, pf.String, data(0, 14), "Login", isencrypted)
+        cmn.add_le(tree, pf.String, data(14, 16), "Password", isencrypted)
     elseif opcode == REQUEST_SERVER_LOGIN then
-        cmn.add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
-        cmn.add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
-        cmn.add_le(tree, Uint8, data(8, 1), "Server ID", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, pf.Uint8, data(8, 1), "Server ID", isencrypted)
     elseif opcode == REQUEST_SERVER_LIST then
-        cmn.add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
-        cmn.add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(4, 4), "Session Key 1.2", isencrypted)
     elseif opcode == REQUEST_GG_AUTH then
-        cmn.add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
+        cmn.add_le(tree, pf.Dword, data(0, 4), "Session ID", isencrypted)
     end
 end
 
@@ -185,7 +176,7 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local isencrypted = is_encrypted_packet(buffer, isserver)
 
     local subtree = tree:add(Lineage2Login, buffer(), "Lineage2 Login Protocol")
-    subtree:add_le(Length, buffer(0, 2))
+    subtree:add_le(pf.Length, buffer(0, 2))
 
     local opcode_p = nil
     local data_p = nil

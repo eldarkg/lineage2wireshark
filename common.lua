@@ -3,8 +3,7 @@
     Author: Eldar Khayrullin
     Email: eldar.khayrullin@mail.ru
     Date: 2024
-    Description: Wireshark Dissector for "Lineage2 common"
-    Protocol: 785a
+    Description: common
 ]]--
 
 local crypto = require("crypto")
