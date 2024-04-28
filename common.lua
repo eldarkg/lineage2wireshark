@@ -56,21 +56,21 @@ function _M.decrypt(enc)
     return dec
 end
 
-function _M.generated(obj, isgen)
-    return isgen and obj:set_generated() or obj
+function _M.generated(item, isgen)
+    return isgen and item:set_generated() or item
 end
 
-local function add_generic(add, obj, protofield, tvbrange, label, isgen)
-    obj = _M.generated(add(obj, protofield, tvbrange), isgen)
-    obj = label and obj:prepend_text(label) or obj
+local function add_generic(add, item, protofield, tvbrange, label, isgen)
+    item = _M.generated(add(item, protofield, tvbrange), isgen)
+    item = label and item:prepend_text(label) or item
 end
 
-function _M.add_le(obj, protofield, tvbrange, label, isgen)
-    add_generic(obj.add_le, obj, protofield, tvbrange, label, isgen)
+function _M.add_le(item, protofield, tvbrange, label, isgen)
+    add_generic(item.add_le, item, protofield, tvbrange, label, isgen)
 end
 
-function _M.add_be(obj, protofield, tvbrange, label, isgen)
-    add_generic(obj.add, obj, protofield, tvbrange, label, isgen)
+function _M.add_be(item, protofield, tvbrange, label, isgen)
+    add_generic(item.add, item, protofield, tvbrange, label, isgen)
 end
 
 function _M.set_info_field(isserver, isgen, opcode_str, pinfo)
