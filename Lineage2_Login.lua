@@ -13,7 +13,7 @@ local LOGIN_PORT = 2106
 local BLOWFISH_PK = "64 10 30 10 ae 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
 
 local function align_size(data, bs)
-    alen = (bs - #data % bs) % bs
+    local alen = (bs - #data % bs) % bs
     for i = 1, alen do
         data = data .. "\x00"
     end
