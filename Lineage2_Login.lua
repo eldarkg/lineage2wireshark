@@ -268,7 +268,7 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
 
     add_le(subtree, opcode_field, opcode_p, nil, isencrypted)
 
-    local data_st = generated(subtree:add(Lineage2Login, data_p, "Data"),
+    local data_st = generated(tree:add(Lineage2Login, data_p, "Data"),
                               isencrypted)
 
     local opcode = opcode_p:uint()
