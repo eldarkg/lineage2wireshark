@@ -7,77 +7,12 @@
     Protocol: 785a
 ]]--
 
-local crypto = require("crypto")
+local cmn = require("common")
 
 local LOGIN_PORT = 2106
-local BLOWFISH_PK = Struct.fromhex(
-    "64 10 30 10 ae 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00", " ")
-
-local function align_size(data, bs)
-    local alen = (bs - #data % bs) % bs
-    for i = 1, alen do
-        data = data .. "\x00"
-    end
-
-    return data
-end
-
-local function swap_endian(data, bs)
-    local swapped = ""
-    for i = 1, #data, bs do
-        for j = i + bs - 1, i, -1 do
-            local b = (j <= #data) and string.char(data:byte(j)) or "\x00"
-            swapped = swapped .. b
-        end
-    end
-
-    return swapped
-end
-
-local function decrypt(enc)
-    local bf_bs = 8
-    enc = align_size(enc, bf_bs)
-
-    local bs = 4
-    local enc_be = swap_endian(enc, bs)
-
-    local cipher =
-        crypto.decrypt.new("bf-ecb", BLOWFISH_PK)
-
-    local dec_be = cipher:update(enc_be)
-    local dec_be_next = cipher:final()
-    dec_be = dec_be .. (dec_be_next and dec_be_next or "")
-
-    -- FIXME not work?
-    -- local dec_be = crypto.decrypt("bf-ecb", enc_be, BLOWFISH_PK)
-
-    local dec = swap_endian(dec_be, bs)
-    return dec
-end
-
-local function get_opcode_str(table, id)
-    return table[id] and table[id] or ""
-end
 
 local function is_encrypted_packet(buffer, isserver)
     return not (isserver and buffer:len() == 11 and buffer(2, 1):uint() == 0x00)
-end
-
-local function generated(obj, isencrypted)
-    return isencrypted and obj:set_generated() or obj
-end
-
-local function add_generic(add, obj, protofield, tvbrange, label, isencrypted)
-    obj = generated(add(obj, protofield, tvbrange), isencrypted)
-    obj = label and obj:prepend_text(label) or obj
-end
-
-local function add_le(obj, protofield, tvbrange, label, isencrypted)
-    add_generic(obj.add_le, obj, protofield, tvbrange, label, isencrypted)
-end
-
-local function add_be(obj, protofield, tvbrange, label, isencrypted)
-    add_generic(obj.add, obj, protofield, tvbrange, label, isencrypted)
 end
 
 local Lineage2Login = Proto("Lineage2_Login", "Lineage2 Login Protocol")
@@ -188,55 +123,55 @@ Lineage2Login.fields = {
 
 local function decode_server_data(opcode, data, isencrypted, tree)
     if opcode == INIT then
-        add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
-        add_le(tree, Dword, data(4, 4), "Protocol version", isencrypted)
+        cmn.add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
+        cmn.add_le(tree, Dword, data(4, 4), "Protocol version", isencrypted)
     elseif opcode == LOGIN_FAIL then
-        add_le(tree, LoginFailReason, data(0, 4), nil, isencrypted)
+        cmn.add_le(tree, LoginFailReason, data(0, 4), nil, isencrypted)
     elseif opcode == ACCOUNT_KICKED then
-        add_le(tree, AccountKickedReason, data(0, 4), nil, isencrypted)
+        cmn.add_le(tree, AccountKickedReason, data(0, 4), nil, isencrypted)
     elseif opcode == LOGIN_OK then
-        add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
-        add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
     elseif opcode == SERVER_LIST then
-        add_le(tree, Uint8, data(0, 1), "Count", isencrypted)
+        cmn.add_le(tree, Uint8, data(0, 1), "Count", isencrypted)
         local blk_sz = 21
         for i = 0, data(0, 1):uint() - 1 do
             local b = blk_sz * i
-            local serv_st = generated(tree:add(Lineage2Login,
-                                      data(b + 2, blk_sz),
-                                      "Server " .. (i + 1)), isencrypted)
-            add_le(serv_st, Uint8, data(b + 2, 1), "Server ID", isencrypted)
-            add_be(serv_st, IPv4, data(b + 3, 4), "Game Server IP", isencrypted)
-            add_le(serv_st, Uint32, data(b + 7, 4), "Port", isencrypted)
-            add_le(serv_st, Uint8, data(b + 11, 1), "Age limit", isencrypted)
-            add_le(serv_st, Bool, data(b + 12, 1), "PVP server", isencrypted)
-            add_le(serv_st, Uint16, data(b + 13, 2), "Online", isencrypted)
-            add_le(serv_st, Uint16, data(b + 15, 2), "Max", isencrypted)
-            add_le(serv_st, Bool, data(b + 17, 1), "Test server", isencrypted)
+            local serv_st = cmn.generated(tree:add(Lineage2Login,
+                                          data(b + 2, blk_sz),
+                                          "Server " .. (i + 1)), isencrypted)
+            cmn.add_le(serv_st, Uint8, data(b + 2, 1), "Server ID", isencrypted)
+            cmn.add_be(serv_st, IPv4, data(b + 3, 4), "Game Server IP", isencrypted)
+            cmn.add_le(serv_st, Uint32, data(b + 7, 4), "Port", isencrypted)
+            cmn.add_le(serv_st, Uint8, data(b + 11, 1), "Age limit", isencrypted)
+            cmn.add_le(serv_st, Bool, data(b + 12, 1), "PVP server", isencrypted)
+            cmn.add_le(serv_st, Uint16, data(b + 13, 2), "Online", isencrypted)
+            cmn.add_le(serv_st, Uint16, data(b + 15, 2), "Max", isencrypted)
+            cmn.add_le(serv_st, Bool, data(b + 17, 1), "Test server", isencrypted)
         end
     elseif opcode == PLAY_FAIL then
-        add_le(tree, PlayFailReason, data(0, 4), nil, isencrypted)
+        cmn.add_le(tree, PlayFailReason, data(0, 4), nil, isencrypted)
     elseif opcode == PLAY_OK then
-        add_le(tree, Dword, data(0, 4), "Session Key 2.1", isencrypted)
-        add_le(tree, Dword, data(4, 4), "Session Key 2.2", isencrypted)
+        cmn.add_le(tree, Dword, data(0, 4), "Session Key 2.1", isencrypted)
+        cmn.add_le(tree, Dword, data(4, 4), "Session Key 2.2", isencrypted)
     elseif opcode == GG_AUTH then
-        add_le(tree, GGAuthResponse, data(0, 4), nil, isencrypted)
+        cmn.add_le(tree, GGAuthResponse, data(0, 4), nil, isencrypted)
     end
 end
 
 local function decode_client_data(opcode, data, isencrypted, tree)
     if opcode == REQUEST_AUTH_LOGIN then
-        add_le(tree, String, data(0, 14), "Login", isencrypted)
-        add_le(tree, String, data(14, 16), "Password", isencrypted)
+        cmn.add_le(tree, String, data(0, 14), "Login", isencrypted)
+        cmn.add_le(tree, String, data(14, 16), "Password", isencrypted)
     elseif opcode == REQUEST_SERVER_LOGIN then
-        add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
-        add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
-        add_le(tree, Uint8, data(8, 1), "Server ID", isencrypted)
+        cmn.add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, Uint8, data(8, 1), "Server ID", isencrypted)
     elseif opcode == REQUEST_SERVER_LIST then
-        add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
-        add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
     elseif opcode == REQUEST_GG_AUTH then
-        add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
+        cmn.add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
     end
 end
 
@@ -256,7 +191,7 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
     local opcode_p = nil
     local data_p = nil
     if isencrypted then
-        local dec = decrypt(buffer(2):bytes():raw())
+        local dec = cmn.decrypt(buffer(2):bytes():raw())
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
         opcode_p = dec_tvb(0, 1)
@@ -266,17 +201,17 @@ function Lineage2Login.dissector(buffer, pinfo, tree)
         data_p = buffer(3)
     end
 
-    add_le(subtree, opcode_field, opcode_p, nil, isencrypted)
+    cmn.add_le(subtree, opcode_field, opcode_p, nil, isencrypted)
 
-    local data_st = generated(tree:add(Lineage2Login, data_p, "Data"),
-                              isencrypted)
+    local data_st = cmn.generated(tree:add(Lineage2Login, data_p, "Data"),
+                                  isencrypted)
 
     local opcode = opcode_p:uint()
     local decode_data = isserver and decode_server_data or decode_client_data
     decode_data(opcode, data_p, isencrypted, data_st)
 
     local src_role = isserver and "Server" or "Client"
-    local opcode_str = get_opcode_str(opcode_tbl, opcode)
+    local opcode_str = cmn.get_opcode_str(opcode_tbl, opcode)
     pinfo.cols.info =
         tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
         " " ..  src_role .. ": " ..
