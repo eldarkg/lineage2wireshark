@@ -130,17 +130,17 @@ local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, su
         subtree:add_le(Dword, dec_data(0, 4)):prepend_text(" Session ID")
         subtree:add_le(Dword, dec_data(4, 4)):prepend_text(" Protocol ver.")
     elseif enc_opcode == 0x01 then
-        subtree:add_le(LoginFailReason, enc_data(0, 4)):prepend_text(" ")
+        subtree:add_le(LoginFailReason, enc_data(0, 4)):prepend_text(" "):set_generated()
     elseif enc_opcode == 0x03 then
-        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1")
-        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2")
+        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1"):set_generated()
+        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2"):set_generated()
     elseif enc_opcode == 0x04 then
-        subtree:add_le(Uint8, enc_data(0, 1)):prepend_text(" Servers count")
+        subtree:add_le(Uint8, enc_data(0, 1)):prepend_text(" Servers count"):set_generated()
         local blk_sz = 21
         for i = 0, enc_data(0, 1):uint() - 1 do
             local b = blk_sz * i
             local subtree2 = subtree:add(Lineage2Login, enc_data(b + 2, blk_sz),
-                                         "Server " .. (i + 1))
+                                         " Server " .. (i + 1)):set_generated()
             subtree2:add_le(Uint8, enc_data(b + 2, 1)):prepend_text("Server ID")
             subtree2:add(IPv4, enc_data(b + 3, 4)):prepend_text("Game Server IP")
             subtree2:add_le(Uint32, enc_data(b + 7, 4)):prepend_text("Port")
@@ -151,23 +151,23 @@ local function decode_server_data(dec_opcode, enc_opcode, dec_data, enc_data, su
             subtree2:add_le(Bool, enc_data(b + 17, 1)):prepend_text("Test server")
         end
     elseif enc_opcode == 0x07 then
-        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 2.1")
-        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 2.2")
+        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 2.1"):set_generated()
+        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 2.2"):set_generated()
     end
     -- TODO
 end
 
 local function decode_client_data(dec_opcode, enc_opcode, dec_data, enc_data, subtree)
     if enc_opcode == 0x00 then
-        subtree:add_le(String, enc_data(0, 14)):prepend_text(" Login")
-        subtree:add_le(String, enc_data(14, 16)):prepend_text(" Password")
+        subtree:add_le(String, enc_data(0, 14)):prepend_text(" Login"):set_generated()
+        subtree:add_le(String, enc_data(14, 16)):prepend_text(" Password"):set_generated()
     elseif enc_opcode == 0x02 then
-        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1")
-        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2")
-        subtree:add_le(Uint8, enc_data(8, 1)):prepend_text(" Server ID")
+        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1"):set_generated()
+        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2"):set_generated()
+        subtree:add_le(Uint8, enc_data(8, 1)):prepend_text(" Server ID"):set_generated()
     elseif enc_opcode == 0x05 then
-        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1")
-        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2")
+        subtree:add_le(Dword, enc_data(0, 4)):prepend_text(" Session Key 1.1"):set_generated()
+        subtree:add_le(Dword, enc_data(4, 4)):prepend_text(" Session Key 1.2"):set_generated()
     end
     -- TODO
 end
