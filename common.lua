@@ -57,30 +57,30 @@ function _M.decrypt(enc)
     return dec
 end
 
-function _M.generated(obj, isencrypted)
-    return isencrypted and obj:set_generated() or obj
+function _M.generated(obj, isgen)
+    return isgen and obj:set_generated() or obj
 end
 
-local function add_generic(add, obj, protofield, tvbrange, label, isencrypted)
-    obj = _M.generated(add(obj, protofield, tvbrange), isencrypted)
+local function add_generic(add, obj, protofield, tvbrange, label, isgen)
+    obj = _M.generated(add(obj, protofield, tvbrange), isgen)
     obj = label and obj:prepend_text(label) or obj
 end
 
-function _M.add_le(obj, protofield, tvbrange, label, isencrypted)
-    add_generic(obj.add_le, obj, protofield, tvbrange, label, isencrypted)
+function _M.add_le(obj, protofield, tvbrange, label, isgen)
+    add_generic(obj.add_le, obj, protofield, tvbrange, label, isgen)
 end
 
-function _M.add_be(obj, protofield, tvbrange, label, isencrypted)
-    add_generic(obj.add, obj, protofield, tvbrange, label, isencrypted)
+function _M.add_be(obj, protofield, tvbrange, label, isgen)
+    add_generic(obj.add, obj, protofield, tvbrange, label, isgen)
 end
 
-function _M.set_info_field(isserver, isencrypted, opcode_str, pinfo)
+function _M.set_info_field(isserver, isgen, opcode_str, pinfo)
     local src_role = isserver and "Server" or "Client"
     if not opcode_str then opcode_str = "" end
     pinfo.cols.info =
         tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
         " " ..  src_role .. ": " ..
-        (isencrypted and ("[" .. opcode_str .. "]") or opcode_str)
+        (isgen and ("[" .. opcode_str .. "]") or opcode_str)
 end
 
 return _M
