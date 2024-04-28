@@ -73,7 +73,7 @@ function _M.add_be(item, protofield, tvbrange, label, isgen)
     add_generic(item.add, item, protofield, tvbrange, label, isgen)
 end
 
-function _M.set_info_field(isserver, isgen, opcode_str, pinfo)
+function _M.set_info_field(pinfo, isserver, isgen, opcode_str)
     local src_role = isserver and "Server" or "Client"
     if not opcode_str then opcode_str = "" end
     pinfo.cols.info =

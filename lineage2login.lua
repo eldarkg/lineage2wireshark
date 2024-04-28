@@ -120,7 +120,7 @@ local function is_encrypted_packet(buffer, isserver)
     return not (isserver and buffer:len() == 11 and buffer(2, 1):uint() == 0x00)
 end
 
-local function decode_server_data(opcode, data, isencrypted, tree)
+local function decode_server_data(tree, opcode, data, isencrypted)
     if opcode == INIT then
         cmn.add_le(tree, pf_dword, data(0, 4), "Session ID", isencrypted)
         cmn.add_le(tree, pf_dword, data(4, 4), "Protocol version", isencrypted)
@@ -158,7 +158,7 @@ local function decode_server_data(opcode, data, isencrypted, tree)
     end
 end
 
-local function decode_client_data(opcode, data, isencrypted, tree)
+local function decode_client_data(tree, opcode, data, isencrypted)
     if opcode == REQUEST_AUTH_LOGIN then
         cmn.add_le(tree, pf_string, data(0, 14), "Login", isencrypted)
         cmn.add_le(tree, pf_string, data(14, 16), "Password", isencrypted)
@@ -207,9 +207,9 @@ function lineage2login.dissector(buffer, pinfo, tree)
 
     local opcode = opcode_p:uint()
     local decode_data = isserver and decode_server_data or decode_client_data
-    decode_data(opcode, data_p, isencrypted, data_st)
+    decode_data(data_st, opcode, data_p, isencrypted)
 
-    cmn.set_info_field(isserver, isencrypted, opcode_tbl[opcode], pinfo)
+    cmn.set_info_field(pinfo, isserver, isencrypted, opcode_tbl[opcode])
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
