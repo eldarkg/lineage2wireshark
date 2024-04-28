@@ -222,8 +222,9 @@ local function decode_client_data(opcode, data, isencrypted, tree)
     elseif opcode == 0x05 then
         add_le(tree, Dword, data(0, 4), "Session Key 1.1", isencrypted)
         add_le(tree, Dword, data(4, 4), "Session Key 1.2", isencrypted)
+    elseif opcode == 0x07 then
+        add_le(tree, Dword, data(0, 4), "Session ID", isencrypted)
     end
-    -- TODO
 end
 
 function Lineage2Login.dissector(buffer, pinfo, tree)
