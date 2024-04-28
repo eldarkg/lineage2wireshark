@@ -10,7 +10,8 @@
 local crypto = require("crypto")
 
 local LOGIN_PORT = 2106
-local BLOWFISH_PK = "64 10 30 10 ae 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
+local BLOWFISH_PK = Struct.fromhex(
+    "64 10 30 10 ae 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00", " ")
 
 local function align_size(data, bs)
     local alen = (bs - #data % bs) % bs
@@ -41,14 +42,14 @@ local function decrypt(enc)
     local enc_be = swap_endian(enc, bs)
 
     local cipher =
-        crypto.decrypt.new("bf-ecb", Struct.fromhex(BLOWFISH_PK, " "))
+        crypto.decrypt.new("bf-ecb", BLOWFISH_PK)
 
     local dec_be = cipher:update(enc_be)
     local dec_be_next = cipher:final()
     dec_be = dec_be .. (dec_be_next and dec_be_next or "")
 
     -- FIXME not work?
-    -- local dec_be = crypto.decrypt("bf-ecb", enc_be, Struct.fromhex(BLOWFISH_PK, " "))
+    -- local dec_be = crypto.decrypt("bf-ecb", enc_be, BLOWFISH_PK)
 
     local dec = swap_endian(dec_be, bs)
     return dec
