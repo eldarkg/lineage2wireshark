@@ -75,7 +75,7 @@ local pf_bool = ProtoField.bool("lineage2login.bool", " ")
 local pf_uint8 = ProtoField.uint8("lineage2login.uint8", " ", base.DEC)
 local pf_uint16 = ProtoField.uint16("lineage2login.uint16", " ", base.DEC)
 local pf_uint32 = ProtoField.uint32("lineage2login.uint32", " ", base.DEC)
-local pf_dword = ProtoField.uint32("lineage2login.dword", " ", base.HEX)
+local pf_bin32 = ProtoField.uint32("lineage2login.bin32", " ", base.HEX)
 local pf_string = ProtoField.string("lineage2login.string", " ", base.ASCII)
 local pf_ipv4 = ProtoField.ipv4("lineage2login.ipv4", " ")
 local pf_server_opcode = ProtoField.uint8("lineage2login.server_opcode",
@@ -101,7 +101,7 @@ lineage2login.fields = {
     pf_uint8,
     pf_uint16,
     pf_uint32,
-    pf_dword,
+    pf_bin32,
     pf_string,
     pf_ipv4,
     pf_server_opcode,
@@ -118,15 +118,15 @@ end
 
 local function decode_server_data(tree, opcode, data, isencrypted)
     if opcode == INIT then
-        cmn.add_le(tree, pf_dword, data(0, 4), "Session ID", isencrypted)
-        cmn.add_le(tree, pf_dword, data(4, 4), "Protocol version", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(0, 4), "Session ID", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(4, 4), "Protocol version", isencrypted)
     elseif opcode == LOGIN_FAIL then
         cmn.add_le(tree, pf_login_fail_reason, data(0, 4), nil, isencrypted)
     elseif opcode == ACCOUNT_KICKED then
         cmn.add_le(tree, pf_account_kicked_reason, data(0, 4), nil, isencrypted)
     elseif opcode == LOGIN_OK then
-        cmn.add_le(tree, pf_dword, data(0, 4), "Session Key 1.1", isencrypted)
-        cmn.add_le(tree, pf_dword, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(4, 4), "Session Key 1.2", isencrypted)
     elseif opcode == SERVER_LIST then
         cmn.add_le(tree, pf_uint8, data(0, 1), "Count", isencrypted)
         local blk_sz = 21
@@ -147,8 +147,8 @@ local function decode_server_data(tree, opcode, data, isencrypted)
     elseif opcode == PLAY_FAIL then
         cmn.add_le(tree, pf_play_fail_reason, data(0, 4), nil, isencrypted)
     elseif opcode == PLAY_OK then
-        cmn.add_le(tree, pf_dword, data(0, 4), "Session Key 2.1", isencrypted)
-        cmn.add_le(tree, pf_dword, data(4, 4), "Session Key 2.2", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(0, 4), "Session Key 2.1", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(4, 4), "Session Key 2.2", isencrypted)
     elseif opcode == GG_AUTH then
         cmn.add_le(tree, pf_gg_auth_response, data(0, 4), nil, isencrypted)
     end
@@ -159,14 +159,14 @@ local function decode_client_data(tree, opcode, data, isencrypted)
         cmn.add_le(tree, pf_string, data(0, 14), "Login", isencrypted)
         cmn.add_le(tree, pf_string, data(14, 16), "Password", isencrypted)
     elseif opcode == REQUEST_SERVER_LOGIN then
-        cmn.add_le(tree, pf_dword, data(0, 4), "Session Key 1.1", isencrypted)
-        cmn.add_le(tree, pf_dword, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(4, 4), "Session Key 1.2", isencrypted)
         cmn.add_le(tree, pf_uint8, data(8, 1), "Server ID", isencrypted)
     elseif opcode == REQUEST_SERVER_LIST then
-        cmn.add_le(tree, pf_dword, data(0, 4), "Session Key 1.1", isencrypted)
-        cmn.add_le(tree, pf_dword, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(4, 4), "Session Key 1.2", isencrypted)
     elseif opcode == REQUEST_GG_AUTH then
-        cmn.add_le(tree, pf_dword, data(0, 4), "Session ID", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(0, 4), "Session ID", isencrypted)
     end
 end
 

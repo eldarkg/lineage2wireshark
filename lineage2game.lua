@@ -28,7 +28,7 @@ local pf_bool = ProtoField.bool("lineage2game.bool", " ")
 local pf_uint8 = ProtoField.uint8("lineage2game.uint8", " ", base.DEC)
 local pf_uint16 = ProtoField.uint16("lineage2game.uint16", " ", base.DEC)
 local pf_uint32 = ProtoField.uint32("lineage2game.uint32", " ", base.DEC)
-local pf_dword = ProtoField.uint32("lineage2game.dword", " ", base.HEX)
+local pf_bin32 = ProtoField.uint32("lineage2game.bin32", " ", base.HEX)
 local pf_string = ProtoField.string("lineage2game.string", " ", base.ASCII)
 local pf_stringz = ProtoField.stringz("lineage2game.stringz", " ", base.ASCII)
 local pf_ipv4 = ProtoField.ipv4("lineage2game.ipv4", " ")
@@ -40,21 +40,24 @@ local pf_client_opcode = ProtoField.uint8("lineage2game.client_opcode",
 lineage2game.fields = {
     pf_bytes,
     pf_uint16,
-    pf_dword,
+    pf_bin32,
     pf_server_opcode,
     pf_client_opcode,
 }
 
 local function decode_server_data(tree, opcode, data, isencrypted)
     if opcode == CRYPT_INIT then
-        cmn.add_le(tree, pf_bytes, data(1), "XOR key", isencrypted) -- length 16 or 4!?
+        -- FIXME length 16 or 4 or full !?
+        cmn.add_le(tree, pf_bytes, data(1), "XOR key", isencrypted)
     end
+    -- TODO
 end
 
 local function decode_client_data(tree, opcode, data, isencrypted)
     if opcode == PROTOCOL_VERSION then
-        cmn.add_le(tree, pf_dword, data(0, 4), "Protocol version", isencrypted)
+        cmn.add_le(tree, pf_bin32, data(0, 4), "Protocol version", isencrypted)
     end
+    -- TODO
 end
 
 function lineage2game.dissector(buffer, pinfo, tree)
