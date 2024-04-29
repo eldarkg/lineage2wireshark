@@ -9,9 +9,9 @@
 local _M = {}
 
 ---@param buffer ByteArray
----@return string
-function _M.raw(buffer)
-    return buffer:bytes():raw()
+---@return ByteArray
+function _M.le(buffer)
+    return buffer:le_uint()
 end
 
 function _M.generated(item, isgen)

@@ -8,6 +8,7 @@
 ]]--
 
 local cmn = require("common")
+local packet = require("packet")
 local bf = require("blowfish")
 
 local LOGIN_PORT = 2106
@@ -117,8 +118,17 @@ lineage2login.fields = {
     pf_gg_auth_response,
 }
 
+---@param buffer ByteArray
+---@param isserver boolean
+---@return boolean
 local function is_encrypted_packet(buffer, isserver)
-    return not (isserver and buffer:len() == 11 and buffer(2, 1):uint() == 0x00)
+    if isserver then
+        local len = packet.length(buffer)
+        local opcode = packet.opcode(buffer)
+        return not (len == 11 and opcode == INIT)
+    else
+        return true
+    end
 end
 
 local function decode_server_data(tree, opcode, data, isencrypted)
@@ -135,7 +145,7 @@ local function decode_server_data(tree, opcode, data, isencrypted)
     elseif opcode == SERVER_LIST then
         cmn.add_le(tree, pf_uint8, data(0, 1), "Count", isencrypted)
         local blk_sz = 21
-        for i = 0, data(0, 1):uint() - 1 do
+        for i = 0, cmn.le(data(0, 1)) - 1 do
             local b = blk_sz * i
             local serv_st = cmn.generated(tree:add(lineage2login,
                                           data(b + 2, blk_sz),
@@ -186,19 +196,20 @@ function lineage2login.dissector(buffer, pinfo, tree)
     local isencrypted = is_encrypted_packet(buffer, isserver)
 
     local subtree = tree:add(lineage2login, buffer(), "Lineage2 Login Protocol")
-    cmn.add_le(subtree, pf_uint16, buffer(0, 2), "Length", false)
+    cmn.add_le(subtree, pf_uint16, packet.length_buffer(buffer), "Length",
+               false)
 
     local opcode_p = nil
     local data_p = nil
     if isencrypted then
-        local dec = bf.decrypt(cmn.raw(buffer(2)), BLOWFISH_PK)
+        local dec = bf.decrypt(packet.encrypted_block(buffer), BLOWFISH_PK)
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
         opcode_p = dec_tvb(0, 1)
         data_p = dec_tvb(1)
     else
-        opcode_p = buffer(2, 1)
-        data_p = buffer(3)
+        opcode_p = packet.opcode_buffer(buffer)
+        data_p = packet.data_buffer(buffer)
     end
 
     cmn.add_le(subtree, pf_opcode, opcode_p, nil, isencrypted)
@@ -206,7 +217,7 @@ function lineage2login.dissector(buffer, pinfo, tree)
     local data_st = cmn.generated(tree:add(lineage2login, data_p, "Data"),
                                   isencrypted)
 
-    local opcode = opcode_p:uint()
+    local opcode = cmn.le(opcode_p)
     local decode_data = isserver and decode_server_data or decode_client_data
     decode_data(data_st, opcode, data_p, isencrypted)
 
