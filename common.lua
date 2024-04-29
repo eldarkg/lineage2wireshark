@@ -8,6 +8,12 @@
 
 local _M = {}
 
+---@param buffer ByteArray
+---@return string
+function _M.raw(buffer)
+    return buffer:bytes():raw()
+end
+
 function _M.generated(item, isgen)
     return isgen and item:set_generated() or item
 end

@@ -191,7 +191,7 @@ function lineage2login.dissector(buffer, pinfo, tree)
     local opcode_p = nil
     local data_p = nil
     if isencrypted then
-        local dec = bf.decrypt(buffer(2):bytes():raw(), BLOWFISH_PK)
+        local dec = bf.decrypt(cmn.raw(buffer(2)), BLOWFISH_PK)
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
         opcode_p = dec_tvb(0, 1)
