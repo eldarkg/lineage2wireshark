@@ -13,7 +13,6 @@ local _M = {}
 ---@param data string
 ---@param bs   number
 ---@return string
----@nodiscard
 local function align_size(data, bs)
     local alen = (bs - #data % bs) % bs
     for i = 1, alen do
@@ -26,7 +25,6 @@ end
 ---@param data string
 ---@param bs   number
 ---@return string
----@nodiscard
 local function swap_endian(data, bs)
     local swapped = ""
     for i = 1, #data, bs do
@@ -42,7 +40,6 @@ end
 ---@param enc string
 ---@param pk  string
 ---@return string
----@nodiscard
 function _M.decrypt(enc, pk)
     local bf_bs = 8
     enc = align_size(enc, bf_bs)
