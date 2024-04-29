@@ -44,4 +44,16 @@ function _M.encrypted_block(buffer)
     return buffer(2):bytes():raw()
 end
 
+---@param data ByteArray
+---@return ByteArray
+function _M.xor_key_buffer(data)
+    return data(1, 4)
+end
+
+---@param data ByteArray
+---@return string
+function _M.xor_key(data)
+    return _M.xor_key_buffer(data):bytes():raw()
+end
+
 return _M
