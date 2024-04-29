@@ -4,7 +4,7 @@
     Email: eldar.khayrullin@mail.ru
     Date: 2024
     Description: Wireshark Dissector for Lineage2Game
-    Protocol: 785a?
+    Protocol: 709
 ]]--
 
 local cmn = require("common")
@@ -47,8 +47,7 @@ lineage2game.fields = {
 
 local function decode_server_data(tree, opcode, data, isencrypted)
     if opcode == CRYPT_INIT then
-        -- FIXME length 16 or 4 or full !?
-        cmn.add_le(tree, pf_bytes, data(1), "XOR key", isencrypted)
+        cmn.add_le(tree, pf_bytes, data(1, 4), "XOR key", isencrypted)
     end
     -- TODO
 end
