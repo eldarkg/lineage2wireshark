@@ -8,8 +8,14 @@
 ]]--
 
 local cmn = require("common")
+local packet = require("packet")
+local xor = require("xor")
 
 local GAME_PORT = 7777
+
+local STATIC_KEY = Struct.fromhex(
+    "A1 6C 54 87",
+    " ")
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 
@@ -45,6 +51,19 @@ lineage2game.fields = {
     pf_client_opcode,
 }
 
+---@param buffer ByteArray
+---@param isserver boolean
+---@return boolean
+local function is_encrypted_packet(buffer, isserver)
+    local len = packet.length(buffer)
+    local opcode = packet.opcode(buffer)
+    if isserver then
+        return not (len == 16 and opcode == CRYPT_INIT)
+    else
+        return not (len == 263 and opcode == PROTOCOL_VERSION)
+    end
+end
+
 local function decode_server_data(tree, opcode, data, isencrypted)
     if opcode == CRYPT_INIT then
         cmn.add_le(tree, pf_bytes, data(1, 4), "XOR key", isencrypted)
@@ -67,15 +86,29 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local isserver = (pinfo.src_port == GAME_PORT)
     local pf_opcode = isserver and pf_server_opcode or pf_client_opcode
     local opcode_tbl = isserver and SERVER_OPCODE or CLIENT_OPCODE
-    local isencrypted = false -- FIXME
+    local isencrypted = is_encrypted_packet(buffer, isserver)
 
     local subtree = tree:add(lineage2game, buffer(), "Lineage2 Game Protocol")
-    cmn.add_le(subtree, pf_uint16, buffer(0, 2), "Length", false)
+    cmn.add_le(subtree, pf_uint16, packet.length_buffer(buffer), "Length", false)
 
-    local opcode_p = buffer(2, 1)
+    local opcode_p = nil
+    local data_p = nil
+    if isencrypted then
+        -- FIXME use received server key
+        local key = xor.create_key(Struct.fromhex("963b0000"), STATIC_KEY)
+        local dec = xor.decrypt(packet.encrypted_block(buffer), key)
+        key = xor.next_key(key, #dec)
+        local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
+
+        opcode_p = dec_tvb(0, 1)
+        data_p = dec_tvb(1)
+    else
+        opcode_p = packet.opcode_buffer(buffer)
+        data_p = packet.data_buffer(buffer)
+    end
+
     cmn.add_le(subtree, pf_opcode, opcode_p, nil, isencrypted)
 
-    local data_p = buffer(3)
     local data_st = cmn.generated(tree:add(lineage2game, data_p, "Data"),
                                   isencrypted)
 
