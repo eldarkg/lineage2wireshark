@@ -8,8 +8,13 @@
 ]]--
 
 local cmn = require("common")
+local bf = require("blowfish")
 
 local LOGIN_PORT = 2106
+
+local BLOWFISH_PK = Struct.fromhex(
+    "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00",
+    " ")
 
 local INIT = 0x00
 local LOGIN_FAIL = 0x01
@@ -186,7 +191,7 @@ function lineage2login.dissector(buffer, pinfo, tree)
     local opcode_p = nil
     local data_p = nil
     if isencrypted then
-        local dec = cmn.decrypt(buffer(2):bytes():raw())
+        local dec = bf.decrypt(buffer(2):bytes():raw(), BLOWFISH_PK)
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
         opcode_p = dec_tvb(0, 1)
