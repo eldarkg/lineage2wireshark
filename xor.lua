@@ -12,7 +12,7 @@ local _M = {}
 ---@param server_key string Server XOR key
 ---@param static_key string Static XOR key
 ---@return string
-function _M.init_key(server_key, static_key)
+function _M.create_key(server_key, static_key)
     return server_key .. static_key
 end
 
