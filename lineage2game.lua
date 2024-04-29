@@ -40,7 +40,7 @@ local pf_client_opcode = ProtoField.uint8("lineage2game.client_opcode",
 lineage2game.fields = {
     pf_bytes,
     pf_uint16,
-    pf_bin32,
+    pf_uint32,
     pf_server_opcode,
     pf_client_opcode,
 }
@@ -55,7 +55,7 @@ end
 
 local function decode_client_data(tree, opcode, data, isencrypted)
     if opcode == PROTOCOL_VERSION then
-        cmn.add_le(tree, pf_bin32, data(0, 4), "Protocol version", isencrypted)
+        cmn.add_le(tree, pf_uint32, data(0, 4), "Protocol version", isencrypted)
     end
     -- TODO
 end
