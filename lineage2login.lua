@@ -201,7 +201,7 @@ function lineage2login.dissector(buffer, pinfo, tree)
         local dec = bf.decrypt(packet.encrypted_block(buffer), BLOWFISH_PK)
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
-        opcode_p = packet.decrypted_opcode_buffer(dec_tvb())
+        opcode_p = packet.decrypted_opcode_buffer(dec_tvb(), isserver)
         data_p = dec_tvb(opcode_p:len())
     else
         opcode_p = packet.opcode_buffer(buffer)

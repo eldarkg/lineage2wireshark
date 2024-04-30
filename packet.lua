@@ -57,17 +57,27 @@ function _M.xor_key(data)
 end
 
 ---@param buffer TvbRange
+---@param isserver boolean
 ---@return TvbRange
-function _M.decrypted_opcode_buffer(buffer)
+function _M.decrypted_opcode_buffer(buffer, isserver)
     local opcode1 = buffer(0, 1):uint()
-    local len = (opcode1 == 0xD0 or opcode1 == 0xFE) and 2 or 1
+    local len = 1
+    if isserver then
+        if opcode1 == 0xFE then
+            len = 2
+        end
+    elseif opcode1 == 0x39 or opcode1 == 0xD0 then
+        len = 2
+    else
+        len = 1 end
     return buffer(0, len)
 end
 
 ---@param buffer TvbRange
+---@param isserver boolean
 ---@return number
-function _M.decrypted_opcode(buffer)
-    return _M.decrypted_opcode_buffer(buffer):uint()
+function _M.decrypted_opcode(buffer, isserver)
+    return _M.decrypted_opcode_buffer(buffer, isserver):uint()
 end
 
 return _M

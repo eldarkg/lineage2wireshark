@@ -36,7 +36,7 @@ local SERVER_OPCODE = {
     NetPingRequest = 0xD3,
     ServerSocketClose = 0xAF,
     ChairSit = 0xE1,
-    ExSendManorList = 0xFE1B, -- FIXME???
+    ExSendManorList = 0xFE1B,
 }
 local SERVER_OPCODE_TXT = cmn.invert(SERVER_OPCODE)
 
@@ -138,7 +138,7 @@ local CLIENT_OPCODE = {
     RequestMakeMacro = 0xC1,
     RequestDeleteMacro = 0xC2,
     RequestAutoSoulShot = 0xCF,
-    RequestExEnchantSkillInfo = 0xD006, -- FIXME ??? vvv
+    RequestExEnchantSkillInfo = 0xD006,
     RequestExEnchantSkill = 0xD007,
     RequestExManorList = 0xD008,
     RequestExPledgeCrestLarge = 0xD010,
@@ -233,6 +233,7 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local opcode_p = nil
     local data_p = nil
     if isencrypted then
+        -- TODO empty encrypted_block ?
         local dec = xor.decrypt(packet.encrypted_block(buffer), xor_key)
         -- TODO only not in cache (flag)
         if isserver then
@@ -243,7 +244,7 @@ function lineage2game.dissector(buffer, pinfo, tree)
 
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
-        opcode_p = packet.decrypted_opcode_buffer(dec_tvb())
+        opcode_p = packet.decrypted_opcode_buffer(dec_tvb(), isserver)
         data_p = dec_tvb(opcode_p:len())
     else
         opcode_p = packet.opcode_buffer(buffer)
