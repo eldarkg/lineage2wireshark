@@ -123,9 +123,12 @@ function lineage2game.dissector(buffer, pinfo, tree)
         data_p = packet.data_buffer(buffer)
     end
 
-    cmn.add_le(subtree, pf_opcode, opcode_p, nil, isencrypted)
+    if isencrypted then
+        local xor_key_tvb = ByteArray.tvb(ByteArray.new(xor_key, true), "XOR key")
+        cmn.add_le(subtree, pf_bytes, xor_key_tvb(), "XOR key", isencrypted)
+    end
 
-    -- TODO show xor key in tree for debug
+    cmn.add_le(subtree, pf_opcode, opcode_p, nil, isencrypted)
 
     local data_st = cmn.generated(tree:add(lineage2game, data_p, "Data"),
                                   isencrypted)
