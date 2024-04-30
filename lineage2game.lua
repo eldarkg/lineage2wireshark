@@ -103,6 +103,12 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local subtree = tree:add(lineage2game, buffer(), "Lineage2 Game Protocol")
     cmn.add_le(subtree, pf_uint16, packet.length_buffer(buffer), "Length", false)
 
+    if isencrypted then
+        local label = "XOR key"
+        local xor_key_tvb = ByteArray.tvb(ByteArray.new(xor_key, true), label)
+        cmn.add_le(subtree, pf_bytes, xor_key_tvb(), label, isencrypted)
+    end
+
     local opcode_p = nil
     local data_p = nil
     if isencrypted then
@@ -123,11 +129,6 @@ function lineage2game.dissector(buffer, pinfo, tree)
         data_p = packet.data_buffer(buffer)
     end
 
-    if isencrypted then
-        local xor_key_tvb = ByteArray.tvb(ByteArray.new(xor_key, true), "XOR key")
-        cmn.add_le(subtree, pf_bytes, xor_key_tvb(), "XOR key", isencrypted)
-    end
-
     cmn.add_le(subtree, pf_opcode, opcode_p, nil, isencrypted)
 
     local data_st = cmn.generated(tree:add(lineage2game, data_p, "Data"),
@@ -136,8 +137,7 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local opcode = cmn.le(opcode_p)
     -- TODO move up
     if isserver and opcode == SERVER_OPCODE.CryptInit then
-        server_xor_key =
-            xor.create_key(packet.xor_key(data_p), STATIC_XOR_KEY)
+        server_xor_key = xor.create_key(packet.xor_key(data_p), STATIC_XOR_KEY)
         client_xor_key = server_xor_key
     end
     local decode_data = isserver and decode_server_data or decode_client_data
