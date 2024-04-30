@@ -12,10 +12,7 @@ local packet = require("packet")
 local xor = require("xor")
 
 local GAME_PORT = 7777
-
-local STATIC_KEY = Struct.fromhex(
-    "A1 6C 54 87",
-    " ")
+local STATIC_KEY = "\xA1\x6C\x54\x87"
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 

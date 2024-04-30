@@ -12,10 +12,8 @@ local packet = require("packet")
 local bf = require("blowfish")
 
 local LOGIN_PORT = 2106
-
-local BLOWFISH_PK = Struct.fromhex(
-    "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00",
-    " ")
+local BLOWFISH_PK =
+"\x64\x10\x30\x10\xAE\x06\x31\x10\x16\x95\x30\x10\x32\x65\x30\x10\x71\x44\x30\x10\x00"
 
 local INIT = 0x00
 local LOGIN_FAIL = 0x01
