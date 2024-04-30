@@ -243,19 +243,19 @@ function lineage2game.dissector(buffer, pinfo, tree)
 
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
-        opcode_p = dec_tvb(0, 1)
-        data_p = dec_tvb(1)
+        opcode_p = packet.decrypted_opcode_buffer(dec_tvb())
+        data_p = dec_tvb(opcode_p:len())
     else
         opcode_p = packet.opcode_buffer(buffer)
         data_p = packet.data_buffer(buffer)
     end
 
-    cmn.add_le(subtree, pf_opcode, opcode_p, nil, isencrypted)
+    cmn.add_be(subtree, pf_opcode, opcode_p, nil, isencrypted)
 
     local data_st = cmn.generated(tree:add(lineage2game, data_p, "Data"),
                                   isencrypted)
 
-    local opcode = cmn.le(opcode_p)
+    local opcode = cmn.be(opcode_p)
     -- TODO move up
     if isserver and opcode == SERVER_OPCODE.CryptInit then
         server_xor_key = xor.create_key(packet.xor_key(data_p), STATIC_XOR_KEY)

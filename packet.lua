@@ -56,4 +56,18 @@ function _M.xor_key(data)
     return _M.xor_key_buffer(data):bytes():raw()
 end
 
+---@param buffer TvbRange
+---@return TvbRange
+function _M.decrypted_opcode_buffer(buffer)
+    local opcode1 = buffer(0, 1):uint()
+    local len = (opcode1 == 0xD0 or opcode1 == 0xFE) and 2 or 1
+    return buffer(0, len)
+end
+
+---@param buffer TvbRange
+---@return number
+function _M.decrypted_opcode(buffer)
+    return _M.decrypted_opcode_buffer(buffer):uint()
+end
+
 return _M

@@ -14,6 +14,11 @@ function _M.le(buffer)
     return buffer:le_uint()
 end
 
+---@param buffer ByteArray
+---@return ByteArray
+function _M.be(buffer)
+    return buffer:uint()
+end
 
 ---Invert table key and value between themselves
 ---@param tbl table
