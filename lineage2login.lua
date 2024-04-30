@@ -7,9 +7,9 @@
     Protocol: 785a
 ]]--
 
+local bf = require("blowfish")
 local cmn = require("common")
 local packet = require("packet")
-local bf = require("blowfish")
 
 local LOGIN_PORT = 2106
 local BLOWFISH_PK =
