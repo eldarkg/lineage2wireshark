@@ -65,6 +65,7 @@ local GG_AUTH_RESPONSE = {
     [0x0B] = "Skip authorization",
 }
 
+local pf_bytes = ProtoField.bytes("lineage2game.bytes", " ", base.NONE)
 local pf_bool = ProtoField.bool("lineage2login.bool", " ")
 local pf_uint8 = ProtoField.uint8("lineage2login.uint8", " ", base.DEC)
 local pf_uint16 = ProtoField.uint16("lineage2login.uint16", " ", base.DEC)
@@ -91,6 +92,7 @@ local pf_gg_auth_response = ProtoField.uint32("lineage2login.gg_auth_response",
 
 local lineage2login = Proto("lineage2login", "Lineage2 Login Protocol")
 lineage2login.fields = {
+    pf_bytes,
     pf_bool,
     pf_uint8,
     pf_uint16,
@@ -186,6 +188,12 @@ function lineage2login.dissector(buffer, pinfo, tree)
     local subtree = tree:add(lineage2login, buffer(), "Lineage2 Login Protocol")
     cmn.add_le(subtree, pf_uint16, packet.length_buffer(buffer), "Length",
                false)
+
+    if isencrypted then
+        local label = "Blowfish PK"
+        local bf_pk_tvb = ByteArray.tvb(ByteArray.new(BLOWFISH_PK, true), label)
+        cmn.add_le(subtree, pf_bytes, bf_pk_tvb(), label, isencrypted)
+    end
 
     local opcode_p = nil
     local data_p = nil
