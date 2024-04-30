@@ -12,7 +12,7 @@ local packet = require("packet")
 local xor = require("xor")
 
 local GAME_PORT = 7777
-local STATIC_KEY = "\xA1\x6C\x54\x87"
+local STATIC_XOR_KEY = "\xA1\x6C\x54\x87"
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 
@@ -134,7 +134,7 @@ function lineage2game.dissector(buffer, pinfo, tree)
     -- TODO move up
     if isserver and opcode == CRYPT_INIT then
         server_xor_key =
-            xor.create_key(packet.xor_key(data_p), STATIC_KEY)
+            xor.create_key(packet.xor_key(data_p), STATIC_XOR_KEY)
         client_xor_key = server_xor_key
     end
     local decode_data = isserver and decode_server_data or decode_client_data
