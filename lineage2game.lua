@@ -16,15 +16,15 @@ local STATIC_XOR_KEY = "\xA1\x6C\x54\x87"
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 
-local CRYPT_INIT = 0x00
 local SERVER_OPCODE = {
-    [CRYPT_INIT] = "CryptInit",
+    CryptInit = 0x00,
 }
+local SERVER_OPCODE_TXT = cmn.invert(SERVER_OPCODE)
 
-local PROTOCOL_VERSION = 0x00
 local CLIENT_OPCODE = {
-    [PROTOCOL_VERSION] = "ProtocolVersion",
+    ProtocolVersion = 0x00,
 }
+local CLIENT_OPCODE_TXT = cmn.invert(CLIENT_OPCODE)
 
 local pf_bytes = ProtoField.bytes("lineage2game.bytes", " ", base.NONE)
 local pf_bool = ProtoField.bool("lineage2game.bool", " ")
@@ -36,9 +36,9 @@ local pf_string = ProtoField.string("lineage2game.string", " ", base.ASCII)
 local pf_stringz = ProtoField.stringz("lineage2game.stringz", " ", base.ASCII)
 local pf_ipv4 = ProtoField.ipv4("lineage2game.ipv4", " ")
 local pf_server_opcode = ProtoField.uint8("lineage2game.server_opcode",
-                                          "Opcode", base.HEX, SERVER_OPCODE)
+                                          "Opcode", base.HEX, SERVER_OPCODE_TXT)
 local pf_client_opcode = ProtoField.uint8("lineage2game.client_opcode",
-                                          "Opcode", base.HEX, CLIENT_OPCODE)
+                                          "Opcode", base.HEX, CLIENT_OPCODE_TXT)
 
 lineage2game.fields = {
     pf_bytes,
@@ -60,14 +60,14 @@ local function is_encrypted_packet(buffer, isserver)
     local len = packet.length(buffer)
     local opcode = packet.opcode(buffer)
     if isserver then
-        return not (len == 16 and opcode == CRYPT_INIT)
+        return not (len == 16 and opcode == SERVER_OPCODE.CryptInit)
     else
-        return not (len == 263 and opcode == PROTOCOL_VERSION)
+        return not (len == 263 and opcode == CLIENT_OPCODE.ProtocolVersion)
     end
 end
 
 local function decode_server_data(tree, opcode, data, isencrypted)
-    if opcode == CRYPT_INIT then
+    if opcode == SERVER_OPCODE.CryptInit then
         cmn.add_le(tree, pf_bytes, packet.xor_key_buffer(data), "XOR key",
                    isencrypted)
     end
@@ -75,7 +75,7 @@ local function decode_server_data(tree, opcode, data, isencrypted)
 end
 
 local function decode_client_data(tree, opcode, data, isencrypted)
-    if opcode == PROTOCOL_VERSION then
+    if opcode == CLIENT_OPCODE.ProtocolVersion then
         cmn.add_le(tree, pf_uint32, data(0, 4), "Protocol version", isencrypted)
     end
     -- TODO
@@ -91,7 +91,7 @@ function lineage2game.dissector(buffer, pinfo, tree)
 
     local isserver = (pinfo.src_port == GAME_PORT)
     local pf_opcode = isserver and pf_server_opcode or pf_client_opcode
-    local opcode_tbl = isserver and SERVER_OPCODE or CLIENT_OPCODE
+    local opcode_txt_tbl = isserver and SERVER_OPCODE_TXT or CLIENT_OPCODE_TXT
     local isencrypted = is_encrypted_packet(buffer, isserver)
 
     if not xor_key_cache[pinfo.number] then
@@ -132,7 +132,7 @@ function lineage2game.dissector(buffer, pinfo, tree)
 
     local opcode = cmn.le(opcode_p)
     -- TODO move up
-    if isserver and opcode == CRYPT_INIT then
+    if isserver and opcode == SERVER_OPCODE.CryptInit then
         server_xor_key =
             xor.create_key(packet.xor_key(data_p), STATIC_XOR_KEY)
         client_xor_key = server_xor_key
@@ -140,7 +140,7 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local decode_data = isserver and decode_server_data or decode_client_data
     decode_data(data_st, opcode, data_p, isencrypted)
 
-    cmn.set_info_field(pinfo, isserver, isencrypted, opcode_tbl[opcode])
+    cmn.set_info_field(pinfo, isserver, isencrypted, opcode_txt_tbl[opcode])
 end
 
 local tcp_port = DissectorTable.get("tcp.port")

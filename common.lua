@@ -14,6 +14,18 @@ function _M.le(buffer)
     return buffer:le_uint()
 end
 
+
+---Invert table key and value between themselves
+---@param tbl table
+---@return table
+function _M.invert(tbl)
+    local itbl = {}
+    for key, value in pairs(tbl) do
+        itbl[value] = key
+    end
+    return itbl
+end
+
 function _M.generated(item, isgen)
     return isgen and item:set_generated() or item
 end
