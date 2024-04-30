@@ -17,12 +17,13 @@ local STATIC_XOR_KEY = "\xA1\x6C\x54\x87"
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 
 local SERVER_OPCODE = {
-    CryptInit = 0x00,
+    KeyInit = 0x00,
     MoveToLocation = 0x01,
     UserInfo = 0x04,
     StatusUpdate = 0x0E,
-    CharList = 0x13,
+    CharSelectInfo = 0x13,
     AuthLoginFail = 0x14,
+    CharSelected = 0x15,
     CharCreateOk = 0x19,
     CharCreateFail = 0x1A,
     CharDeleteOk = 0x23,
@@ -31,11 +32,14 @@ local SERVER_OPCODE = {
     ChangeWaitType = 0x2F,
     TeleportToLocation = 0x38,
     ChangeMoveType = 0x3E,
+    SkillList = 0x58,
     LogoutOK = 0x7E,
     QuestList = 0x80,
-    NetPingRequest = 0xD3,
+    NetPing = 0xD3,
     ServerSocketClose = 0xAF,
     ChairSit = 0xE1,
+    SendMacroList = 0xE7,
+    SSQInfo = 0xF8,
     ExSendManorList = 0xFE1B,
 }
 local SERVER_OPCODE_TXT = cmn.invert(SERVER_OPCODE)
@@ -46,12 +50,12 @@ local CLIENT_OPCODE = {
     Say = 0x02,
     EnterWorld = 0x03,
     Action = 0x04,
-    AuthRequest = 0x08,
+    RequestAuthLogin = 0x08,
     Logout = 0x09,
     AttackRequest = 0x0A,
-    CharacterCreate = 0x0B,
-    CharacterDelete = 0x0C,
-    CharacterSelected = 0x0D,
+    CharCreate = 0x0B,
+    CharDelete = 0x0C,
+    CharSelected = 0x0D,
     RequestItemList = 0x0F,
     RequestUnEquipItem = 0x11,
     RequestDropItem = 0x12,
@@ -126,6 +130,7 @@ local CLIENT_OPCODE = {
     SetPrivateStoreMsgBuy = 0x94,
     RequestStartAllianceWar = 0x98,
     RequestStopAllianceWar = 0x9A,
+    RequestSkillCoolTime = 0x9D,
     RequestBlock = 0xA0,
     RequestSiegeAttackerList = 0xA2,
     RequestJoinSiege = 0xA4,
@@ -140,7 +145,7 @@ local CLIENT_OPCODE = {
     RequestAutoSoulShot = 0xCF,
     RequestExEnchantSkillInfo = 0xD006,
     RequestExEnchantSkill = 0xD007,
-    RequestExManorList = 0xD008,
+    RequestManorList = 0xD008,
     RequestExPledgeCrestLarge = 0xD010,
     RequestExSetPledgeCrestLarge = 0xD011,
     RequestChangePartyLeader = 0xEE,
@@ -181,14 +186,14 @@ local function is_encrypted_packet(buffer, isserver)
     local len = packet.length(buffer)
     local opcode = packet.opcode(buffer)
     if isserver then
-        return not (len == 16 and opcode == SERVER_OPCODE.CryptInit)
+        return not (len == 16 and opcode == SERVER_OPCODE.KeyInit)
     else
         return not (len == 263 and opcode == CLIENT_OPCODE.ProtocolVersion)
     end
 end
 
 local function decode_server_data(tree, opcode, data, isencrypted)
-    if opcode == SERVER_OPCODE.CryptInit then
+    if opcode == SERVER_OPCODE.KeyInit then
         cmn.add_le(tree, pf_bytes, packet.xor_key_buffer(data), "XOR key",
                    isencrypted)
     end
@@ -258,7 +263,7 @@ function lineage2game.dissector(buffer, pinfo, tree)
 
     local opcode = cmn.be(opcode_p)
     -- TODO move up
-    if isserver and opcode == SERVER_OPCODE.CryptInit then
+    if isserver and opcode == SERVER_OPCODE.KeyInit then
         server_xor_key = xor.create_key(packet.xor_key(data_p), STATIC_XOR_KEY)
         client_xor_key = server_xor_key
     end
