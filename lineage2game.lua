@@ -51,10 +51,10 @@ lineage2game.fields = {
     pf_client_opcode,
 }
 
--- TODO local?
-Lineage2game_xor_key = {}
-Lineage2game_s_xor_key = ""
-Lineage2game_c_xor_key = ""
+-- TODO save only dynamic part
+local xor_key_cache = {}
+local server_xor_key = ""
+local client_xor_key = ""
 
 ---@param buffer ByteArray
 ---@param isserver boolean
@@ -97,11 +97,11 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local opcode_tbl = isserver and SERVER_OPCODE or CLIENT_OPCODE
     local isencrypted = is_encrypted_packet(buffer, isserver)
 
-    if not Lineage2game_xor_key[pinfo.number] then
-        Lineage2game_xor_key[pinfo.number] =
-            isserver and Lineage2game_s_xor_key or Lineage2game_c_xor_key
+    if not xor_key_cache[pinfo.number] then
+        xor_key_cache[pinfo.number] =
+            isserver and server_xor_key or client_xor_key
     end
-    local xor_key = Lineage2game_xor_key[pinfo.number]
+    local xor_key = xor_key_cache[pinfo.number]
 
     local subtree = tree:add(lineage2game, buffer(), "Lineage2 Game Protocol")
     cmn.add_le(subtree, pf_uint16, packet.length_buffer(buffer), "Length", false)
@@ -110,10 +110,11 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local data_p = nil
     if isencrypted then
         local dec = xor.decrypt(packet.encrypted_block(buffer), xor_key)
+        -- TODO only not in cache (flag)
         if isserver then
-            Lineage2game_s_xor_key = xor.next_key(xor_key, #dec)
+            server_xor_key = xor.next_key(xor_key, #dec)
         else
-            Lineage2game_c_xor_key = xor.next_key(xor_key, #dec)
+            client_xor_key = xor.next_key(xor_key, #dec)
         end
 
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
@@ -135,9 +136,9 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local opcode = cmn.le(opcode_p)
     -- TODO move up
     if isserver and opcode == CRYPT_INIT then
-        Lineage2game_s_xor_key =
+        server_xor_key =
             xor.create_key(packet.xor_key(data_p), STATIC_KEY)
-        Lineage2game_c_xor_key = Lineage2game_s_xor_key
+        client_xor_key = server_xor_key
     end
     local decode_data = isserver and decode_server_data or decode_client_data
     decode_data(data_st, opcode, data_p, isencrypted)
