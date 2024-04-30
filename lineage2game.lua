@@ -33,7 +33,7 @@ local SERVER_OPCODE = {
     TeleportToLocation = 0x38,
     ChangeMoveType = 0x3E,
     SkillList = 0x58,
-    LogoutOK = 0x7E,
+    LogOutOk = 0x7E,
     QuestList = 0x80,
     NetPing = 0xD3,
     ServerSocketClose = 0xAF,
@@ -214,6 +214,8 @@ function lineage2game.dissector(buffer, pinfo, tree)
     -- TODO if pinfo.visited then return end
 
     if buffer:len() == 0 then return end
+    -- TODO check buffer:len() and packet length. What to do if not equal?
+    -- FIXME maybe multiple la2 packets in one buffer. Use packet length
 
     local isserver = (pinfo.src_port == GAME_PORT)
     local pf_opcode = isserver and pf_server_opcode or pf_client_opcode

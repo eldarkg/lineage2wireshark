@@ -179,6 +179,7 @@ function lineage2login.dissector(buffer, pinfo, tree)
     pinfo.cols.protocol = lineage2login.name
 
     if buffer:len() == 0 then return end
+    -- TODO check buffer:len() and packet length. What to do if not equal?
 
     local isserver = (pinfo.src_port == LOGIN_PORT)
     local pf_opcode = isserver and pf_server_opcode or pf_client_opcode
