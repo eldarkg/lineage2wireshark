@@ -330,6 +330,8 @@ local function process_packet(tree, buffer, isserver)
     end
 end
 
+-- TODO lineage2game.init -> clear cache
+
 function lineage2game.dissector(buffer, pinfo, tree)
     pinfo.cols.protocol = lineage2game.name
     -- TODO check pinfo.visited
@@ -390,3 +392,5 @@ end
 
 local tcp_port = DissectorTable.get("tcp.port")
 tcp_port:add(GAME_PORT, lineage2game)
+-- TODO use treeitem:add_tvb_expert_info
+-- TODO use 11.3.8.2. dissect_tcp_pdus ?
