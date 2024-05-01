@@ -180,6 +180,11 @@ lineage2game.fields = {
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)
 -- TODO save only dynamic part
 
+---Last packet pinfo.number
+local last_packet_number = -1
+---Accumulator XOR decrypt length in current pinfo.number
+local xor_accum_len = 0
+
 ---Key: pinfo.number. Value: XOR key
 local xor_key_cache = {}
 local server_xor_key = ""
@@ -230,22 +235,22 @@ local function opcode_str(opcode, isserver)
     return str and str or ""
 end
 
----@param number number pinfo.number
+---@param pnum     number pinfo.number
 ---@param isserver boolean
-local function process_xor_key_cache(number, isserver)
-    if xor_key_cache[number] then
+local function process_xor_key_cache(pnum, isserver)
+    if xor_key_cache[pnum] then
+        local xor_key = xor.next_key(xor_key_cache[pnum], xor_accum_len)
         if isserver then
-            server_xor_key = xor_key_cache[number]
+            server_xor_key = xor_key
         else
-            client_xor_key = xor_key_cache[number]
+            client_xor_key = xor_key
         end
     else
-        xor_key_cache[number] = isserver and server_xor_key or client_xor_key
+        xor_key_cache[pnum] = isserver and server_xor_key or client_xor_key
     end
 end
 
 ---@param key      string Server XOR key
----@param isserver boolean
 local function init_xor_key(key)
     server_xor_key = xor.create_key(key, STATIC_XOR_KEY)
     client_xor_key = server_xor_key
@@ -254,6 +259,8 @@ end
 ---@param plen number Previous decrypted data length
 ---@param isserver boolean
 local function update_xor_key(plen, isserver)
+    xor_accum_len = xor_accum_len + plen
+
     if isserver then
         server_xor_key = xor.next_key(server_xor_key, plen)
     else
@@ -263,14 +270,20 @@ end
 
 ---@param tree     TreeItem
 ---@param tvb      Tvb
+---@param pnum     number pinfo.number
 ---@param isserver boolean
-local function process_packet(tree, tvb, isserver)
+local function process_packet(tree, tvb, pnum, isserver)
     local isencrypted = is_encrypted_packet(tvb, isserver)
     -- TODO check isencrypted and *_xor_key is empty then not process. Ret false. Print no XOR key
 
+    if isencrypted then
+        process_xor_key_cache(pnum, isserver)
+    end
+
+    local xor_key = isserver and server_xor_key or client_xor_key
+
     local opcode_tvb = nil
     local data_tvb = nil
-    local xor_key = isserver and server_xor_key or client_xor_key
     if isencrypted then
         -- TODO empty encrypted_block ?
         local dec = xor.decrypt(packet.encrypted_block(tvb), xor_key)
@@ -339,8 +352,7 @@ local function dissect(tvb, pinfo, tree)
     end
 
     local isserver = (pinfo.src_port == GAME_PORT)
-    process_xor_key_cache(pinfo.number, isserver)
-    process_packet(tree, tvb, isserver)
+    process_packet(tree, tvb, pinfo.number, isserver)
 
     -- local len_warn = (buffer:len() ~= packet.length(buffer)) and " !!!" or " OK"
     -- TODO move to process_packet
@@ -350,7 +362,6 @@ local function dissect(tvb, pinfo, tree)
     -- TODO print list of opcode names separated (with stat?) with comma
     -- cmn.set_info_field(pinfo, isserver, isencrypted, opcode_str .. len_warn)
 
-    -- FIXME use actual?
     return tvb:len()
 end
 
@@ -361,6 +372,10 @@ end
 ---@param tree TreeItem
 function lineage2game.dissector(tvb, pinfo, tree)
     -- dissect(buffer, pinfo, tree)
+    if pinfo.number ~= last_packet_number then
+        last_packet_number = pinfo.number
+        xor_accum_len = 0
+    end
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
     dissect_tcp_pdus(tvb, subtree, packet.PACKET_LENGTH_LEN, get_len, dissect)
 end
