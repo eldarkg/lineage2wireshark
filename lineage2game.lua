@@ -34,11 +34,13 @@ local SERVER_OPCODE = {
     ChangeMoveType = 0x3E,
     SkillList = 0x58,
     LogOutOk = 0x7E,
+    MagicEffectIcons = 0x7F,
     QuestList = 0x80,
     NetPing = 0xD3,
     ServerSocketClose = 0xAF,
     ChairSit = 0xE1,
     SendMacroList = 0xE7,
+    EtcStatusUpdate = 0xF3,
     SSQInfo = 0xF8,
     ExSendManorList = 0xFE1B,
 }
@@ -174,6 +176,7 @@ lineage2game.fields = {
     pf_client_opcode,
 }
 
+-- TODO implement module cache. Methods: append(number, val), last, load(number)
 -- TODO save only dynamic part
 local xor_key_cache = {}
 local server_xor_key = ""

@@ -62,6 +62,7 @@ end
 function _M.decrypted_opcode_buffer(buffer, isserver)
     local opcode1 = buffer(0, 1):uint()
     local len = 1
+    -- TODO generate extended opcode1 list from *_OPCODE table
     if isserver then
         if opcode1 == 0xFE then
             len = 2
