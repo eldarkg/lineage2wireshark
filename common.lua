@@ -8,14 +8,14 @@
 
 local _M = {}
 
----@param buffer ByteArray
----@return ByteArray
+---@param buffer Tvb
+---@return Tvb
 function _M.le(buffer)
     return buffer:le_uint()
 end
 
----@param buffer ByteArray
----@return ByteArray
+---@param buffer Tvb
+---@return Tvb
 function _M.be(buffer)
     return buffer:uint()
 end

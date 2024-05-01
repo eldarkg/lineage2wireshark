@@ -108,7 +108,7 @@ lineage2login.fields = {
     pf_gg_auth_response,
 }
 
----@param buffer ByteArray
+---@param buffer Tvb
 ---@param isserver boolean
 ---@return boolean
 local function is_encrypted_packet(buffer, isserver)
@@ -187,7 +187,7 @@ function lineage2login.dissector(buffer, pinfo, tree)
     local isencrypted = is_encrypted_packet(buffer, isserver)
 
     local subtree = tree:add(lineage2login, buffer(), "Lineage2 Login Protocol")
-    cmn.add_le(subtree, pf_uint16, packet.length_buffer(buffer), "Length",
+    cmn.add_le(subtree, pf_uint16, packet.length_tvb(buffer), "Length",
                false)
 
     if isencrypted then
@@ -196,27 +196,27 @@ function lineage2login.dissector(buffer, pinfo, tree)
         cmn.add_le(subtree, pf_bytes, bf_pk_tvb(), label, isencrypted)
     end
 
-    local opcode_p = nil
-    local data_p = nil
+    local opcode_tvb = nil
+    local data_tvb = nil
     if isencrypted then
         local dec = bf.decrypt(packet.encrypted_block(buffer), BLOWFISH_PK)
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
-        opcode_p = packet.decrypted_opcode_buffer(dec_tvb(), isserver)
-        data_p = dec_tvb(opcode_p:len())
+        opcode_tvb = packet.decrypted_opcode_tvb(dec_tvb(), isserver)
+        data_tvb = dec_tvb(opcode_tvb:len())
     else
-        opcode_p = packet.opcode_buffer(buffer)
-        data_p = packet.data_buffer(buffer)
+        opcode_tvb = packet.opcode_tvb(buffer)
+        data_tvb = packet.data_tvb(buffer)
     end
 
-    cmn.add_be(subtree, pf_opcode, opcode_p, nil, isencrypted)
+    cmn.add_be(subtree, pf_opcode, opcode_tvb, nil, isencrypted)
 
-    local data_st = cmn.generated(tree:add(lineage2login, data_p, "Data"),
+    local data_st = cmn.generated(tree:add(lineage2login, data_tvb, "Data"),
                                   isencrypted)
 
-    local opcode = cmn.be(opcode_p)
+    local opcode = cmn.be(opcode_tvb)
     local decode_data = isserver and decode_server_data or decode_client_data
-    decode_data(data_st, opcode, data_p, isencrypted)
+    decode_data(data_st, opcode, data_tvb, isencrypted)
 
     cmn.set_info_field(pinfo, isserver, isencrypted, opcode_txt_tbl[opcode])
 end

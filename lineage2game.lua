@@ -185,17 +185,12 @@ local xor_key_cache = {}
 local server_xor_key = ""
 local client_xor_key = ""
 
----Key: pinfo.number. Value: packet chunk
-local packet_chunk_cache = {}
-local server_packet_chunk = ByteArray.new()
-local client_packet_chunk = ByteArray.new()
-
----@param buffer ByteArray
+---@param tvb Tvb
 ---@param isserver boolean
 ---@return boolean
-local function is_encrypted_packet(buffer, isserver)
-    local len = packet.length(buffer)
-    local opcode = packet.opcode(buffer)
+local function is_encrypted_packet(tvb, isserver)
+    local len = packet.length(tvb)
+    local opcode = packet.opcode(tvb)
     -- TODO check current *_xor_key for empty
     if isserver then
         return not (len == 16 and opcode == SERVER_OPCODE.KeyInit)
@@ -204,14 +199,22 @@ local function is_encrypted_packet(buffer, isserver)
     end
 end
 
+---@param tree        TreeItem
+---@param opcode      number
+---@param data        Tvb
+---@param isencrypted boolean
 local function decode_server_data(tree, opcode, data, isencrypted)
     if opcode == SERVER_OPCODE.KeyInit then
-        cmn.add_le(tree, pf_bytes, packet.xor_key_buffer(data), "XOR key",
+        cmn.add_le(tree, pf_bytes, packet.xor_key_tvb(data), "XOR key",
                    isencrypted)
     end
     -- TODO
 end
 
+---@param tree        TreeItem
+---@param opcode      number
+---@param data        Tvb
+---@param isencrypted boolean
 local function decode_client_data(tree, opcode, data, isencrypted)
     if opcode == CLIENT_OPCODE.ProtocolVersion then
         cmn.add_le(tree, pf_uint32, data(0, 4), "Protocol version", isencrypted)
@@ -258,56 +261,41 @@ local function update_xor_key(plen, isserver)
     end
 end
 
----@param number number pinfo.number
----@param isserver boolean
-local function process_packet_chunk_cache(number, isserver)
-    if packet_chunk_cache[number] then
-        if isserver then
-            server_packet_chunk = packet_chunk_cache[number]
-        else
-            client_packet_chunk = packet_chunk_cache[number]
-        end
-    else
-        packet_chunk_cache[number] = isserver and server_packet_chunk or client_packet_chunk
-    end
-end
-
 ---@param tree     TreeItem
----@param buffer   ByteArray
----@param xor_key  string
+---@param tvb      Tvb
 ---@param isserver boolean
-local function process_packet(tree, buffer, isserver)
-    local isencrypted = is_encrypted_packet(buffer, isserver)
+local function process_packet(tree, tvb, isserver)
+    local isencrypted = is_encrypted_packet(tvb, isserver)
     -- TODO check isencrypted and *_xor_key is empty then not process. Ret false. Print no XOR key
 
-    local opcode_p = nil
-    local data_p = nil
+    local opcode_tvb = nil
+    local data_tvb = nil
     local xor_key = isserver and server_xor_key or client_xor_key
     if isencrypted then
         -- TODO empty encrypted_block ?
-        local dec = xor.decrypt(packet.encrypted_block(buffer), xor_key)
+        local dec = xor.decrypt(packet.encrypted_block(tvb), xor_key)
         -- TODO move down
         -- TODO show Opcode name instead Decrypted
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
-        opcode_p = packet.decrypted_opcode_buffer(dec_tvb(), isserver)
-        data_p = dec_tvb(opcode_p:len())
+        opcode_tvb = packet.decrypted_opcode_tvb(dec_tvb(), isserver)
+        data_tvb = dec_tvb(opcode_tvb:len())
     else
-        opcode_p = packet.opcode_buffer(buffer)
-        data_p = packet.data_buffer(buffer)
+        opcode_tvb = packet.opcode_tvb(tvb)
+        data_tvb = packet.data_tvb(tvb)
     end
 
-    local opcode = cmn.be(opcode_p)
+    local opcode = cmn.be(opcode_tvb)
 
     -- TODO only not in cache (flag). Check is isencrypted?
     if isserver and opcode == SERVER_OPCODE.KeyInit then
-        init_xor_key(packet.xor_key(data_p))
+        init_xor_key(packet.xor_key(data_tvb))
     end
 
     -- TODO before Decrypted in representation
     -- TODO add packet id in sequence, example: 1. Opcode name
-    local subtree = tree:add(lineage2game, buffer(), opcode_str(opcode, isserver))
-    cmn.add_le(subtree, pf_uint16, packet.length_buffer(buffer), "Length", false)
+    local subtree = tree:add(lineage2game, tvb(), opcode_str(opcode, isserver))
+    cmn.add_le(subtree, pf_uint16, packet.length_tvb(tvb), "Length", false)
     if isencrypted then
         local label = "XOR key"
         -- TODO make hidden
@@ -316,70 +304,43 @@ local function process_packet(tree, buffer, isserver)
     end
 
     local pf_opcode = isserver and pf_server_opcode or pf_client_opcode
-    cmn.add_be(subtree, pf_opcode, opcode_p, nil, isencrypted)
+    cmn.add_be(subtree, pf_opcode, opcode_tvb, nil, isencrypted)
 
     -- TODO move dec_tvb here
-    local data_st = cmn.generated(subtree:add(lineage2game, data_p, "Data"),
+    local data_st = cmn.generated(subtree:add(lineage2game, data_tvb, "Data"),
                                   isencrypted)
     -- TODO decode_data call server or client by isserver
     local decode_data = isserver and decode_server_data or decode_client_data
-    decode_data(data_st, opcode, data_p, isencrypted)
+    decode_data(data_st, opcode, data_tvb, isencrypted)
 
     if isencrypted then
-        update_xor_key(packet.encrypted_block(buffer):len(), isserver)
+        update_xor_key(packet.encrypted_block(tvb):len(), isserver)
     end
 end
 
--- TODO lineage2game.init -> clear cache
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param offset number
+local function get_len(tvb, pinfo, offset)
+    return packet.length(tvb(offset))
+end
 
-function lineage2game.dissector(buffer, pinfo, tree)
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param tree TreeItem
+local function dissect(tvb, pinfo, tree)
     pinfo.cols.protocol = lineage2game.name
     -- TODO check pinfo.visited
     -- TODO check pinfo.conversation
     -- TODO if pinfo.visited then return end
 
-    if buffer:len() == 0 then return end
+    if tvb:len() == 0 then
+        return 0
+    end
 
     local isserver = (pinfo.src_port == GAME_PORT)
-
     process_xor_key_cache(pinfo.number, isserver)
-    process_packet_chunk_cache(pinfo.number, isserver)
-
-    local subtree = tree:add(lineage2game, buffer(), "Lineage2 Game Protocol")
-
-    local chunk = isserver and server_packet_chunk or client_packet_chunk
-    local exbuffer = nil
-    if chunk:len() ~= 0 then
-        local label = "Previous Chunk"
-        cmn.add_le(subtree, pf_bytes, chunk:tvb(label)(), label, true)
-
-        -- TODO make hidden
-        exbuffer = (chunk .. buffer():bytes()):tvb("Merged")
-    else
-        exbuffer = buffer
-    end
-
-    local nchunk = ByteArray.new()
-    local from = 0
-    -- TODO process with next packet (concatenate)
-    while from < exbuffer:len() do
-        local len = packet.length(exbuffer(from))
-        if exbuffer:len() < from + len then
-            local nchunk_p = exbuffer(from)
-            cmn.add_le(subtree, pf_bytes, nchunk_p, "{Chunk}", false)
-            nchunk = nchunk_p():bytes()
-            break
-        end
-
-        process_packet(subtree, exbuffer(from, len), isserver)
-        from = from + len
-    end
-
-    if isserver then
-        server_packet_chunk = nchunk
-    else
-        client_packet_chunk = nchunk
-    end
+    process_packet(tree, tvb, isserver)
 
     -- local len_warn = (buffer:len() ~= packet.length(buffer)) and " !!!" or " OK"
     -- TODO move to process_packet
@@ -388,9 +349,22 @@ function lineage2game.dissector(buffer, pinfo, tree)
     -- if not opcode_str then opcode_str = "" end
     -- TODO print list of opcode names separated (with stat?) with comma
     -- cmn.set_info_field(pinfo, isserver, isencrypted, opcode_str .. len_warn)
+
+    -- FIXME use actual?
+    return tvb:len()
+end
+
+-- TODO lineage2game.init -> clear cache
+
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param tree TreeItem
+function lineage2game.dissector(tvb, pinfo, tree)
+    -- dissect(buffer, pinfo, tree)
+    local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
+    dissect_tcp_pdus(tvb, subtree, packet.PACKET_LENGTH_LEN, get_len, dissect)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
 tcp_port:add(GAME_PORT, lineage2game)
 -- TODO use treeitem:add_tvb_expert_info
--- TODO use 11.3.8.2. dissect_tcp_pdus ?
