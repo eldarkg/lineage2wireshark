@@ -176,13 +176,18 @@ lineage2game.fields = {
     pf_client_opcode,
 }
 
--- TODO implement module cache. Methods: append(number, val), last, load(number)
+-- TODO implement module cache. Methods: new, set(number, val), last, get(number)
 -- TODO save only dynamic part
+
+---Key: pinfo.number. Value: XOR key
 local xor_key_cache = {}
 local server_xor_key = ""
 local client_xor_key = ""
--- TODO cache of packet chunks: [pinfo.number] = chunk
--- TODO chunk - last chunk
+
+---Key: pinfo.number. Value: packet chunk
+local packet_chunk_cache = {}
+local server_packet_chunk = ByteArray.new()
+local client_packet_chunk = ByteArray.new()
 
 ---@param buffer ByteArray
 ---@param isserver boolean
@@ -249,6 +254,20 @@ local function update_xor_key(plen, isserver)
         server_xor_key = xor.next_key(server_xor_key, plen)
     else
         client_xor_key = xor.next_key(client_xor_key, plen)
+    end
+end
+
+---@param number number pinfo.number
+---@param isserver boolean
+local function process_packet_chunk_cache(number, isserver)
+    if packet_chunk_cache[number] then
+        if isserver then
+            server_packet_chunk = packet_chunk_cache[number]
+        else
+            client_packet_chunk = packet_chunk_cache[number]
+        end
+    else
+        packet_chunk_cache[number] = isserver and server_packet_chunk or client_packet_chunk
     end
 end
 
@@ -319,21 +338,36 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local isserver = (pinfo.src_port == GAME_PORT)
 
     process_xor_key_cache(pinfo.number, isserver)
-    -- TODO process chunk cache
+    process_packet_chunk_cache(pinfo.number, isserver)
 
     local subtree = tree:add(lineage2game, buffer(), "Lineage2 Game Protocol")
 
+    local chunk = isserver and server_packet_chunk or client_packet_chunk
+    if chunk:len() ~= 0 then
+        local label = "Previous Chunk"
+        cmn.add_le(subtree, pf_bytes, chunk:tvb(label)(), label, true)
+    end
+
+    local nchunk = ByteArray.new()
     local from = 0
+    -- TODO process with next packet (concatenate)
     while from < buffer:len() do
         local len = packet.length(buffer(from))
         if buffer:len() < from + len then
-            -- TODO save chunk and process with next packet (concatenate)
-            print("error: part of packet " .. tostring(pinfo.number))
+            local nchunk_p = buffer(from)
+            cmn.add_le(subtree, pf_bytes, nchunk_p, "{Chunk}", false)
+            nchunk = nchunk_p():bytes()
             break
         end
 
         process_packet(subtree, buffer(from, len), isserver)
         from = from + len
+    end
+
+    if isserver then
+        server_packet_chunk = nchunk
+    else
+        client_packet_chunk = nchunk
     end
 
     -- local len_warn = (buffer:len() ~= packet.length(buffer)) and " !!!" or " OK"
