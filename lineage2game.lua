@@ -39,6 +39,7 @@ local SERVER_OPCODE = {
     NetPing = 0xD3,
     ServerSocketClose = 0xAF,
     ChairSit = 0xE1,
+    HennaInfo = 0xE4,
     SendMacroList = 0xE7,
     EtcStatusUpdate = 0xF3,
     SSQInfo = 0xF8,
