@@ -286,6 +286,7 @@ local function process_packet(tree, buffer, isserver)
         -- TODO empty encrypted_block ?
         local dec = xor.decrypt(packet.encrypted_block(buffer), xor_key)
         -- TODO move down
+        -- TODO show Opcode name instead Decrypted
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
         opcode_p = packet.decrypted_opcode_buffer(dec_tvb(), isserver)
@@ -308,6 +309,7 @@ local function process_packet(tree, buffer, isserver)
     cmn.add_le(subtree, pf_uint16, packet.length_buffer(buffer), "Length", false)
     if isencrypted then
         local label = "XOR key"
+        -- TODO make hidden
         local xor_key_tvb = ByteArray.tvb(ByteArray.new(xor_key, true), label)
         cmn.add_le(subtree, pf_bytes, xor_key_tvb(), label, isencrypted)
     end
@@ -343,24 +345,30 @@ function lineage2game.dissector(buffer, pinfo, tree)
     local subtree = tree:add(lineage2game, buffer(), "Lineage2 Game Protocol")
 
     local chunk = isserver and server_packet_chunk or client_packet_chunk
+    local exbuffer = nil
     if chunk:len() ~= 0 then
         local label = "Previous Chunk"
         cmn.add_le(subtree, pf_bytes, chunk:tvb(label)(), label, true)
+
+        -- TODO make hidden
+        exbuffer = (chunk .. buffer():bytes()):tvb("Merged")
+    else
+        exbuffer = buffer
     end
 
     local nchunk = ByteArray.new()
     local from = 0
     -- TODO process with next packet (concatenate)
-    while from < buffer:len() do
-        local len = packet.length(buffer(from))
-        if buffer:len() < from + len then
-            local nchunk_p = buffer(from)
+    while from < exbuffer:len() do
+        local len = packet.length(exbuffer(from))
+        if exbuffer:len() < from + len then
+            local nchunk_p = exbuffer(from)
             cmn.add_le(subtree, pf_bytes, nchunk_p, "{Chunk}", false)
             nchunk = nchunk_p():bytes()
             break
         end
 
-        process_packet(subtree, buffer(from, len), isserver)
+        process_packet(subtree, exbuffer(from, len), isserver)
         from = from + len
     end
 
