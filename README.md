@@ -1,11 +1,20 @@
-Wireshark Filters
-* All: (tcp.srcport == 2106 || tcp.dstport == 2106 || tcp.srcport == 7777 || tcp.dstport == 7777)
+# lineage2wireshark
+
+## Wireshark Filters
 * Login server: (tcp.srcport == 2106 || tcp.dstport == 2106)
 * Game server: (tcp.srcport == 7777 || tcp.dstport == 7777)
-* Show only lineage packets: && tcp.len != 0
-* Show only tcp push: && tcp.flags.push == 1 (NO USE!!!)
+* Show only packets: && tcp.len != 0
 
-Dependency
+## Wireshark Preferences
+### Protocols -> TCP
+* Validate the TCP checksum if possible (?)
+* Allow subdissector to reassemble TCP streams
+* Reassemble out-of-order segments
+* Analyze TCP sequence numbers
+* Do not call subdissectors for error packets (?)
+![Preferences](doc/wireshark_pref.png)
+
+## Dependency
 * Wireshark 4.2.2 (other not tested)
 * Lua 5.2
 * luarocks
