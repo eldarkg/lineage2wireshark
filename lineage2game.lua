@@ -11,6 +11,7 @@ local cmn = require("common")
 local packet = require("packet")
 local xor = require("xor")
 
+-- TODO move to protocol preferences
 local GAME_PORT = 7777
 local STATIC_XOR_KEY = "\xA1\x6C\x54\x87"
 

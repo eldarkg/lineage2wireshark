@@ -11,6 +11,7 @@ local bf = require("blowfish")
 local cmn = require("common")
 local packet = require("packet")
 
+-- TODO move to protocol preferences
 local LOGIN_PORT = 2106
 local BLOWFISH_PK =
 "\x64\x10\x30\x10\xAE\x06\x31\x10\x16\x95\x30\x10\x32\x65\x30\x10\x71\x44\x30\x10\x00"
@@ -175,6 +176,7 @@ local function decode_client_data(tree, opcode, data, isencrypted)
     end
 end
 
+-- TODO use dissect_tcp_pdus as lineage2game.lua
 function lineage2login.dissector(buffer, pinfo, tree)
     pinfo.cols.protocol = lineage2login.name
 
