@@ -156,6 +156,7 @@ local CLIENT_OPCODE = {
 }
 local CLIENT_OPCODE_TXT = cmn.invert(CLIENT_OPCODE)
 
+-- TODO rename to f_*
 local pf_bytes = ProtoField.bytes("lineage2game.bytes", " ", base.NONE)
 local pf_bool = ProtoField.bool("lineage2game.bool", " ")
 local pf_uint8 = ProtoField.uint8("lineage2game.uint8", " ", base.DEC)
@@ -183,6 +184,8 @@ lineage2game.fields = {
 
 ---Last packet pinfo.number
 local last_packet_number = -1
+---Key: pinfo.number. Value: TCP reassembled segment XOR length
+local xor_len_cache = {}
 ---Accumulator XOR decrypt length in current pinfo.number
 local xor_accum_len = 0
 
@@ -372,10 +375,19 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 function lineage2game.dissector(tvb, pinfo, tree)
-    if pinfo.number ~= last_packet_number then
+    if pinfo.number == last_packet_number then
+        if xor_len_cache[last_packet_number] and
+            xor_len_cache[last_packet_number] <= xor_accum_len then
+            xor_accum_len = 0
+        end
+    else
+        if xor_len_cache[last_packet_number] == nil then
+            xor_len_cache[last_packet_number] = xor_accum_len
+        end
         last_packet_number = pinfo.number
         xor_accum_len = 0
     end
+
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, get_len, dissect)
 end
