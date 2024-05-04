@@ -176,26 +176,25 @@ local function decode_client_data(tree, opcode, data, isencrypted)
     end
 end
 
--- TODO use dissect_tcp_pdus as lineage2game.lua
-function lineage2login.dissector(tvb, pinfo, tree)
-    pinfo.cols.protocol = lineage2login.name
-
-    if tvb:len() == 0 then return end
-    -- TODO check tvb:len() and packet length. What to do if not equal?
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param tree TreeItem
+local function dissect(tvb, pinfo, tree)
+    if tvb:len() == 0 then
+        return 0
+    end
 
     local isserver = (pinfo.src_port == LOGIN_PORT)
     local f_opcode = isserver and f_server_opcode or f_client_opcode
     local opcode_txt_tbl = isserver and SERVER_OPCODE_TXT or CLIENT_OPCODE_TXT
     local isencrypted = is_encrypted_packet(tvb, isserver)
 
-    local subtree = tree:add(lineage2login, tvb(), "Lineage2 Login Protocol")
-    cmn.add_le(subtree, f_uint16, packet.length_tvb(tvb), "Length",
-               false)
+    cmn.add_le(tree, f_uint16, packet.length_tvb(tvb), "Length", false)
 
     if isencrypted then
         local label = "Blowfish PK"
         local bf_pk_tvb = ByteArray.tvb(ByteArray.new(BLOWFISH_PK, true), label)
-        cmn.add_le(subtree, f_bytes, bf_pk_tvb(), label, isencrypted)
+        cmn.add_le(tree, f_bytes, bf_pk_tvb(), label, isencrypted)
     end
 
     local opcode_tvb = nil
@@ -211,8 +210,9 @@ function lineage2login.dissector(tvb, pinfo, tree)
         data_tvb = packet.data_tvb(tvb)
     end
 
-    cmn.add_be(subtree, f_opcode, opcode_tvb, nil, isencrypted)
+    cmn.add_be(tree, f_opcode, opcode_tvb, nil, isencrypted)
 
+    -- TODO move to tree
     local data_st = cmn.generated(tree:add(lineage2login, data_tvb, "Data"),
                                   isencrypted)
 
@@ -221,6 +221,22 @@ function lineage2login.dissector(tvb, pinfo, tree)
     decode_data(data_st, opcode, data_tvb, isencrypted)
 
     cmn.set_info_field(pinfo, isserver, isencrypted, opcode_txt_tbl[opcode])
+
+    return tvb:len()
+end
+
+function lineage2login.init()
+end
+
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param tree TreeItem
+function lineage2login.dissector(tvb, pinfo, tree)
+    pinfo.cols.protocol = lineage2login.name
+    pinfo.cols.info = ""
+
+    local subtree = tree:add(lineage2login, tvb(), "Lineage2 Login Protocol")
+    dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
