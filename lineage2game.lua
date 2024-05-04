@@ -17,6 +17,8 @@ local STATIC_XOR_KEY = "\xA1\x6C\x54\x87"
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 
+-- TODO set protocol info
+
 local SERVER_OPCODE = {
     KeyInit = 0x00,
     MoveToLocation = 0x01,
@@ -272,16 +274,29 @@ local function update_xor_key(plen, isserver)
     end
 end
 
----@param tree     TreeItem
----@param tvb      Tvb
----@param pnum     number pinfo.number
----@param isserver boolean
-local function process_packet(tree, tvb, pnum, isserver)
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param offset number
+local function get_len(tvb, pinfo, offset)
+    return packet.length(tvb(offset))
+end
+
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param tree TreeItem
+local function dissect(tvb, pinfo, tree)
+    pinfo.cols.protocol = lineage2game.name
+
+    if tvb:len() == 0 then
+        return 0
+    end
+
+    local isserver = (pinfo.src_port == GAME_PORT)
     local isencrypted = is_encrypted_packet(tvb, isserver)
     -- TODO check isencrypted and *_xor_key is empty then not process. Ret false. Print no XOR key
 
     if isencrypted then
-        process_xor_key_cache(pnum, isserver)
+        process_xor_key_cache(pinfo.number, isserver)
     end
 
     local xor_key = isserver and server_xor_key or client_xor_key
@@ -333,38 +348,9 @@ local function process_packet(tree, tvb, pnum, isserver)
     if isencrypted then
         update_xor_key(packet.encrypted_block(tvb):len(), isserver)
     end
-end
 
----@param tvb Tvb
----@param pinfo Pinfo
----@param offset number
-local function get_len(tvb, pinfo, offset)
-    return packet.length(tvb(offset))
-end
-
----@param tvb Tvb
----@param pinfo Pinfo
----@param tree TreeItem
-local function dissect(tvb, pinfo, tree)
-    pinfo.cols.protocol = lineage2game.name
-    -- TODO check pinfo.visited
-    -- TODO check pinfo.conversation
-    -- TODO if pinfo.visited then return end
-
-    if tvb:len() == 0 then
-        return 0
-    end
-
-    local isserver = (pinfo.src_port == GAME_PORT)
-    process_packet(tree, tvb, pinfo.number, isserver)
-
-    -- local len_warn = (buffer:len() ~= packet.length(buffer)) and " !!!" or " OK"
-    -- TODO move to process_packet
-    -- local opcode_str =
-    --     isserver and SERVER_OPCODE_TXT[opcode] or CLIENT_OPCODE_TXT[opcode]
-    -- if not opcode_str then opcode_str = "" end
     -- TODO print list of opcode names separated (with stat?) with comma
-    -- cmn.set_info_field(pinfo, isserver, isencrypted, opcode_str .. len_warn)
+    -- cmn.set_info_field(pinfo, isserver, isencrypted, opcode_str() .. len_warn)
 
     return tvb:len()
 end
