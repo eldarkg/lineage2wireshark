@@ -41,6 +41,15 @@ lineage2login.fields = {
     pf.gg_auth_response,
 }
 
+---@param opcode number
+---@param isserver boolean
+---@return string
+local function opcode_str(opcode, isserver)
+    local str = isserver and SERVER_OPCODE_TXT[opcode]
+                         or CLIENT_OPCODE_TXT[opcode]
+    return str and str or ""
+end
+
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
@@ -51,7 +60,6 @@ local function dissect(tvb, pinfo, tree)
 
     local isserver = (pinfo.src_port == LOGIN_PORT)
     local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
-    local opcode_txt_tbl = isserver and SERVER_OPCODE_TXT or CLIENT_OPCODE_TXT
     local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
 
     cmn.add_le(tree, pf.uint16, packet.length_tvb(tvb), "Length", false)
@@ -85,7 +93,7 @@ local function dissect(tvb, pinfo, tree)
     local decode_data = isserver and decode_server_data or decode_client_data
     decode_data(data_st, opcode, data_tvb, isencrypted)
 
-    cmn.set_info_field(pinfo, isserver, isencrypted, opcode_txt_tbl[opcode])
+    cmn.set_info_field(pinfo, isserver, isencrypted, opcode_str(opcode, isserver))
 
     return tvb:len()
 end
