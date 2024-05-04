@@ -248,9 +248,9 @@ local function opcode_str(opcode, isserver)
     return str and str or ""
 end
 
----@param pnum     number pinfo.number
 ---@param isserver boolean
-local function process_xor_key_cache(pnum, isserver)
+local function process_xor_key_cache(isserver)
+    local pnum = last_packet_number
     if xor_key_cache[pnum] then
         local xor_key = xor.next_key(xor_key_cache[pnum], xor_accum_len)
         if isserver then
@@ -317,8 +317,7 @@ local function dissect(tvb, pinfo, tree)
     -- TODO check isencrypted and *_xor_key is empty then not process. Ret false. Print no XOR key
 
     if isencrypted then
-        -- TODO use last_packet_number
-        process_xor_key_cache(pinfo.number, isserver)
+        process_xor_key_cache(isserver)
     end
 
     local xor_key = isserver and server_xor_key or client_xor_key
