@@ -347,8 +347,9 @@ local function dissect(tvb, pinfo, tree)
     end
 
     -- TODO before Decrypted in representation
-    -- TODO add packet id in sequence, example: 1. Opcode name
-    local subtree = tree:add(lineage2game, tvb(), opcode_str(opcode, isserver))
+    local subtree = tree:add(lineage2game, tvb(),
+                             tostring(last_subpacket_number) .. ". " ..
+                             opcode_str(opcode, isserver))
     cmn.add_le(subtree, f_uint16, packet.length_tvb(tvb), "Length", false)
     if isencrypted then
         local label = "XOR key"
