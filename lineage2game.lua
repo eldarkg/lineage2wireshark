@@ -372,13 +372,12 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 function lineage2game.dissector(tvb, pinfo, tree)
-    -- dissect(buffer, pinfo, tree)
     if pinfo.number ~= last_packet_number then
         last_packet_number = pinfo.number
         xor_accum_len = 0
     end
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
-    dissect_tcp_pdus(tvb, subtree, packet.PACKET_LENGTH_LEN, get_len, dissect)
+    dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, get_len, dissect)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")

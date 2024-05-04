@@ -8,12 +8,12 @@
 
 local _M = {}
 
-_M.PACKET_LENGTH_LEN = 2
+_M.HEADER_LEN = 2
 
 ---@param tvb Tvb
 ---@return Tvb
 function _M.length_tvb(tvb)
-    return tvb(0, _M.PACKET_LENGTH_LEN)
+    return tvb(0, _M.HEADER_LEN)
 end
 
 ---@param tvb Tvb
