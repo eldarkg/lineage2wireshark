@@ -11,30 +11,16 @@ local bf = require("blowfish")
 local cmn = require("common")
 local packet = require("packet")
 
+local SERVER_OPCODE = require("login.opcode.server")
+local CLIENT_OPCODE = require("login.opcode.client")
+
+local SERVER_OPCODE_TXT = cmn.invert(SERVER_OPCODE)
+local CLIENT_OPCODE_TXT = cmn.invert(CLIENT_OPCODE)
+
 -- TODO move to protocol preferences
 local LOGIN_PORT = 2106
 local BLOWFISH_PK =
 "\x64\x10\x30\x10\xAE\x06\x31\x10\x16\x95\x30\x10\x32\x65\x30\x10\x71\x44\x30\x10\x00"
-
-local SERVER_OPCODE = {
-    Init = 0x00,
-    LoginFail = 0x01,
-    AccountKicked = 0x02,
-    LoginOk = 0x03,
-    ServerList = 0x04,
-    PlayFail = 0x06,
-    PlayOk = 0x07,
-    GGAuth = 0x0B,
-}
-local SERVER_OPCODE_TXT = cmn.invert(SERVER_OPCODE)
-
-CLIENT_OPCODE = {
-    RequestAuthLogin = 0x00,
-    RequestServerLogin = 0x02,
-    RequestServerList = 0x05,
-    RequestGGAuth = 0x07,
-}
-local CLIENT_OPCODE_TXT = cmn.invert(CLIENT_OPCODE)
 
 local LOGIN_FAIL_REASON = {
     [0x01] = "System error",
