@@ -328,7 +328,7 @@ local function dissect(tvb, pinfo, tree)
         -- TODO empty encrypted_block ?
         local dec = xor.decrypt(packet.encrypted_block(tvb), xor_key)
         -- TODO move down
-        -- TODO show Opcode name instead Decrypted
+        -- TODO show [Opcode name] instead Decrypted
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
         opcode_tvb = packet.decrypted_opcode_tvb(dec_tvb(), isserver)
