@@ -6,6 +6,8 @@
     Description: packet
 ]]--
 
+local SERVER_OPCODE = require("login.opcode.server").SERVER_OPCODE
+
 local _M = {}
 
 _M.HEADER_LEN = 2
@@ -88,6 +90,19 @@ end
 ---@return number
 function _M.decrypted_opcode(tvb, isserver)
     return _M.decrypted_opcode_tvb(tvb, isserver):uint()
+end
+
+---@param tvb Tvb
+---@param isserver boolean
+---@return boolean
+function _M.is_encrypted_login_packet(tvb, isserver)
+    if isserver then
+        local len = _M.length(tvb)
+        local opcode = _M.opcode(tvb)
+        return not (len == 11 and opcode == SERVER_OPCODE.Init)
+    else
+        return true
+    end
 end
 
 return _M

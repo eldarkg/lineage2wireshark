@@ -40,19 +40,6 @@ lineage2login.fields = {
     pf.gg_auth_response,
 }
 
----@param tvb Tvb
----@param isserver boolean
----@return boolean
-local function is_encrypted_packet(tvb, isserver)
-    if isserver then
-        local len = packet.length(tvb)
-        local opcode = packet.opcode(tvb)
-        return not (len == 11 and opcode == SERVER_OPCODE.Init)
-    else
-        return true
-    end
-end
-
 local function decode_server_data(tree, opcode, data, isencrypted)
     if opcode == SERVER_OPCODE.Init then
         cmn.add_le(tree, pf.bin32, data(0, 4), "Session ID", isencrypted)
@@ -118,7 +105,7 @@ local function dissect(tvb, pinfo, tree)
     local isserver = (pinfo.src_port == LOGIN_PORT)
     local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
     local opcode_txt_tbl = isserver and SERVER_OPCODE_TXT or CLIENT_OPCODE_TXT
-    local isencrypted = is_encrypted_packet(tvb, isserver)
+    local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
 
     cmn.add_le(tree, pf.uint16, packet.length_tvb(tvb), "Length", false)
 
