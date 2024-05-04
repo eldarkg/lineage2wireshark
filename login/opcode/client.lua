@@ -7,11 +7,22 @@
     Protocol: 785a?
 ]]--
 
-local CLIENT_OPCODE = {
+---Workaround: skip 1st pass without root path
+if not package.searchpath("common", package.path) then
+    return
+end
+
+local cmn = require("common")
+
+local _M = {}
+
+_M.CLIENT_OPCODE = {
     RequestAuthLogin = 0x00,
     RequestServerLogin = 0x02,
     RequestServerList = 0x05,
     RequestGGAuth = 0x07,
 }
 
-return CLIENT_OPCODE
+_M.CLIENT_OPCODE_TXT = cmn.invert(_M.CLIENT_OPCODE)
+
+return _M

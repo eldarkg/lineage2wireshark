@@ -7,7 +7,16 @@
     Protocol: 785a?
 ]]--
 
-local SERVER_OPCODE = {
+---Workaround: skip 1st pass without root path
+if not package.searchpath("common", package.path) then
+    return
+end
+
+local cmn = require("common")
+
+local _M = {}
+
+_M.SERVER_OPCODE = {
     Init = 0x00,
     LoginFail = 0x01,
     AccountKicked = 0x02,
@@ -18,4 +27,6 @@ local SERVER_OPCODE = {
     GGAuth = 0x0B,
 }
 
-return SERVER_OPCODE
+_M.SERVER_OPCODE_TXT = cmn.invert(_M.SERVER_OPCODE)
+
+return _M
