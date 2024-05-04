@@ -8,16 +8,16 @@
 
 local _M = {}
 
----@param buffer Tvb
----@return Tvb
-function _M.le(buffer)
-    return buffer:le_uint()
+---@param tvb Tvb
+---@return number
+function _M.le(tvb)
+    return tvb:le_uint()
 end
 
----@param buffer Tvb
----@return Tvb
-function _M.be(buffer)
-    return buffer:uint()
+---@param tvb Tvb
+---@return number
+function _M.be(tvb)
+    return tvb:uint()
 end
 
 ---Invert table key and value between themselves
