@@ -56,20 +56,6 @@ local xor_key_cache
 ---Key: opcode. Value: sub packet count
 local last_opcode_stat
 
----@param tvb Tvb
----@param isserver boolean
----@return boolean
-local function is_encrypted_packet(tvb, isserver)
-    local len = packet.length(tvb)
-    local opcode = packet.opcode(tvb)
-    -- TODO check current *_xor_key for empty
-    if isserver then
-        return not (len == 16 and opcode == SERVER_OPCODE.KeyInit)
-    else
-        return not (len == 263 and opcode == CLIENT_OPCODE.ProtocolVersion)
-    end
-end
-
 ---@param tree        TreeItem
 ---@param opcode      number
 ---@param data        Tvb
@@ -157,7 +143,7 @@ local function dissect(tvb, pinfo, tree)
     last_subpacket_number = last_subpacket_number + 1
 
     local isserver = (pinfo.src_port == GAME_PORT)
-    local isencrypted = is_encrypted_packet(tvb, isserver)
+    local isencrypted = packet.is_encrypted_game_packet(tvb, isserver)
     -- TODO check isencrypted and *_xor_key is empty then not process. Ret false. Print no XOR key
 
     if isencrypted then

@@ -6,7 +6,9 @@
     Description: packet
 ]]--
 
-local SERVER_OPCODE = require("login.opcode.server").SERVER_OPCODE
+local LOGIN_SERVER_OPCODE = require("login.opcode.server").SERVER_OPCODE
+local GAME_SERVER_OPCODE = require("game.opcode.server").SERVER_OPCODE
+local GAME_CLIENT_OPCODE = require("game.opcode.client").CLIENT_OPCODE
 
 local _M = {}
 
@@ -99,9 +101,23 @@ function _M.is_encrypted_login_packet(tvb, isserver)
     if isserver then
         local len = _M.length(tvb)
         local opcode = _M.opcode(tvb)
-        return not (len == 11 and opcode == SERVER_OPCODE.Init)
+        return not (len == 11 and opcode == LOGIN_SERVER_OPCODE.Init)
     else
         return true
+    end
+end
+
+---@param tvb Tvb
+---@param isserver boolean
+---@return boolean
+function _M.is_encrypted_game_packet(tvb, isserver)
+    local len = _M.length(tvb)
+    local opcode = _M.opcode(tvb)
+    -- TODO check current *_xor_key for empty
+    if isserver then
+        return not (len == 16 and opcode == GAME_SERVER_OPCODE.KeyInit)
+    else
+        return not (len == 263 and opcode == GAME_CLIENT_OPCODE.ProtocolVersion)
     end
 end
 
