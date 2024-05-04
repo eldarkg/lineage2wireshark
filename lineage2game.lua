@@ -156,27 +156,26 @@ local CLIENT_OPCODE = {
 }
 local CLIENT_OPCODE_TXT = cmn.invert(CLIENT_OPCODE)
 
--- TODO rename to f_*
-local pf_bytes = ProtoField.bytes("lineage2game.bytes", " ", base.NONE)
-local pf_bool = ProtoField.bool("lineage2game.bool", " ")
-local pf_uint8 = ProtoField.uint8("lineage2game.uint8", " ", base.DEC)
-local pf_uint16 = ProtoField.uint16("lineage2game.uint16", " ", base.DEC)
-local pf_uint32 = ProtoField.uint32("lineage2game.uint32", " ", base.DEC)
-local pf_bin32 = ProtoField.uint32("lineage2game.bin32", " ", base.HEX)
-local pf_string = ProtoField.string("lineage2game.string", " ", base.ASCII)
-local pf_stringz = ProtoField.stringz("lineage2game.stringz", " ", base.ASCII)
-local pf_ipv4 = ProtoField.ipv4("lineage2game.ipv4", " ")
-local pf_server_opcode = ProtoField.uint8("lineage2game.server_opcode",
-                                          "Opcode", base.HEX, SERVER_OPCODE_TXT)
-local pf_client_opcode = ProtoField.uint8("lineage2game.client_opcode",
-                                          "Opcode", base.HEX, CLIENT_OPCODE_TXT)
+local f_bytes = ProtoField.bytes("lineage2game.bytes", " ", base.NONE)
+local f_bool = ProtoField.bool("lineage2game.bool", " ")
+local f_uint8 = ProtoField.uint8("lineage2game.uint8", " ", base.DEC)
+local f_uint16 = ProtoField.uint16("lineage2game.uint16", " ", base.DEC)
+local f_uint32 = ProtoField.uint32("lineage2game.uint32", " ", base.DEC)
+local f_bin32 = ProtoField.uint32("lineage2game.bin32", " ", base.HEX)
+local f_string = ProtoField.string("lineage2game.string", " ", base.ASCII)
+local f_stringz = ProtoField.stringz("lineage2game.stringz", " ", base.ASCII)
+local f_ipv4 = ProtoField.ipv4("lineage2game.ipv4", " ")
+local f_server_opcode = ProtoField.uint8("lineage2game.server_opcode",
+                                         "Opcode", base.HEX, SERVER_OPCODE_TXT)
+local f_client_opcode = ProtoField.uint8("lineage2game.client_opcode",
+                                         "Opcode", base.HEX, CLIENT_OPCODE_TXT)
 
 lineage2game.fields = {
-    pf_bytes,
-    pf_uint16,
-    pf_uint32,
-    pf_server_opcode,
-    pf_client_opcode,
+    f_bytes,
+    f_uint16,
+    f_uint32,
+    f_server_opcode,
+    f_client_opcode,
 }
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)
@@ -214,7 +213,7 @@ end
 ---@param isencrypted boolean
 local function decode_server_data(tree, opcode, data, isencrypted)
     if opcode == SERVER_OPCODE.KeyInit then
-        cmn.add_le(tree, pf_bytes, packet.xor_key_tvb(data), "XOR key",
+        cmn.add_le(tree, f_bytes, packet.xor_key_tvb(data), "XOR key",
                    isencrypted)
     end
     -- TODO
@@ -226,7 +225,7 @@ end
 ---@param isencrypted boolean
 local function decode_client_data(tree, opcode, data, isencrypted)
     if opcode == CLIENT_OPCODE.ProtocolVersion then
-        cmn.add_le(tree, pf_uint32, data(0, 4), "Protocol version", isencrypted)
+        cmn.add_le(tree, f_uint32, data(0, 4), "Protocol version", isencrypted)
     end
     -- TODO
 end
@@ -254,7 +253,7 @@ local function process_xor_key_cache(pnum, isserver)
     end
 end
 
----@param key      string Server XOR key
+---@param key string Server XOR key
 local function init_xor_key(key)
     server_xor_key = xor.create_key(key, STATIC_XOR_KEY)
     client_xor_key = server_xor_key
@@ -312,16 +311,16 @@ local function process_packet(tree, tvb, pnum, isserver)
     -- TODO before Decrypted in representation
     -- TODO add packet id in sequence, example: 1. Opcode name
     local subtree = tree:add(lineage2game, tvb(), opcode_str(opcode, isserver))
-    cmn.add_le(subtree, pf_uint16, packet.length_tvb(tvb), "Length", false)
+    cmn.add_le(subtree, f_uint16, packet.length_tvb(tvb), "Length", false)
     if isencrypted then
         local label = "XOR key"
         -- TODO make hidden
         local xor_key_tvb = ByteArray.tvb(ByteArray.new(xor_key, true), label)
-        cmn.add_le(subtree, pf_bytes, xor_key_tvb(), label, isencrypted)
+        cmn.add_le(subtree, f_bytes, xor_key_tvb(), label, isencrypted)
     end
 
-    local pf_opcode = isserver and pf_server_opcode or pf_client_opcode
-    cmn.add_be(subtree, pf_opcode, opcode_tvb, nil, isencrypted)
+    local f_opcode = isserver and f_server_opcode or f_client_opcode
+    cmn.add_be(subtree, f_opcode, opcode_tvb, nil, isencrypted)
 
     -- TODO move dec_tvb here
     local data_st = cmn.generated(subtree:add(lineage2game, data_tvb, "Data"),
