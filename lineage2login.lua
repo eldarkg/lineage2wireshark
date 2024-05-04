@@ -109,13 +109,13 @@ lineage2login.fields = {
     f_gg_auth_response,
 }
 
----@param buffer Tvb
+---@param tvb Tvb
 ---@param isserver boolean
 ---@return boolean
-local function is_encrypted_packet(buffer, isserver)
+local function is_encrypted_packet(tvb, isserver)
     if isserver then
-        local len = packet.length(buffer)
-        local opcode = packet.opcode(buffer)
+        local len = packet.length(tvb)
+        local opcode = packet.opcode(tvb)
         return not (len == 11 and opcode == SERVER_OPCODE.Init)
     else
         return true
@@ -177,19 +177,19 @@ local function decode_client_data(tree, opcode, data, isencrypted)
 end
 
 -- TODO use dissect_tcp_pdus as lineage2game.lua
-function lineage2login.dissector(buffer, pinfo, tree)
+function lineage2login.dissector(tvb, pinfo, tree)
     pinfo.cols.protocol = lineage2login.name
 
-    if buffer:len() == 0 then return end
-    -- TODO check buffer:len() and packet length. What to do if not equal?
+    if tvb:len() == 0 then return end
+    -- TODO check tvb:len() and packet length. What to do if not equal?
 
     local isserver = (pinfo.src_port == LOGIN_PORT)
     local f_opcode = isserver and f_server_opcode or f_client_opcode
     local opcode_txt_tbl = isserver and SERVER_OPCODE_TXT or CLIENT_OPCODE_TXT
-    local isencrypted = is_encrypted_packet(buffer, isserver)
+    local isencrypted = is_encrypted_packet(tvb, isserver)
 
-    local subtree = tree:add(lineage2login, buffer(), "Lineage2 Login Protocol")
-    cmn.add_le(subtree, f_uint16, packet.length_tvb(buffer), "Length",
+    local subtree = tree:add(lineage2login, tvb(), "Lineage2 Login Protocol")
+    cmn.add_le(subtree, f_uint16, packet.length_tvb(tvb), "Length",
                false)
 
     if isencrypted then
@@ -201,14 +201,14 @@ function lineage2login.dissector(buffer, pinfo, tree)
     local opcode_tvb = nil
     local data_tvb = nil
     if isencrypted then
-        local dec = bf.decrypt(packet.encrypted_block(buffer), BLOWFISH_PK)
+        local dec = bf.decrypt(packet.encrypted_block(tvb), BLOWFISH_PK)
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
         opcode_tvb = packet.decrypted_opcode_tvb(dec_tvb(), isserver)
         data_tvb = dec_tvb(opcode_tvb:len())
     else
-        opcode_tvb = packet.opcode_tvb(buffer)
-        data_tvb = packet.data_tvb(buffer)
+        opcode_tvb = packet.opcode_tvb(tvb)
+        data_tvb = packet.data_tvb(tvb)
     end
 
     cmn.add_be(subtree, f_opcode, opcode_tvb, nil, isencrypted)
