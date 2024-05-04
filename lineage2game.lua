@@ -290,7 +290,7 @@ end
 ---@return boolean false on 1 dissection pass
 local function is_last_subpacket()
     return packet_count_cache[last_packet_number] and
-           last_subpacket_number == packet_count_cache[last_packet_number] - 1
+           last_subpacket_number == packet_count_cache[last_packet_number]
 end
 
 ---@param tvb Tvb
@@ -309,6 +309,8 @@ local function dissect(tvb, pinfo, tree)
     if tvb:len() == 0 then
         return 0
     end
+
+    last_subpacket_number = last_subpacket_number + 1
 
     local isserver = (pinfo.src_port == GAME_PORT)
     local isencrypted = is_encrypted_packet(tvb, isserver)
@@ -407,8 +409,6 @@ end
 ---@param tree TreeItem
 function lineage2game.dissector(tvb, pinfo, tree)
     if pinfo.number == last_packet_number then
-        last_subpacket_number = last_subpacket_number + 1
-
         if packet_count_cache[last_packet_number] and
            packet_count_cache[last_packet_number] <= last_subpacket_number then
             xor_accum_len = 0
@@ -417,7 +417,7 @@ function lineage2game.dissector(tvb, pinfo, tree)
     else
         if last_packet_number and
            packet_count_cache[last_packet_number] == nil then
-            packet_count_cache[last_packet_number] = last_subpacket_number + 1
+            packet_count_cache[last_packet_number] = last_subpacket_number
         end
 
         last_packet_number = pinfo.number
