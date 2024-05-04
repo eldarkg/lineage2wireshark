@@ -12,8 +12,10 @@ local packet = require("packet")
 local pf = require("game.protofield")
 local xor = require("xor")
 
+local decode_server_data = require("game.decode.server").decode_server_data
+local decode_client_data = require("game.decode.client").decode_client_data
+
 local SERVER_OPCODE = require("game.opcode.server").SERVER_OPCODE
-local CLIENT_OPCODE = require("game.opcode.client").CLIENT_OPCODE
 local SERVER_OPCODE_TXT = require("game.opcode.server").SERVER_OPCODE_TXT
 local CLIENT_OPCODE_TXT = require("game.opcode.client").CLIENT_OPCODE_TXT
 
@@ -55,29 +57,6 @@ local xor_key_cache
 ---Opcode stat in last packet
 ---Key: opcode. Value: sub packet count
 local last_opcode_stat
-
----@param tree        TreeItem
----@param opcode      number
----@param data        Tvb
----@param isencrypted boolean
-local function decode_server_data(tree, opcode, data, isencrypted)
-    if opcode == SERVER_OPCODE.KeyInit then
-        cmn.add_le(tree, pf.bytes, packet.xor_key_tvb(data), "XOR key",
-                   isencrypted)
-    end
-    -- TODO
-end
-
----@param tree        TreeItem
----@param opcode      number
----@param data        Tvb
----@param isencrypted boolean
-local function decode_client_data(tree, opcode, data, isencrypted)
-    if opcode == CLIENT_OPCODE.ProtocolVersion then
-        cmn.add_le(tree, pf.uint32, data(0, 4), "Protocol version", isencrypted)
-    end
-    -- TODO
-end
 
 ---@param opcode number
 ---@param isserver boolean
