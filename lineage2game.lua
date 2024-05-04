@@ -185,16 +185,19 @@ lineage2game.fields = {
 ---Init by lineage2game.init
 ---Last packet pinfo.number
 local last_packet_number
----Key: pinfo.number. Value: TCP reassembled segment XOR length
-local xor_len_cache
 ---Accumulator XOR decrypt length in current pinfo.number
 local xor_accum_len
 
+---Last sub packet number
+local last_subpacket_number
+---Key: pinfo.number. Value: sub packet count
+local packet_count_cache
+
+local server_xor_key
+local client_xor_key
 -- TODO save only dynamic part
 ---Key: pinfo.number. Value: XOR key
 local xor_key_cache
-local server_xor_key
-local client_xor_key
 
 ---@param tvb Tvb
 ---@param isserver boolean
@@ -356,13 +359,15 @@ local function dissect(tvb, pinfo, tree)
 end
 
 function lineage2game.init()
-    last_packet_number = -1
-    xor_len_cache = {}
+    last_packet_number = nil
     xor_accum_len = 0
 
-    xor_key_cache = {}
+    last_subpacket_number = 0
+    packet_count_cache = {}
+
     server_xor_key = ""
     client_xor_key = ""
+    xor_key_cache = {}
 end
 
 ---@param tvb Tvb
@@ -370,16 +375,22 @@ end
 ---@param tree TreeItem
 function lineage2game.dissector(tvb, pinfo, tree)
     if pinfo.number == last_packet_number then
-        if xor_len_cache[last_packet_number] and
-            xor_len_cache[last_packet_number] <= xor_accum_len then
+        last_subpacket_number = last_subpacket_number + 1
+
+        if packet_count_cache[last_packet_number] and
+           packet_count_cache[last_packet_number] <= last_subpacket_number then
             xor_accum_len = 0
+            last_subpacket_number = 0
         end
     else
-        if xor_len_cache[last_packet_number] == nil then
-            xor_len_cache[last_packet_number] = xor_accum_len
+        if last_packet_number and
+           packet_count_cache[last_packet_number] == nil then
+            packet_count_cache[last_packet_number] = last_subpacket_number + 1
         end
+
         last_packet_number = pinfo.number
         xor_accum_len = 0
+        last_subpacket_number = 0
     end
 
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
