@@ -53,7 +53,7 @@ function _M.set_info_field(pinfo, isserver, isgen, str)
     local src_role = isserver and "Server" or "Client"
     pinfo.cols.info =
         tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
-        " " ..  src_role .. ": " ..  (isgen and ("[" .. str .. "]") or str)
+        " " .. src_role .. ": " .. (isgen and ("[" .. str .. "]") or str)
 end
 
 return _M
