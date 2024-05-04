@@ -48,13 +48,12 @@ function _M.add_be(item, protofield, tvbrange, label, isgen)
     add_generic(item.add, item, protofield, tvbrange, label, isgen)
 end
 
-function _M.set_info_field(pinfo, isserver, isgen, opcode_str)
+-- TODO opcode_stat and opcode_str() instead str
+function _M.set_info_field(pinfo, isserver, isgen, str)
     local src_role = isserver and "Server" or "Client"
-    if not opcode_str then opcode_str = "" end
     pinfo.cols.info =
         tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
-        " " ..  src_role .. ": " ..
-        (isgen and ("[" .. opcode_str .. "]") or opcode_str)
+        " " ..  src_role .. ": " ..  (isgen and ("[" .. str .. "]") or str)
 end
 
 return _M

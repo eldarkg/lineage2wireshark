@@ -199,6 +199,10 @@ local client_xor_key
 ---Key: pinfo.number. Value: XOR key
 local xor_key_cache
 
+---Opcode stat in last packet
+---Key: opcode. Value: sub packet count
+local last_opcode_stat
+
 ---@param tvb Tvb
 ---@param isserver boolean
 ---@return boolean
@@ -277,6 +281,18 @@ local function update_xor_key(plen, isserver)
     end
 end
 
+---@param opcode number
+local function update_last_opcode_stat(opcode)
+    local n = last_opcode_stat[opcode]
+    last_opcode_stat[opcode] = n and n + 1 or 1
+end
+
+---@return boolean false on 1 dissection pass
+local function is_last_subpacket()
+    return packet_count_cache[last_packet_number] and
+           last_subpacket_number == packet_count_cache[last_packet_number] - 1
+end
+
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param offset number
@@ -299,6 +315,7 @@ local function dissect(tvb, pinfo, tree)
     -- TODO check isencrypted and *_xor_key is empty then not process. Ret false. Print no XOR key
 
     if isencrypted then
+        -- TODO use last_packet_number
         process_xor_key_cache(pinfo.number, isserver)
     end
 
@@ -321,6 +338,7 @@ local function dissect(tvb, pinfo, tree)
     end
 
     local opcode = cmn.be(opcode_tvb)
+    update_last_opcode_stat(opcode)
 
     -- TODO only not in cache (flag). Check is isencrypted?
     if isserver and opcode == SERVER_OPCODE.KeyInit then
@@ -352,8 +370,20 @@ local function dissect(tvb, pinfo, tree)
         update_xor_key(packet.encrypted_block(tvb):len(), isserver)
     end
 
-    -- TODO print list of opcode names separated (with stat?) with comma
-    -- cmn.set_info_field(pinfo, isserver, isencrypted, opcode_str() .. len_warn)
+    if is_last_subpacket() then
+        -- TODO move to common
+        local str = ""
+        for op, count in pairs(last_opcode_stat) do
+            if #str ~= 0 then
+                str = str .. ", "
+            end
+            str = str .. opcode_str(op, isserver)
+            if 1 < count then
+                str = str .. "(" .. count .. ")"
+            end
+        end
+        cmn.set_info_field(pinfo, isserver, isencrypted, str)
+    end
 
     return tvb:len()
 end
@@ -368,6 +398,8 @@ function lineage2game.init()
     server_xor_key = ""
     client_xor_key = ""
     xor_key_cache = {}
+
+    last_opcode_stat = {}
 end
 
 ---@param tvb Tvb
@@ -391,6 +423,7 @@ function lineage2game.dissector(tvb, pinfo, tree)
         last_packet_number = pinfo.number
         xor_accum_len = 0
         last_subpacket_number = 0
+        last_opcode_stat = {}
     end
 
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
