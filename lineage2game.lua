@@ -22,8 +22,6 @@ local GAME_PORT = 7777
 local STATIC_XOR_KEY = "\xA1\x6C\x54\x87"
 -- TODO preferences: offset, init key (while not found init)
 
-local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
-
 -- TODO set protocol info
 
 local f_bytes = ProtoField.bytes("lineage2game.bytes", " ", base.NONE)
@@ -40,6 +38,7 @@ local f_server_opcode = ProtoField.uint8("lineage2game.server_opcode",
 local f_client_opcode = ProtoField.uint8("lineage2game.client_opcode",
                                          "Opcode", base.HEX, CLIENT_OPCODE_TXT)
 
+local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 lineage2game.fields = {
     f_bytes,
     f_uint16,
