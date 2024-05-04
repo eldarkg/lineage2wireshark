@@ -283,8 +283,8 @@ end
 
 ---@param opcode number
 local function update_last_opcode_stat(opcode)
-    local n = last_opcode_stat[opcode]
-    last_opcode_stat[opcode] = n and n + 1 or 1
+    local count = last_opcode_stat[opcode]
+    last_opcode_stat[opcode] = count and count + 1 or 1
 end
 
 ---@return boolean false on 1 dissection pass
