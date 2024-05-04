@@ -14,6 +14,7 @@ local xor = require("xor")
 -- TODO move to protocol preferences
 local GAME_PORT = 7777
 local STATIC_XOR_KEY = "\xA1\x6C\x54\x87"
+-- TODO preferences: offset, init key (while not found init)
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 
@@ -304,8 +305,6 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 local function dissect(tvb, pinfo, tree)
-    pinfo.cols.protocol = lineage2game.name
-
     if tvb:len() == 0 then
         return 0
     end
@@ -408,6 +407,7 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 function lineage2game.dissector(tvb, pinfo, tree)
+    pinfo.cols.protocol = lineage2game.name
     pinfo.cols.info = ""
 
     if pinfo.number == last_packet_number then
