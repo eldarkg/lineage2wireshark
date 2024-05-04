@@ -408,6 +408,8 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 function lineage2game.dissector(tvb, pinfo, tree)
+    pinfo.cols.info = ""
+
     if pinfo.number == last_packet_number then
         if packet_count_cache[last_packet_number] and
            packet_count_cache[last_packet_number] <= last_subpacket_number then
