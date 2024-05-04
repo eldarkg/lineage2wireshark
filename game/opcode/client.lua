@@ -7,7 +7,16 @@
     Protocol: 709?
 ]]--
 
-local CLIENT_OPCODE = {
+---Workaround: skip 1st pass without root path
+if not package.searchpath("common", package.path) then
+    return
+end
+
+local cmn = require("common")
+
+local _M = {}
+
+_M.CLIENT_OPCODE = {
     ProtocolVersion = 0x00,
     MoveBackwardToLocation = 0x01,
     Say = 0x02,
@@ -114,4 +123,6 @@ local CLIENT_OPCODE = {
     RequestChangePartyLeader = 0xEE,
 }
 
-return CLIENT_OPCODE
+_M.CLIENT_OPCODE_TXT = cmn.invert(_M.CLIENT_OPCODE)
+
+return _M

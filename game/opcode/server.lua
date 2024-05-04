@@ -7,7 +7,16 @@
     Protocol: 709?
 ]]--
 
-local SERVER_OPCODE = {
+---Workaround: skip 1st pass without root path
+if not package.searchpath("common", package.path) then
+    return
+end
+
+local cmn = require("common")
+
+local _M = {}
+
+_M.SERVER_OPCODE = {
     KeyInit = 0x00,
     MoveToLocation = 0x01,
     UserInfo = 0x04,
@@ -37,4 +46,6 @@ local SERVER_OPCODE = {
     ExSendManorList = 0xFE1B,
 }
 
-return SERVER_OPCODE
+_M.SERVER_OPCODE_TXT = cmn.invert(_M.SERVER_OPCODE)
+
+return _M

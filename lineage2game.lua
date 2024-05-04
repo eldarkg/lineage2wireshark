@@ -9,13 +9,13 @@
 
 local cmn = require("common")
 local packet = require("packet")
+local pf = require("game.protofield")
 local xor = require("xor")
 
-local SERVER_OPCODE = require("game.opcode.server")
-local CLIENT_OPCODE = require("game.opcode.client")
-
-local SERVER_OPCODE_TXT = cmn.invert(SERVER_OPCODE)
-local CLIENT_OPCODE_TXT = cmn.invert(CLIENT_OPCODE)
+local SERVER_OPCODE = require("game.opcode.server").SERVER_OPCODE
+local CLIENT_OPCODE = require("game.opcode.client").CLIENT_OPCODE
+local SERVER_OPCODE_TXT = require("game.opcode.server").SERVER_OPCODE_TXT
+local CLIENT_OPCODE_TXT = require("game.opcode.client").CLIENT_OPCODE_TXT
 
 -- TODO move to protocol preferences
 local GAME_PORT = 7777
@@ -24,27 +24,13 @@ local STATIC_XOR_KEY = "\xA1\x6C\x54\x87"
 
 -- TODO set protocol info
 
-local f_bytes = ProtoField.bytes("lineage2game.bytes", " ", base.NONE)
-local f_bool = ProtoField.bool("lineage2game.bool", " ")
-local f_uint8 = ProtoField.uint8("lineage2game.uint8", " ", base.DEC)
-local f_uint16 = ProtoField.uint16("lineage2game.uint16", " ", base.DEC)
-local f_uint32 = ProtoField.uint32("lineage2game.uint32", " ", base.DEC)
-local f_bin32 = ProtoField.uint32("lineage2game.bin32", " ", base.HEX)
-local f_string = ProtoField.string("lineage2game.string", " ", base.ASCII)
-local f_stringz = ProtoField.stringz("lineage2game.stringz", " ", base.ASCII)
-local f_ipv4 = ProtoField.ipv4("lineage2game.ipv4", " ")
-local f_server_opcode = ProtoField.uint8("lineage2game.server_opcode",
-                                         "Opcode", base.HEX, SERVER_OPCODE_TXT)
-local f_client_opcode = ProtoField.uint8("lineage2game.client_opcode",
-                                         "Opcode", base.HEX, CLIENT_OPCODE_TXT)
-
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 lineage2game.fields = {
-    f_bytes,
-    f_uint16,
-    f_uint32,
-    f_server_opcode,
-    f_client_opcode,
+    pf.bytes,
+    pf.uint16,
+    pf.uint32,
+    pf.server_opcode,
+    pf.client_opcode,
 }
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)
@@ -90,7 +76,7 @@ end
 ---@param isencrypted boolean
 local function decode_server_data(tree, opcode, data, isencrypted)
     if opcode == SERVER_OPCODE.KeyInit then
-        cmn.add_le(tree, f_bytes, packet.xor_key_tvb(data), "XOR key",
+        cmn.add_le(tree, pf.bytes, packet.xor_key_tvb(data), "XOR key",
                    isencrypted)
     end
     -- TODO
@@ -102,7 +88,7 @@ end
 ---@param isencrypted boolean
 local function decode_client_data(tree, opcode, data, isencrypted)
     if opcode == CLIENT_OPCODE.ProtocolVersion then
-        cmn.add_le(tree, f_uint32, data(0, 4), "Protocol version", isencrypted)
+        cmn.add_le(tree, pf.uint32, data(0, 4), "Protocol version", isencrypted)
     end
     -- TODO
 end
@@ -208,16 +194,16 @@ local function dissect(tvb, pinfo, tree)
     local subtree = tree:add(lineage2game, tvb(),
                              tostring(last_subpacket_number) .. ". " ..
                              opcode_str(opcode, isserver))
-    cmn.add_le(subtree, f_uint16, packet.length_tvb(tvb), "Length", false)
+    cmn.add_le(subtree, pf.uint16, packet.length_tvb(tvb), "Length", false)
     if isencrypted then
         local label = "XOR key"
         -- TODO make hidden
         local xor_key_tvb = ByteArray.tvb(ByteArray.new(xor_key, true), label)
-        cmn.add_le(subtree, f_bytes, xor_key_tvb(), label, isencrypted)
+        cmn.add_le(subtree, pf.bytes, xor_key_tvb(), label, isencrypted)
     end
 
-    local f_opcode = isserver and f_server_opcode or f_client_opcode
-    cmn.add_be(subtree, f_opcode, opcode_tvb, nil, isencrypted)
+    local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
+    cmn.add_be(subtree, pf_opcode, opcode_tvb, nil, isencrypted)
 
     -- TODO move dec_tvb here
     local data_st = cmn.generated(subtree:add(lineage2game, data_tvb, "Data"),
