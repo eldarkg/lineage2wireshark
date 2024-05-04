@@ -296,13 +296,6 @@ end
 
 ---@param tvb Tvb
 ---@param pinfo Pinfo
----@param offset number
-local function get_len(tvb, pinfo, offset)
-    return packet.length(tvb(offset))
-end
-
----@param tvb Tvb
----@param pinfo Pinfo
 ---@param tree TreeItem
 local function dissect(tvb, pinfo, tree)
     if tvb:len() == 0 then
@@ -429,7 +422,7 @@ function lineage2game.dissector(tvb, pinfo, tree)
     end
 
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
-    dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, get_len, dissect)
+    dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")

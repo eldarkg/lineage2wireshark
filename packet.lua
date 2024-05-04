@@ -23,6 +23,13 @@ function _M.length(tvb)
 end
 
 ---@param tvb Tvb
+---@param pinfo Pinfo
+---@param offset number
+function _M.get_len(tvb, pinfo, offset)
+    return _M.length(tvb(offset))
+end
+
+---@param tvb Tvb
 ---@return Tvb
 function _M.opcode_tvb(tvb)
     return tvb(2, 1)
