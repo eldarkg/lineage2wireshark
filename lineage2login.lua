@@ -10,6 +10,7 @@
 local bf = require("blowfish")
 local cmn = require("common")
 local packet = require("packet")
+local msg = require("login.message.server")
 
 local SERVER_OPCODE = require("login.opcode.server")
 local CLIENT_OPCODE = require("login.opcode.client")
@@ -21,36 +22,6 @@ local CLIENT_OPCODE_TXT = cmn.invert(CLIENT_OPCODE)
 local LOGIN_PORT = 2106
 local BLOWFISH_PK =
 "\x64\x10\x30\x10\xAE\x06\x31\x10\x16\x95\x30\x10\x32\x65\x30\x10\x71\x44\x30\x10\x00"
-
-local LOGIN_FAIL_REASON = {
-    [0x01] = "System error",
-    [0x02] = "Invalid password",
-    [0x03] = "Invalid login or password",
-    [0x04] = "Access denied",
-    [0x05] = "Invalid account",
-    [0x07] = "Account is used",
-    [0x09] = "Account is banned",
-    [0x10] = "Server is service",
-    [0x12] = "Validity period expired",
-    [0x13] = "Account time is over",
-}
-
-local ACCOUNT_KICKED_REASON = {
-    [0x01] = "Data stealer",
-    [0x08] = "Generic violation",
-    [0x10] = "7 days suspended",
-    [0x20] = "Permanently banned",
-}
-
-local PLAY_FAIL_REASON = {
-    [0x03] = "Invalid password",
-    [0x04] = "Access failed. Please try again later",
-    [0x0F] = "Server overloaded",
-}
-
-local GG_AUTH_RESPONSE = {
-    [0x0B] = "Skip authorization",
-}
 
 local f_bytes = ProtoField.bytes("lineage2game.bytes", " ", base.NONE)
 local f_bool = ProtoField.bool("lineage2login.bool", " ")
@@ -66,16 +37,16 @@ local f_client_opcode = ProtoField.uint8("lineage2login.client_opcode",
                                          "Opcode", base.HEX, CLIENT_OPCODE_TXT)
 local f_login_fail_reason = ProtoField.uint32("lineage2login.login_fail_reason",
                                               "Reason", base.HEX,
-                                              LOGIN_FAIL_REASON)
+                                              msg.LOGIN_FAIL_REASON)
 local f_account_kicked_reason = ProtoField.uint32("lineage2login.account_kicked_reason",
                                                   "Reason", base.HEX,
-                                                  ACCOUNT_KICKED_REASON)
+                                                  msg.ACCOUNT_KICKED_REASON)
 local f_play_fail_reason = ProtoField.uint32("lineage2login.play_fail_reason",
                                              "Reason", base.HEX,
-                                             PLAY_FAIL_REASON)
+                                             msg.PLAY_FAIL_REASON)
 local f_gg_auth_response = ProtoField.uint32("lineage2login.gg_auth_response",
                                              "Response", base.HEX,
-                                             GG_AUTH_RESPONSE)
+                                             msg.GG_AUTH_RESPONSE)
 
 local lineage2login = Proto("lineage2login", "Lineage2 Login Protocol")
 lineage2login.fields = {
