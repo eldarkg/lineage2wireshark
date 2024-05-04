@@ -83,7 +83,7 @@ local function process_xor_key_cache(isserver)
 end
 
 ---@param key string Server XOR key
-local function init_xor_key(key)
+local function init_xor_keys(key)
     server_xor_key = xor.create_key(key, STATIC_XOR_KEY)
     client_xor_key = server_xor_key
 end
@@ -153,7 +153,7 @@ local function dissect(tvb, pinfo, tree)
 
     -- TODO only not in cache (flag). Check is isencrypted?
     if isserver and opcode == SERVER_OPCODE.KeyInit then
-        init_xor_key(packet.xor_key(data_tvb))
+        init_xor_keys(packet.xor_key(data_tvb))
     end
 
     -- TODO before Decrypted in representation
