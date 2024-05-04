@@ -179,19 +179,20 @@ lineage2game.fields = {
 }
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)
--- TODO save only dynamic part
 
+---Init by lineage2game.init
 ---Last packet pinfo.number
-local last_packet_number = -1
+local last_packet_number
 ---Key: pinfo.number. Value: TCP reassembled segment XOR length
-local xor_len_cache = {}
+local xor_len_cache
 ---Accumulator XOR decrypt length in current pinfo.number
-local xor_accum_len = 0
+local xor_accum_len
 
+-- TODO save only dynamic part
 ---Key: pinfo.number. Value: XOR key
-local xor_key_cache = {}
-local server_xor_key = ""
-local client_xor_key = ""
+local xor_key_cache
+local server_xor_key
+local client_xor_key
 
 ---@param tvb Tvb
 ---@param isserver boolean
@@ -368,7 +369,15 @@ local function dissect(tvb, pinfo, tree)
     return tvb:len()
 end
 
--- TODO lineage2game.init -> clear cache
+function lineage2game.init()
+    last_packet_number = -1
+    xor_len_cache = {}
+    xor_accum_len = 0
+
+    xor_key_cache = {}
+    server_xor_key = ""
+    client_xor_key = ""
+end
 
 ---@param tvb Tvb
 ---@param pinfo Pinfo
