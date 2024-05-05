@@ -1,5 +1,9 @@
 # lineage2wireshark
 
+## Support Protocols
+* Login server: 785a
+* Game server: 709
+
 ## Wireshark Filters
 * Login server: (tcp.srcport == 2106 || tcp.dstport == 2106)
 * Game server: (tcp.srcport == 7777 || tcp.dstport == 7777)
