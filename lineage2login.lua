@@ -65,7 +65,7 @@ local function dissect(tvb, pinfo, tree)
 
     if isencrypted then
         local label = "Blowfish PK"
-        local bf_pk_tvb = ByteArray.tvb(ByteArray.new(BLOWFISH_PK, true), label)
+        local bf_pk_tvb = ByteArray.new(BLOWFISH_PK, true):tvb(label)
         cmn.add_le(tree, pf.bytes, bf_pk_tvb(), label, isencrypted)
     end
 
@@ -73,7 +73,7 @@ local function dissect(tvb, pinfo, tree)
     local data_tvbr
     if isencrypted then
         local dec_payload = bf.decrypt(packet.payload(tvb), BLOWFISH_PK)
-        local dec_payload_tvb = ByteArray.tvb(ByteArray.new(dec_payload, true), "Decrypted")
+        local dec_payload_tvb = ByteArray.tvb(dec_payload, "Decrypted")
 
         opcode_tvbr = packet.opcode_tvbr(dec_payload_tvb(), isserver)
         data_tvbr = dec_payload_tvb(opcode_tvbr:len())

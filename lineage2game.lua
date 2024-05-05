@@ -67,7 +67,7 @@ local function opcode_str(opcode, isserver)
 end
 
 ---@param isserver boolean
----@return string XOR key
+---@return ByteArray xor_key
 local function process_xor_key_cache(isserver)
     local pnum = last_packet_number
     local xor_key
@@ -85,9 +85,9 @@ local function process_xor_key_cache(isserver)
     return xor_key
 end
 
----@param key string Server XOR key
+---@param key ByteArray Server XOR key
 local function init_xor_keys(key)
-    server_xor_key = xor.create_key(key, STATIC_XOR_KEY)
+    server_xor_key = xor.create_key(key, ByteArray.new(STATIC_XOR_KEY, true))
     client_xor_key = server_xor_key
 end
 
@@ -138,7 +138,7 @@ local function dissect(tvb, pinfo, tree)
 
         local dec_payload = xor.decrypt(packet.payload(tvb), xor_key)
         -- TODO move down
-        local dec_payload_tvb = ByteArray.tvb(ByteArray.new(dec_payload, true), "Decrypted")
+        local dec_payload_tvb = ByteArray.tvb(dec_payload, "Decrypted")
 
         opcode_tvbr = packet.opcode_tvbr(dec_payload_tvb(), isserver)
         data_tvbr = dec_payload_tvb(opcode_tvbr:len())
@@ -163,7 +163,7 @@ local function dissect(tvb, pinfo, tree)
     if isencrypted then
         local label = "XOR key"
         -- TODO make hidden
-        local xor_key_tvb = ByteArray.tvb(ByteArray.new(xor_key, true), label)
+        local xor_key_tvb = xor_key:tvb(label)
         cmn.add_le(subtree, pf.bytes, xor_key_tvb(), label, isencrypted)
     end
 
@@ -196,8 +196,8 @@ function lineage2game.init()
     last_subpacket_number = 0
     packet_count_cache = {}
 
-    server_xor_key = ""
-    client_xor_key = ""
+    server_xor_key = nil
+    client_xor_key = nil
     xor_key_cache = {}
 
     last_opcode_stat = {}

@@ -23,38 +23,38 @@ local OPCODE_PAYLOAD_OFFSET = 0
 
 local XOR_KEY_DATA_OFFSET = 1
 
----@param tvb Tvb packet
+---@param tvb Tvb Packet
 ---@return TvbRange
 function _M.length_tvbr(tvb)
     return tvb(LENGTH_OFFSET, LENGTH_LEN)
 end
 
----@param tvb Tvb packet
+---@param tvb Tvb Packet
 ---@return number
 function _M.length(tvb)
     return _M.length_tvbr(tvb):le_uint()
 end
 
----@param tvb Tvb packet
+---@param tvb Tvb Packet
 ---@param pinfo Pinfo
 ---@param offset number
 function _M.get_len(tvb, pinfo, offset)
     return _M.length(tvb(offset))
 end
 
----@param tvb Tvb packet
----@return TvbRange payload packet payload without header length
+---@param tvb Tvb Packet
+---@return TvbRange payload Packet payload without header length
 function _M.payload_tvbr(tvb)
     return tvb(_M.HEADER_LEN)
 end
 
----@param tvb Tvb packet
----@return string payload packet payload without header length
+---@param tvb Tvb Packet
+---@return ByteArray payload Packet payload without header length
 function _M.payload(tvb)
-    return _M.payload_tvbr(tvb):raw()
+    return _M.payload_tvbr(tvb):bytes()
 end
 
----@param tvbr TvbRange payload
+---@param tvbr TvbRange Payload
 ---@param isserver boolean
 ---@return TvbRange
 function _M.opcode_tvbr(tvbr, isserver)
@@ -72,7 +72,7 @@ function _M.opcode_tvbr(tvbr, isserver)
 end
 
 -- TODO use ByteArray
----@param tvbr TvbRange payload
+---@param tvbr TvbRange Payload
 ---@param isserver boolean
 ---@return number
 function _M.opcode(tvbr, isserver)
@@ -93,9 +93,9 @@ function _M.xor_key_tvbr(data)
 end
 
 ---@param data ByteArray
----@return string
+---@return ByteArray
 function _M.xor_key(data)
-    return data:raw(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
+    return data:subset(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
 end
 
 ---@param tvb Tvb packet

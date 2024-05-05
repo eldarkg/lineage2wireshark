@@ -10,36 +10,35 @@ local crypto = require("crypto")
 
 local _M = {}
 
----@param data string
----@param bs   number
----@return string
+---@param data ByteArray
+---@param bs number
+---@return ByteArray
 local function align_size(data, bs)
-    local alen = (bs - #data % bs) % bs
-    for i = 1, alen do
-        data = data .. "\x00"
-    end
-
+    local alen = (bs - data:len() % bs) % bs
+    data:set_size(data:len() + alen)
     return data
 end
 
----@param data string
----@param bs   number
----@return string
+---@param data ByteArray
+---@param bs number
+---@return ByteArray
 local function swap_endian(data, bs)
-    local swapped = ""
-    for i = 1, #data, bs do
+    local swapped = ByteArray.new()
+    swapped:set_size(data:len())
+
+    for i = 0, data:len() - 1, bs do
         for j = i + bs - 1, i, -1 do
-            local b = (j <= #data) and string.char(data:byte(j)) or "\x00"
-            swapped = swapped .. b
+            local b = (j < data:len()) and data:get_index(j) or 0
+            swapped:set_index(2 * i + bs - 1 - j, b)
         end
     end
 
     return swapped
 end
 
----@param enc string
----@param pk  string
----@return string
+---@param enc ByteArray
+---@param pk string
+---@return ByteArray
 function _M.decrypt(enc, pk)
     local bf_bs = 8
     enc = align_size(enc, bf_bs)
@@ -47,15 +46,13 @@ function _M.decrypt(enc, pk)
     local bs = 4
     local enc_be = swap_endian(enc, bs)
 
-    local cipher =
-        crypto.decrypt.new("bf-ecb", pk)
-
-    local dec_be = cipher:update(enc_be)
-    local dec_be_next = cipher:final()
-    dec_be = dec_be .. (dec_be_next and dec_be_next or "")
+    local cipher = crypto.decrypt.new("bf-ecb", pk)
+    local dec_be_raw = cipher:update(enc_be:raw())
+    local dec_be_next_raw = cipher:final() and cipher:final() or ""
+    local dec_be = ByteArray.new(dec_be_raw .. dec_be_next_raw, true)
 
     -- FIXME not work?
-    -- local dec_be = crypto.decrypt("bf-ecb", enc_be, pk)
+    -- local dec_be = ByteArray.new(crypto.decrypt("bf-ecb", enc_be:raw(), pk), true)
 
     local dec = swap_endian(dec_be, bs)
     return dec

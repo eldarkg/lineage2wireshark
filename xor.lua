@@ -9,53 +9,57 @@
 
 local _M = {}
 
----@param server_key string Server XOR key
----@param static_key string Static XOR key
----@return string
+local DYNAMIC_KEY_LEN = 4
+
+---@param server_key ByteArray Server XOR key
+---@param static_key ByteArray Static XOR key
+---@return ByteArray
 function _M.create_key(server_key, static_key)
     return server_key .. static_key
 end
 
----@param key  string
+---@param key ByteArray
 ---@param plen number Previous crypt data length
----@return string
+---@return ByteArray
 function _M.next_key(key, plen)
-    local nb = 4
-    local fmt = "<I" .. tostring(nb)
-    local dkey = Struct.unpack(fmt, key:sub(1, nb))
+    local dkey = key:le_uint(0, DYNAMIC_KEY_LEN)
     dkey = dkey + plen
-    return Struct.pack(fmt, dkey) .. key:sub(nb + 1)
+    local fmt = "<I" .. tostring(DYNAMIC_KEY_LEN)
+    local dkey_b = ByteArray.new(Struct.pack(fmt, dkey), true)
+    return dkey_b .. key:subset(DYNAMIC_KEY_LEN, key:len() - DYNAMIC_KEY_LEN)
 end
 
----@param data string
----@param key  string
----@param enc  boolean
----@return string
-local function crypt(data, key, enc)
-    local dec = ""
-    local temp = 0
-    for i = 1, #data do
-        local benc = data:byte(i)
-        local bkey = key:byte((i - 1) % #key + 1)
-        local bxor = bit32.bxor(benc, bkey, temp)
-        dec = dec .. string.char(bxor)
+---@param data ByteArray
+---@param key ByteArray
+---@param isenc boolean
+---@return ByteArray
+local function crypt(data, key, isenc)
+    local dec = ByteArray.new()
+    dec:set_size(data:len())
 
-        temp = enc and bxor or benc
+    local btmp = 0
+    for i = 0, data:len() - 1 do
+        local benc = data:get_index(i)
+        local bkey = key:get_index(i % key:len())
+        local bxor = bit32.bxor(benc, bkey, btmp)
+        dec:set_index(i, bxor)
+
+        btmp = isenc and bxor or benc
     end
 
     return dec
 end
 
----@param enc string
----@param key string
----@return string
+---@param enc ByteArray
+---@param key ByteArray
+---@return ByteArray
 function _M.decrypt(enc, key)
     return crypt(enc, key, false)
 end
 
----@param dec string
----@param key string
----@return string
+---@param dec ByteArray
+---@param key ByteArray
+---@return ByteArray
 function _M.encrypt(dec, key)
     return crypt(dec, key, true)
 end
