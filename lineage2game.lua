@@ -26,8 +26,11 @@ local SERVER_OPCODE = require("game.opcode.server").SERVER_OPCODE
 local SERVER_OPCODE_TXT = require("game.opcode.server").SERVER_OPCODE_TXT
 local CLIENT_OPCODE_TXT = require("game.opcode.client").CLIENT_OPCODE_TXT
 
-local GAME_PORT = 7777
-local STATIC_XOR_KEY = "A1 6C 54 87"
+local DEFAULT_GAME_PORT = 7777
+local DEFAULT_STATIC_XOR_KEY_HEX = "A1 6C 54 87"
+
+local GAME_PORT = DEFAULT_GAME_PORT
+local STATIC_XOR_KEY = Struct.fromhex(DEFAULT_STATIC_XOR_KEY_HEX, " ")
 -- TODO preferences: offset, init key (while not found init)
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
@@ -38,9 +41,12 @@ lineage2game.fields = {
     pf.server_opcode,
     pf.client_opcode,
 }
-lineage2game.prefs.game_port = Pref.uint("Game port", GAME_PORT, "TCP port")
-lineage2game.prefs.static_xor_key =
-   Pref.string("Static part of XOR key", STATIC_XOR_KEY, "Format: XX YY ... ZZ")
+lineage2game.prefs.game_port =
+    Pref.uint("Game server port", DEFAULT_GAME_PORT,
+              "Default: " .. DEFAULT_GAME_PORT)
+lineage2game.prefs.static_xor_key_hex =
+    Pref.string("Static part of XOR key", DEFAULT_STATIC_XOR_KEY_HEX,
+                "Default: " .. DEFAULT_STATIC_XOR_KEY_HEX)
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)
 
@@ -92,7 +98,7 @@ end
 
 ---@param key ByteArray Server XOR key
 local function init_xor_keys(key)
-    server_xor_key = xor.create_key(key, ByteArray.new(STATIC_XOR_KEY))
+    server_xor_key = xor.create_key(key, ByteArray.new(STATIC_XOR_KEY, true))
     client_xor_key = server_xor_key
 end
 
@@ -204,7 +210,7 @@ end
 
 function lineage2game.prefs_changed()
     GAME_PORT = lineage2game.prefs.game_port
-    STATIC_XOR_KEY = lineage2game.prefs.static_xor_key
+    STATIC_XOR_KEY = Struct.fromhex(lineage2game.prefs.static_xor_key_hex, " ")
 end
 
 ---@param tvb Tvb
