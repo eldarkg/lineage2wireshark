@@ -8,16 +8,16 @@
 
 local _M = {}
 
----@param tvb Tvb
+---@param buf ByteArray|TvbRange
 ---@return number
-function _M.le(tvb)
-    return tvb:le_uint()
+function _M.le(buf)
+    return buf:le_uint()
 end
 
----@param tvb Tvb
+---@param buf ByteArray|TvbRange
 ---@return number
-function _M.be(tvb)
-    return tvb:uint()
+function _M.be(buf)
+    return buf:uint()
 end
 
 ---Invert table key and value between themselves
