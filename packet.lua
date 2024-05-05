@@ -43,9 +43,15 @@ function _M.get_len(tvb, pinfo, offset)
 end
 
 ---@param tvb Tvb packet
----@return TvbRange packet payload without header length
+---@return TvbRange payload packet payload without header length
 function _M.payload_tvbr(tvb)
     return tvb(_M.HEADER_LEN)
+end
+
+---@param tvb Tvb packet
+---@return string payload packet payload without header length
+function _M.payload(tvb)
+    return _M.payload_tvbr(tvb):raw()
 end
 
 ---@param tvbr TvbRange payload
@@ -78,13 +84,6 @@ end
 ---@return TvbRange
 function _M.data_tvbr(tvb)
     return tvb(3)
-end
-
--- TODO use payload (ret bytes)
----@param tvb Tvb
----@return string
-function _M.encrypted_block(tvb)
-    return tvb(_M.HEADER_LEN):bytes():raw()
 end
 
 ---@param data Tvb

@@ -136,7 +136,7 @@ local function dissect(tvb, pinfo, tree)
             return tvb:len()
         end
 
-        local dec_payload = xor.decrypt(packet.encrypted_block(tvb), xor_key)
+        local dec_payload = xor.decrypt(packet.payload(tvb), xor_key)
         -- TODO move down
         local dec_payload_tvb = ByteArray.tvb(ByteArray.new(dec_payload, true), "Decrypted")
 
@@ -178,7 +178,7 @@ local function dissect(tvb, pinfo, tree)
     decode_data(data_st, opcode, data_tvbr, isencrypted)
 
     if isencrypted then
-        update_xor_key(packet.encrypted_block(tvb):len(), isserver)
+        update_xor_key(packet.payload(tvb):len(), isserver)
     end
 
     if is_last_subpacket() then
