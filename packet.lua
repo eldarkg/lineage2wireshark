@@ -97,7 +97,7 @@ end
 ---@return ByteArray
 function _M.data(payload, op_len)
     return op_len < payload:len()
-            and payload:subset(op_len, payload:len() - op_len)
+            and payload(op_len, payload:len() - op_len)
             or ByteArray.new()
 end
 
@@ -110,7 +110,7 @@ end
 ---@param data ByteArray Data
 ---@return ByteArray
 function _M.xor_key(data)
-    return data:subset(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
+    return data(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
 end
 
 ---@param tvb Tvb Packet

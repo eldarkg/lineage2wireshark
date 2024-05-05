@@ -26,7 +26,7 @@ function _M.next_key(key, plen)
     dkey = dkey + plen
     local fmt = "<I" .. tostring(DYNAMIC_KEY_LEN)
     local dkey_b = ByteArray.new(Struct.pack(fmt, dkey), true)
-    return dkey_b .. key:subset(DYNAMIC_KEY_LEN, key:len() - DYNAMIC_KEY_LEN)
+    return dkey_b .. key(DYNAMIC_KEY_LEN, key:len() - DYNAMIC_KEY_LEN)
 end
 
 ---@param data ByteArray
