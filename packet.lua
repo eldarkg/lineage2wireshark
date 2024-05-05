@@ -75,7 +75,7 @@ end
 ---@param op_len number Opcode length
 ---@return TvbRange
 function _M.opcode_tvbr(tvbr, op_len)
-    return tvbr:range(OPCODE_PAYLOAD_OFFSET, op_len)
+    return tvbr(OPCODE_PAYLOAD_OFFSET, op_len)
 end
 
 ---@param payload ByteArray Payload
@@ -89,7 +89,7 @@ end
 ---@param op_len number Opcode length
 ---@return TvbRange|nil
 function _M.data_tvbr(tvbr, op_len)
-    return op_len < tvbr:len() and tvbr:range(op_len) or nil
+    return op_len < tvbr:len() and tvbr(op_len) or nil
 end
 
 ---@param payload ByteArray Payload
