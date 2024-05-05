@@ -48,7 +48,7 @@ function _M.add_be(item, protofield, tvbrange, label, isgen)
     add_generic(item.add, item, protofield, tvbrange, label, isgen)
 end
 
--- deprecated
+-- FIXME deprecated
 function _M.set_info_field(pinfo, isserver, isgen, str)
     local src_role = isserver and "Server" or "Client"
     pinfo.cols.info =
