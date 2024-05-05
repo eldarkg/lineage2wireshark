@@ -67,18 +67,22 @@ local function opcode_str(opcode, isserver)
 end
 
 ---@param isserver boolean
+---@return string XOR key
 local function process_xor_key_cache(isserver)
     local pnum = last_packet_number
+    local xor_key
     if xor_key_cache[pnum] then
-        local xor_key = xor.next_key(xor_key_cache[pnum], xor_accum_len)
+        xor_key = xor.next_key(xor_key_cache[pnum], xor_accum_len)
         if isserver then
             server_xor_key = xor_key
         else
             client_xor_key = xor_key
         end
     else
-        xor_key_cache[pnum] = isserver and server_xor_key or client_xor_key
+        xor_key = isserver and server_xor_key or client_xor_key
+        xor_key_cache[pnum] = xor_key
     end
+    return xor_key
 end
 
 ---@param key string Server XOR key
@@ -123,12 +127,8 @@ local function dissect(tvb, pinfo, tree)
 
     local isserver = (pinfo.src_port == GAME_PORT)
     local isencrypted = packet.is_encrypted_game_packet(tvb, isserver)
+    local xor_key = isencrypted and process_xor_key_cache(isserver) or ""
 
-    if isencrypted then
-        process_xor_key_cache(isserver)
-    end
-
-    local xor_key = isserver and server_xor_key or client_xor_key
     local opcode_tvb
     local data_tvb
     if isencrypted then
