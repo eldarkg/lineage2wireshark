@@ -130,8 +130,8 @@ local function dissect(tvb, pinfo, tree)
     if isencrypted and not xor_key then
         return tvb:len()
     end
-    local payload = isencrypted and xor.decrypt(packet.payload(tvb), xor_key)
-                                or packet.payload(tvb)
+    local payload = xor_key and xor.decrypt(packet.payload(tvb), xor_key)
+                            or packet.payload(tvb)
     if isencrypted then
         update_xor_key(payload:len(), isserver)
     end
@@ -150,7 +150,7 @@ local function dissect(tvb, pinfo, tree)
                              opcode_str(opcode, isserver))
     cmn.add_le(subtree, pf.uint16, packet.length_tvbr(tvb), "Length", false)
 
-    if isencrypted then
+    if xor_key then
         local label = "XOR key"
         -- TODO make hidden
         local xor_key_tvb = xor_key:tvb(label)

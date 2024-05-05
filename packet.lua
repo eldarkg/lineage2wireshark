@@ -87,7 +87,7 @@ end
 
 ---@param tvbr TvbRange Payload
 ---@param op_len number Opcode length
----@return TvbRange
+---@return TvbRange|nil
 function _M.data_tvbr(tvbr, op_len)
     return op_len < tvbr:len() and tvbr:range(op_len) or nil
 end
@@ -101,7 +101,7 @@ function _M.data(payload, op_len)
             or ByteArray.new()
 end
 
----@param data Tvb Data
+---@param data TvbRange Data
 ---@return TvbRange
 function _M.xor_key_tvbr(data)
     return data(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)

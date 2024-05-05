@@ -22,7 +22,7 @@ local _M = {}
 
 ---@param tree        TreeItem
 ---@param opcode      number
----@param data        Tvb
+---@param data        TvbRange
 ---@param isencrypted boolean
 function _M.decode_server_data(tree, opcode, data, isencrypted)
     if opcode == SERVER_OPCODE.KeyInit then

@@ -21,7 +21,7 @@ local _M = {}
 
 ---@param tree        TreeItem
 ---@param opcode      number
----@param data        Tvb
+---@param data        TvbRange
 ---@param isencrypted boolean
 function _M.decode_client_data(tree, opcode, data, isencrypted)
     if opcode == CLIENT_OPCODE.ProtocolVersion then
