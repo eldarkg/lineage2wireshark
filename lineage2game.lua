@@ -62,9 +62,8 @@ local last_opcode_stat
 ---@param isserver boolean
 ---@return string
 local function opcode_str(opcode, isserver)
-    local str = isserver and SERVER_OPCODE_TXT[opcode]
-                         or CLIENT_OPCODE_TXT[opcode]
-    return str and str or ""
+    return tostring(isserver and SERVER_OPCODE_TXT[opcode]
+                             or CLIENT_OPCODE_TXT[opcode])
 end
 
 ---@param isserver boolean
