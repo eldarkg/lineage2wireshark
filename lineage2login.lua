@@ -71,8 +71,8 @@ local packet_count_cache
 ---@param isserver boolean
 ---@return string
 local function opcode_str(opcode, isserver)
-    return tostring(isserver and SERVER_OPCODE_TXT[opcode]
-                             or CLIENT_OPCODE_TXT[opcode])
+    return isserver and tostring(SERVER_OPCODE_TXT[opcode])
+                    or tostring(CLIENT_OPCODE_TXT[opcode])
 end
 
 ---@param opcode number
