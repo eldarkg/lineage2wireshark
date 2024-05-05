@@ -19,6 +19,10 @@ local SERVER_OPCODE = require("login.opcode.server").SERVER_OPCODE
 
 local _M = {}
 
+---@param tree TreeItem
+---@param opcode number
+---@param data TvbRange
+---@param isencrypted boolean
 function _M.decode_server_data(tree, opcode, data, isencrypted)
     if opcode == SERVER_OPCODE.Init then
         cmn.add_le(tree, pf.bin32, data(0, 4), "Session ID", isencrypted)

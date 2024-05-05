@@ -19,6 +19,10 @@ local CLIENT_OPCODE = require("login.opcode.client").CLIENT_OPCODE
 
 local _M = {}
 
+---@param tree TreeItem
+---@param opcode number
+---@param data TvbRange
+---@param isencrypted boolean
 function _M.decode_client_data(tree, opcode, data, isencrypted)
     if opcode == CLIENT_OPCODE.RequestAuthLogin then
         cmn.add_le(tree, pf.string, data(0, 14), "Login", isencrypted)
