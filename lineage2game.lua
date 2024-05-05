@@ -105,7 +105,7 @@ local function update_last_opcode_stat(opcode)
     last_opcode_stat[opcode] = count and count + 1 or 1
 end
 
----@return boolean false on 1 dissection pass
+---@return boolean false on 1st dissection pass
 local function is_last_subpacket()
     return packet_count_cache[last_packet_number] and
            last_subpacket_number == packet_count_cache[last_packet_number]
@@ -123,18 +123,19 @@ local function dissect(tvb, pinfo, tree)
 
     local isserver = (pinfo.src_port == GAME_PORT)
     local isencrypted = packet.is_encrypted_game_packet(tvb, isserver)
-    -- TODO check isencrypted and *_xor_key is empty then not process. Ret false. Print no XOR key
 
     if isencrypted then
         process_xor_key_cache(isserver)
     end
 
     local xor_key = isserver and server_xor_key or client_xor_key
-
-    local opcode_tvb = nil
-    local data_tvb = nil
+    local opcode_tvb
+    local data_tvb
     if isencrypted then
-        -- TODO empty encrypted_block ?
+        if #xor_key == 0 then
+            return tvb:len()
+        end
+
         local dec = xor.decrypt(packet.encrypted_block(tvb), xor_key)
         -- TODO move down
         -- TODO show [Opcode name] instead Decrypted
