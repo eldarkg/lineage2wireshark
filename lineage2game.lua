@@ -30,8 +30,10 @@ local DEFAULT_GAME_PORT = 7777
 local DEFAULT_STATIC_XOR_KEY_HEX = "A1 6C 54 87"
 
 local GAME_PORT = DEFAULT_GAME_PORT
-local STATIC_XOR_KEY = Struct.fromhex(DEFAULT_STATIC_XOR_KEY_HEX, " ")
--- TODO preferences: offset, init key (while not found init)
+local STATIC_XOR_KEY = ByteArray.new(DEFAULT_STATIC_XOR_KEY_HEX)
+local START_PNUM = 0
+local INIT_SERVER_XOR_KEY = ByteArray.new("00 00 00 00")
+local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 lineage2game.fields = {
@@ -47,6 +49,13 @@ lineage2game.prefs.game_port =
 lineage2game.prefs.static_xor_key_hex =
     Pref.string("Static part of XOR key", DEFAULT_STATIC_XOR_KEY_HEX,
                 "Default: " .. DEFAULT_STATIC_XOR_KEY_HEX)
+lineage2game.prefs.start_pnum =
+    Pref.uint("Start packet number", START_PNUM,
+              "Start analyze from selected packet number")
+lineage2game.prefs.init_server_xor_key_hex =
+    Pref.string("Init server part of XOR key", "", "Format: 00 00 00 00")
+lineage2game.prefs.init_client_xor_key_hex =
+    Pref.string("Init client part of XOR key", "", "Format: 00 00 00 00")
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)
 
@@ -98,7 +107,7 @@ end
 
 ---@param key ByteArray Server XOR key
 local function init_xor_keys(key)
-    server_xor_key = xor.create_key(key, ByteArray.new(STATIC_XOR_KEY, true))
+    server_xor_key = xor.create_key(key, STATIC_XOR_KEY)
     client_xor_key = server_xor_key
 end
 
@@ -206,17 +215,29 @@ function lineage2game.init()
     server_xor_key = nil
     client_xor_key = nil
     xor_key_cache = {}
+
+    server_xor_key = xor.create_key(INIT_SERVER_XOR_KEY, STATIC_XOR_KEY)
+    client_xor_key = xor.create_key(INIT_CLIENT_XOR_KEY, STATIC_XOR_KEY)
 end
 
 function lineage2game.prefs_changed()
     GAME_PORT = lineage2game.prefs.game_port
-    STATIC_XOR_KEY = Struct.fromhex(lineage2game.prefs.static_xor_key_hex, " ")
+    STATIC_XOR_KEY = ByteArray.new(lineage2game.prefs.static_xor_key_hex)
+    START_PNUM = lineage2game.prefs.start_pnum
+    INIT_SERVER_XOR_KEY =
+        ByteArray.new(lineage2game.prefs.init_server_xor_key_hex)
+    INIT_CLIENT_XOR_KEY =
+        ByteArray.new(lineage2game.prefs.init_client_xor_key_hex)
 end
 
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 function lineage2game.dissector(tvb, pinfo, tree)
+    if pinfo.number < START_PNUM then
+        return
+    end
+
     pinfo.cols.protocol = lineage2game.name
     pinfo.cols.info = ""
 
