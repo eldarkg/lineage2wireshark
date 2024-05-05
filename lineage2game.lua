@@ -136,14 +136,14 @@ local function dissect(tvb, pinfo, tree)
             return tvb:len()
         end
 
-        local dec = xor.decrypt(packet.encrypted_block(tvb), xor_key)
+        local dec_payload = xor.decrypt(packet.encrypted_block(tvb), xor_key)
         -- TODO move down
-        local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
+        local dec_payload_tvb = ByteArray.tvb(ByteArray.new(dec_payload, true), "Decrypted")
 
-        opcode_tvbr = packet.decrypted_opcode_tvbr(dec_tvb(), isserver)
-        data_tvbr = dec_tvb(opcode_tvbr:len())
+        opcode_tvbr = packet.opcode_tvbr(dec_payload_tvb(), isserver)
+        data_tvbr = dec_payload_tvb(opcode_tvbr:len())
     else
-        opcode_tvbr = packet.opcode_tvbr(tvb)
+        opcode_tvbr = packet.opcode_tvbr(packet.payload_tvbr(tvb), isserver)
         data_tvbr = packet.data_tvbr(tvb)
     end
 
@@ -152,7 +152,7 @@ local function dissect(tvb, pinfo, tree)
 
     -- TODO only not in cache (flag). Check is isencrypted?
     if isserver and opcode == SERVER_OPCODE.KeyInit then
-        init_xor_keys(packet.xor_key(data_tvbr))
+        init_xor_keys(packet.xor_key(data_tvbr:bytes()))
     end
 
     -- TODO before Decrypted in representation

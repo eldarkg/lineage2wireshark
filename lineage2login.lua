@@ -72,13 +72,13 @@ local function dissect(tvb, pinfo, tree)
     local opcode_tvbr
     local data_tvbr
     if isencrypted then
-        local dec = bf.decrypt(packet.encrypted_block(tvb), BLOWFISH_PK)
-        local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
+        local dec_payload = bf.decrypt(packet.encrypted_block(tvb), BLOWFISH_PK)
+        local dec_payload_tvb = ByteArray.tvb(ByteArray.new(dec_payload, true), "Decrypted")
 
-        opcode_tvbr = packet.decrypted_opcode_tvbr(dec_tvb(), isserver)
-        data_tvbr = dec_tvb(opcode_tvbr:len())
+        opcode_tvbr = packet.opcode_tvbr(dec_payload_tvb(), isserver)
+        data_tvbr = dec_payload_tvb(opcode_tvbr:len())
     else
-        opcode_tvbr = packet.opcode_tvbr(tvb)
+        opcode_tvbr = packet.opcode_tvbr(packet.payload_tvbr(tvb), isserver)
         data_tvbr = packet.data_tvbr(tvb)
     end
 
