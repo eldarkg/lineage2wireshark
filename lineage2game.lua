@@ -40,23 +40,21 @@ lineage2game.fields = {
 ---Init by lineage2game.init
 ---Last packet pinfo.number
 local last_packet_number
----Accumulator XOR decrypt length in current pinfo.number
-local xor_accum_len
-
 ---Last sub packet number
 local last_subpacket_number
+---Opcode stat in last packet
+---Key: opcode. Value: sub packet count
+local last_opcode_stat
 ---Key: pinfo.number. Value: sub packet count
 local packet_count_cache
 
+---Accumulator XOR decrypt length in current pinfo.number
+local xor_accum_len
 local server_xor_key
 local client_xor_key
 -- TODO save only dynamic part
 ---Key: pinfo.number. Value: XOR key
 local xor_key_cache
-
----Opcode stat in last packet
----Key: opcode. Value: sub packet count
-local last_opcode_stat
 
 ---@param opcode number
 ---@param isserver boolean
@@ -187,16 +185,14 @@ end
 
 function lineage2game.init()
     last_packet_number = nil
-    xor_accum_len = 0
-
     last_subpacket_number = 0
+    last_opcode_stat = {}
     packet_count_cache = {}
 
+    xor_accum_len = 0
     server_xor_key = nil
     client_xor_key = nil
     xor_key_cache = {}
-
-    last_opcode_stat = {}
 end
 
 ---@param tvb Tvb
@@ -209,8 +205,8 @@ function lineage2game.dissector(tvb, pinfo, tree)
     if pinfo.number == last_packet_number then
         if packet_count_cache[last_packet_number] and
            packet_count_cache[last_packet_number] <= last_subpacket_number then
-            xor_accum_len = 0
             last_subpacket_number = 0
+            xor_accum_len = 0
         end
     else
         if last_packet_number and
@@ -219,9 +215,9 @@ function lineage2game.dissector(tvb, pinfo, tree)
         end
 
         last_packet_number = pinfo.number
-        xor_accum_len = 0
         last_subpacket_number = 0
         last_opcode_stat = {}
+        xor_accum_len = 0
     end
 
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
