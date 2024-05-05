@@ -7,6 +7,13 @@
     Protocol: 709
 ]]--
 
+set_plugin_info({
+    version = "0.1.0",
+    description = "Lineage2Game",
+    author = "Eldar Khayrullin",
+    repository = "https://gitlab.com/eldarkg/lineage2wireshark"
+})
+
 local cmn = require("common")
 local packet = require("packet")
 local pf = require("game.protofield")

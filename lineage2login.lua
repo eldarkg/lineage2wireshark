@@ -7,6 +7,13 @@
     Protocol: 785a
 ]]--
 
+set_plugin_info({
+    version = "0.1.0",
+    description = "Lineage2Login",
+    author = "Eldar Khayrullin",
+    repository = "https://gitlab.com/eldarkg/lineage2wireshark"
+})
+
 local bf = require("blowfish")
 local cmn = require("common")
 local packet = require("packet")
