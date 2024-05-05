@@ -26,12 +26,9 @@ local SERVER_OPCODE = require("game.opcode.server").SERVER_OPCODE
 local SERVER_OPCODE_TXT = require("game.opcode.server").SERVER_OPCODE_TXT
 local CLIENT_OPCODE_TXT = require("game.opcode.client").CLIENT_OPCODE_TXT
 
--- TODO move to protocol preferences
 local GAME_PORT = 7777
-local STATIC_XOR_KEY = "\xA1\x6C\x54\x87"
+local STATIC_XOR_KEY = "A1 6C 54 87"
 -- TODO preferences: offset, init key (while not found init)
-
--- TODO set protocol info
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 lineage2game.fields = {
@@ -41,6 +38,9 @@ lineage2game.fields = {
     pf.server_opcode,
     pf.client_opcode,
 }
+lineage2game.prefs.game_port = Pref.uint("Game port", GAME_PORT, "TCP port")
+lineage2game.prefs.static_xor_key =
+   Pref.string("Static part of XOR key", STATIC_XOR_KEY, "Format: XX YY ... ZZ")
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)
 
@@ -92,7 +92,7 @@ end
 
 ---@param key ByteArray Server XOR key
 local function init_xor_keys(key)
-    server_xor_key = xor.create_key(key, ByteArray.new(STATIC_XOR_KEY, true))
+    server_xor_key = xor.create_key(key, ByteArray.new(STATIC_XOR_KEY))
     client_xor_key = server_xor_key
 end
 
@@ -202,6 +202,11 @@ function lineage2game.init()
     xor_key_cache = {}
 end
 
+function lineage2game.prefs_changed()
+    GAME_PORT = lineage2game.prefs.game_port
+    STATIC_XOR_KEY = lineage2game.prefs.static_xor_key
+end
+
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
@@ -233,4 +238,3 @@ end
 
 local tcp_port = DissectorTable.get("tcp.port")
 tcp_port:add(GAME_PORT, lineage2game)
--- TODO use treeitem:add_tvb_expert_info
