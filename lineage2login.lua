@@ -30,7 +30,7 @@ local DEFAULT_BLOWFISH_PK_HEX =
     "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
 
 local LOGIN_PORT = DEFAULT_LOGIN_PORT
-local BLOWFISH_PK = Struct.fromhex(DEFAULT_BLOWFISH_PK_HEX, " ")
+local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
 
 local lineage2login = Proto("lineage2login", "Lineage2 Login Protocol")
 lineage2login.fields = {
@@ -100,8 +100,9 @@ local function dissect(tvb, pinfo, tree)
     local isserver = (pinfo.src_port == LOGIN_PORT)
     local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
 
-    local payload = isencrypted and bf.decrypt(packet.payload(tvb), BLOWFISH_PK)
-                                or packet.payload(tvb)
+    local payload = isencrypted
+                        and bf.decrypt(packet.payload(tvb), BLOWFISH_PK:raw())
+                        or packet.payload(tvb)
 
     local opcode_len = packet.opcode_len(payload, isserver)
     local opcode = packet.opcode(payload, opcode_len)
@@ -114,7 +115,7 @@ local function dissect(tvb, pinfo, tree)
 
     if isencrypted then
         local label = "Blowfish PK"
-        local bf_pk_tvb = ByteArray.new(BLOWFISH_PK, true):tvb(label)
+        local bf_pk_tvb = BLOWFISH_PK:tvb(label)
         cmn.add_le(subtree, pf.bytes, bf_pk_tvb(), label, true)
     end
 
@@ -152,7 +153,7 @@ end
 
 function lineage2login.prefs_changed()
     LOGIN_PORT = lineage2login.prefs.login_port
-    BLOWFISH_PK = Struct.fromhex(lineage2login.prefs.bf_pk_hex, " ")
+    BLOWFISH_PK = ByteArray.new(lineage2login.prefs.bf_pk_hex)
 end
 
 ---@param tvb Tvb
