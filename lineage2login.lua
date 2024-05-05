@@ -41,12 +41,35 @@ lineage2login.fields = {
     pf.gg_auth_response,
 }
 
+---Init by lineage2login.init
+---Last packet pinfo.number
+local last_packet_number
+---Last sub packet number
+local last_subpacket_number
+---Opcode stat in last packet
+---Key: opcode. Value: sub packet count
+local last_opcode_stat
+---Key: pinfo.number. Value: sub packet count
+local packet_count_cache
+
 ---@param opcode number
 ---@param isserver boolean
 ---@return string
 local function opcode_str(opcode, isserver)
     return tostring(isserver and SERVER_OPCODE_TXT[opcode]
                              or CLIENT_OPCODE_TXT[opcode])
+end
+
+---@param opcode number
+local function update_last_opcode_stat(opcode)
+    local count = last_opcode_stat[opcode]
+    last_opcode_stat[opcode] = count and count + 1 or 1
+end
+
+---@return boolean false on 1st dissection pass
+local function is_last_subpacket()
+    return packet_count_cache[last_packet_number] and
+           last_subpacket_number == packet_count_cache[last_packet_number]
 end
 
 ---@param tvb Tvb
@@ -57,6 +80,8 @@ local function dissect(tvb, pinfo, tree)
         return 0
     end
 
+    last_subpacket_number = last_subpacket_number + 1
+
     local isserver = (pinfo.src_port == LOGIN_PORT)
     local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
 
@@ -65,14 +90,17 @@ local function dissect(tvb, pinfo, tree)
 
     local opcode_len = packet.opcode_len(payload, isserver)
     local opcode = packet.opcode(payload, opcode_len)
+    update_last_opcode_stat(opcode)
 
-    -- TODO do same as game
-    cmn.add_le(tree, pf.uint16, packet.length_tvbr(tvb), "Length", false)
+    local subtree = tree:add(lineage2login, tvb(),
+                             tostring(last_subpacket_number) .. ". " ..
+                             opcode_str(opcode, isserver))
+    cmn.add_le(subtree, pf.uint16, packet.length_tvbr(tvb), "Length", false)
 
     if isencrypted then
         local label = "Blowfish PK"
         local bf_pk_tvb = ByteArray.new(BLOWFISH_PK, true):tvb(label)
-        cmn.add_le(tree, pf.bytes, bf_pk_tvb(), label, true)
+        cmn.add_le(subtree, pf.bytes, bf_pk_tvb(), label, true)
     end
 
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
@@ -82,23 +110,29 @@ local function dissect(tvb, pinfo, tree)
 
     if opcode_tvbr then
         local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
-        cmn.add_be(tree, pf_opcode, opcode_tvbr, nil, isencrypted)
+        cmn.add_be(subtree, pf_opcode, opcode_tvbr, nil, isencrypted)
     end
 
     if data_tvbr then
-        local data_st = cmn.generated(tree:add(lineage2login, data_tvbr, "Data"),
+        local data_st = cmn.generated(subtree:add(lineage2login, data_tvbr, "Data"),
                                       isencrypted)
         local decode_data = isserver and decode_server_data or decode_client_data
         decode_data(data_st, opcode, data_tvbr, isencrypted)
     end
 
-    -- TODO use same algo as game
-    cmn.set_info_field(pinfo, isserver, isencrypted, opcode_str(opcode, isserver))
+    if is_last_subpacket() then
+        cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
+                                opcode_str)
+    end
 
     return tvb:len()
 end
 
 function lineage2login.init()
+    last_packet_number = nil
+    last_subpacket_number = 0
+    last_opcode_stat = {}
+    packet_count_cache = {}
 end
 
 ---@param tvb Tvb
@@ -107,6 +141,22 @@ end
 function lineage2login.dissector(tvb, pinfo, tree)
     pinfo.cols.protocol = lineage2login.name
     pinfo.cols.info = ""
+
+    if pinfo.number == last_packet_number then
+        if packet_count_cache[last_packet_number] and
+           packet_count_cache[last_packet_number] <= last_subpacket_number then
+            last_subpacket_number = 0
+        end
+    else
+        if last_packet_number and
+           packet_count_cache[last_packet_number] == nil then
+            packet_count_cache[last_packet_number] = last_subpacket_number
+        end
+
+        last_packet_number = pinfo.number
+        last_subpacket_number = 0
+        last_opcode_stat = {}
+    end
 
     local subtree = tree:add(lineage2login, tvb(), "Lineage2 Login Protocol")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
