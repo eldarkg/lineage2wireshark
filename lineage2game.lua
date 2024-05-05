@@ -182,18 +182,8 @@ local function dissect(tvb, pinfo, tree)
     end
 
     if is_last_subpacket() then
-        -- TODO move to common
-        local str = ""
-        for op, count in pairs(last_opcode_stat) do
-            if #str ~= 0 then
-                str = str .. ", "
-            end
-            str = str .. opcode_str(op, isserver)
-            if 1 < count then
-                str = str .. "(" .. count .. ")"
-            end
-        end
-        cmn.set_info_field(pinfo, isserver, isencrypted, str)
+        cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
+                                opcode_str)
     end
 
     return tvb:len()
