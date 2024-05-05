@@ -127,52 +127,49 @@ local function dissect(tvb, pinfo, tree)
 
     local isserver = (pinfo.src_port == GAME_PORT)
     local isencrypted = packet.is_encrypted_game_packet(tvb, isserver)
+
     local xor_key = isencrypted and process_xor_key_cache(isserver) or nil
-
-    local opcode_tvbr
-    local data_tvbr
+    if isencrypted and not xor_key then
+        return tvb:len()
+    end
+    local payload = isencrypted and xor.decrypt(packet.payload(tvb), xor_key)
+                                or packet.payload(tvb)
     if isencrypted then
-        if not xor_key then
-            return tvb:len()
-        end
-
-        local dec_payload = xor.decrypt(packet.payload(tvb), xor_key)
-        -- TODO move down
-        local dec_payload_tvb = ByteArray.tvb(dec_payload, "Decrypted")
-
-        opcode_tvbr = packet.opcode_tvbr(dec_payload_tvb(), isserver)
-        data_tvbr = packet.data_tvbr(dec_payload_tvb(), opcode_tvbr:len())
-    else
-        local payload_tvbr = packet.payload_tvbr(tvb)
-        opcode_tvbr = packet.opcode_tvbr(payload_tvbr, isserver)
-        data_tvbr = packet.data_tvbr(payload_tvbr, opcode_tvbr:len())
+        update_xor_key(payload:len(), isserver)
     end
 
-    local opcode = cmn.be(opcode_tvbr)
+    local opcode_len = packet.opcode_len(payload, isserver)
+    local opcode = packet.opcode(payload, opcode_len)
     update_last_opcode_stat(opcode)
 
     -- TODO only not in cache (flag). Check is isencrypted?
     if isserver and opcode == SERVER_OPCODE.KeyInit then
-        init_xor_keys(packet.xor_key(data_tvbr:bytes()))
+        init_xor_keys(packet.xor_key(packet.data(payload, opcode_len)))
     end
 
-    -- TODO before Decrypted in representation
     local subtree = tree:add(lineage2game, tvb(),
                              tostring(last_subpacket_number) .. ". " ..
                              opcode_str(opcode, isserver))
     cmn.add_le(subtree, pf.uint16, packet.length_tvbr(tvb), "Length", false)
+
     if isencrypted then
         local label = "XOR key"
         -- TODO make hidden
         local xor_key_tvb = xor_key:tvb(label)
-        cmn.add_le(subtree, pf.bytes, xor_key_tvb(), label, isencrypted)
+        cmn.add_le(subtree, pf.bytes, xor_key_tvb(), label, true)
     end
 
-    local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
-    cmn.add_be(subtree, pf_opcode, opcode_tvbr, nil, isencrypted)
+    local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
+                                     or packet.payload_tvbr(tvb)
+    local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
+    local data_tvbr = packet.data_tvbr(payload_tvbr, opcode_len)
+
+    if opcode_tvbr then
+        local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
+        cmn.add_be(subtree, pf_opcode, opcode_tvbr, nil, isencrypted)
+    end
 
     if data_tvbr then
-        -- TODO move dec_tvb here
         local data_st = cmn.generated(subtree:add(lineage2game, data_tvbr, "Data"),
                                       isencrypted)
         -- TODO decode_data call server or client by isserver
@@ -183,10 +180,6 @@ local function dissect(tvb, pinfo, tree)
     if is_last_subpacket() then
         cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
                                 opcode_str)
-    end
-
-    if isencrypted then
-        update_xor_key(packet.payload(tvb):len(), isserver)
     end
 
     return tvb:len()

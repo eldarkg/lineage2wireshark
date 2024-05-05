@@ -58,39 +58,36 @@ local function dissect(tvb, pinfo, tree)
     end
 
     local isserver = (pinfo.src_port == LOGIN_PORT)
-    local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
     local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
 
+    local payload = isencrypted and bf.decrypt(packet.payload(tvb), BLOWFISH_PK)
+                                or packet.payload(tvb)
+
+    local opcode_len = packet.opcode_len(payload, isserver)
+    local opcode = packet.opcode(payload, opcode_len)
+
+    -- TODO do same as game
     cmn.add_le(tree, pf.uint16, packet.length_tvbr(tvb), "Length", false)
 
     if isencrypted then
         local label = "Blowfish PK"
         local bf_pk_tvb = ByteArray.new(BLOWFISH_PK, true):tvb(label)
-        cmn.add_le(tree, pf.bytes, bf_pk_tvb(), label, isencrypted)
+        cmn.add_le(tree, pf.bytes, bf_pk_tvb(), label, true)
     end
 
-    local opcode_tvbr
-    local data_tvbr
-    if isencrypted then
-        local dec_payload = bf.decrypt(packet.payload(tvb), BLOWFISH_PK)
-        local dec_payload_tvb = ByteArray.tvb(dec_payload, "Decrypted")
+    local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
+                                     or packet.payload_tvbr(tvb)
+    local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
+    local data_tvbr = packet.data_tvbr(payload_tvbr, opcode_len)
 
-        opcode_tvbr = packet.opcode_tvbr(dec_payload_tvb(), isserver)
-        data_tvbr = packet.data_tvbr(dec_payload_tvb(), opcode_tvbr:len())
-    else
-        local payload_tvbr = packet.payload_tvbr(tvb)
-        opcode_tvbr = packet.opcode_tvbr(payload_tvbr, isserver)
-        data_tvbr = packet.data_tvbr(payload_tvbr, opcode_tvbr:len())
+    if opcode_tvbr then
+        local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
+        cmn.add_be(tree, pf_opcode, opcode_tvbr, nil, isencrypted)
     end
-
-    local opcode = cmn.be(opcode_tvbr)
-
-    cmn.add_be(tree, pf_opcode, opcode_tvbr, nil, isencrypted)
 
     if data_tvbr then
         local data_st = cmn.generated(tree:add(lineage2login, data_tvbr, "Data"),
                                       isencrypted)
-
         local decode_data = isserver and decode_server_data or decode_client_data
         decode_data(data_st, opcode, data_tvbr, isencrypted)
     end

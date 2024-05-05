@@ -3,7 +3,7 @@
     Author: Eldar Khayrullin
     Email: eldar.khayrullin@mail.ru
     Date: 2024
-    Description: packet
+    Description: Packet
 ]]--
 
 local LOGIN_SERVER_OPCODE = require("login.opcode.server").SERVER_OPCODE
@@ -57,7 +57,7 @@ end
 ---@param payload ByteArray Payload
 ---@param isserver boolean
 ---@return number
-local function opcode_length(payload, isserver)
+function _M.opcode_len(payload, isserver)
     local len = 1
     local opcode1 = payload:uint(OPCODE_PAYLOAD_OFFSET, len)
     -- TODO generate extended opcode1 list from *_OPCODE table
@@ -70,19 +70,19 @@ local function opcode_length(payload, isserver)
     end
     return len
 end
+
 ---@param tvbr TvbRange Payload
----@param isserver boolean
+---@param op_len number Opcode length
 ---@return TvbRange
-function _M.opcode_tvbr(tvbr, isserver)
-    return tvbr:range(OPCODE_PAYLOAD_OFFSET,
-                      opcode_length(tvbr:bytes(), isserver))
+function _M.opcode_tvbr(tvbr, op_len)
+    return tvbr:range(OPCODE_PAYLOAD_OFFSET, op_len)
 end
 
 ---@param payload ByteArray Payload
----@param isserver boolean
+---@param op_len number Opcode length
 ---@return number
-function _M.opcode(payload, isserver)
-    return payload:uint(OPCODE_PAYLOAD_OFFSET, opcode_length(payload, isserver))
+function _M.opcode(payload, op_len)
+    return payload:uint(OPCODE_PAYLOAD_OFFSET, op_len)
 end
 
 ---@param tvbr TvbRange Payload
@@ -90,6 +90,15 @@ end
 ---@return TvbRange
 function _M.data_tvbr(tvbr, op_len)
     return op_len < tvbr:len() and tvbr:range(op_len) or nil
+end
+
+---@param payload ByteArray Payload
+---@param op_len number Opcode length
+---@return ByteArray
+function _M.data(payload, op_len)
+    return op_len < payload:len()
+            and payload:subset(op_len, payload:len() - op_len)
+            or ByteArray.new()
 end
 
 ---@param data Tvb Data
@@ -110,7 +119,8 @@ end
 function _M.is_encrypted_login_packet(tvb, isserver)
     if isserver then
         local len = _M.length(tvb)
-        local opcode = _M.opcode(_M.payload_tvbr(tvb):bytes(), isserver)
+        local payload = _M.payload_tvbr(tvb):bytes()
+        local opcode = _M.opcode(payload, _M.opcode_len(payload, isserver))
         return not (len == 11 and opcode == LOGIN_SERVER_OPCODE.Init)
     else
         return true
@@ -122,7 +132,8 @@ end
 ---@return boolean
 function _M.is_encrypted_game_packet(tvb, isserver)
     local len = _M.length(tvb)
-    local opcode = _M.opcode(_M.payload_tvbr(tvb):bytes(), isserver)
+    local payload = _M.payload_tvbr(tvb):bytes()
+    local opcode = _M.opcode(payload, _M.opcode_len(payload, isserver))
     if isserver then
         return not (len == 16 and opcode == GAME_SERVER_OPCODE.KeyInit)
     else
