@@ -141,10 +141,11 @@ local function dissect(tvb, pinfo, tree)
         local dec_payload_tvb = ByteArray.tvb(dec_payload, "Decrypted")
 
         opcode_tvbr = packet.opcode_tvbr(dec_payload_tvb(), isserver)
-        data_tvbr = dec_payload_tvb(opcode_tvbr:len())
+        data_tvbr = packet.data_tvbr(dec_payload_tvb(), opcode_tvbr:len())
     else
-        opcode_tvbr = packet.opcode_tvbr(packet.payload_tvbr(tvb), isserver)
-        data_tvbr = packet.data_tvbr(tvb)
+        local payload_tvbr = packet.payload_tvbr(tvb)
+        opcode_tvbr = packet.opcode_tvbr(payload_tvbr, isserver)
+        data_tvbr = packet.data_tvbr(payload_tvbr, opcode_tvbr:len())
     end
 
     local opcode = cmn.be(opcode_tvbr)
@@ -170,20 +171,22 @@ local function dissect(tvb, pinfo, tree)
     local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
     cmn.add_be(subtree, pf_opcode, opcode_tvbr, nil, isencrypted)
 
-    -- TODO move dec_tvb here
-    local data_st = cmn.generated(subtree:add(lineage2game, data_tvbr, "Data"),
-                                  isencrypted)
-    -- TODO decode_data call server or client by isserver
-    local decode_data = isserver and decode_server_data or decode_client_data
-    decode_data(data_st, opcode, data_tvbr, isencrypted)
-
-    if isencrypted then
-        update_xor_key(packet.payload(tvb):len(), isserver)
+    if data_tvbr then
+        -- TODO move dec_tvb here
+        local data_st = cmn.generated(subtree:add(lineage2game, data_tvbr, "Data"),
+                                      isencrypted)
+        -- TODO decode_data call server or client by isserver
+        local decode_data = isserver and decode_server_data or decode_client_data
+        decode_data(data_st, opcode, data_tvbr, isencrypted)
     end
 
     if is_last_subpacket() then
         cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
                                 opcode_str)
+    end
+
+    if isencrypted then
+        update_xor_key(packet.payload(tvb):len(), isserver)
     end
 
     return tvb:len()

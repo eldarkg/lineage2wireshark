@@ -76,21 +76,24 @@ local function dissect(tvb, pinfo, tree)
         local dec_payload_tvb = ByteArray.tvb(dec_payload, "Decrypted")
 
         opcode_tvbr = packet.opcode_tvbr(dec_payload_tvb(), isserver)
-        data_tvbr = dec_payload_tvb(opcode_tvbr:len())
+        data_tvbr = packet.data_tvbr(dec_payload_tvb(), opcode_tvbr:len())
     else
-        opcode_tvbr = packet.opcode_tvbr(packet.payload_tvbr(tvb), isserver)
-        data_tvbr = packet.data_tvbr(tvb)
+        local payload_tvbr = packet.payload_tvbr(tvb)
+        opcode_tvbr = packet.opcode_tvbr(payload_tvbr, isserver)
+        data_tvbr = packet.data_tvbr(payload_tvbr, opcode_tvbr:len())
     end
+
+    local opcode = cmn.be(opcode_tvbr)
 
     cmn.add_be(tree, pf_opcode, opcode_tvbr, nil, isencrypted)
 
-    -- TODO move to tree
-    local data_st = cmn.generated(tree:add(lineage2login, data_tvbr, "Data"),
-                                  isencrypted)
+    if data_tvbr then
+        local data_st = cmn.generated(tree:add(lineage2login, data_tvbr, "Data"),
+                                      isencrypted)
 
-    local opcode = cmn.be(opcode_tvbr)
-    local decode_data = isserver and decode_server_data or decode_client_data
-    decode_data(data_st, opcode, data_tvbr, isencrypted)
+        local decode_data = isserver and decode_server_data or decode_client_data
+        decode_data(data_st, opcode, data_tvbr, isencrypted)
+    end
 
     -- TODO use same algo as game
     cmn.set_info_field(pinfo, isserver, isencrypted, opcode_str(opcode, isserver))

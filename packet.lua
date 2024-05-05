@@ -79,11 +79,11 @@ function _M.opcode(tvbr, isserver)
     return _M.opcode_tvbr(tvbr, isserver):uint()
 end
 
--- FIXME process long opcodes
----@param tvb Tvb
+---@param tvbr TvbRange Payload
+---@param op_len number Opcode length
 ---@return TvbRange
-function _M.data_tvbr(tvb)
-    return tvb(3)
+function _M.data_tvbr(tvbr, op_len)
+    return op_len < tvbr:len() and tvbr:range(op_len) or nil
 end
 
 ---@param data Tvb
@@ -117,7 +117,6 @@ end
 function _M.is_encrypted_game_packet(tvb, isserver)
     local len = _M.length(tvb)
     local opcode = _M.opcode(_M.payload_tvbr(tvb), isserver)
-    -- TODO check current *_xor_key for empty
     if isserver then
         return not (len == 16 and opcode == GAME_SERVER_OPCODE.KeyInit)
     else
