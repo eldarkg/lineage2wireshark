@@ -127,12 +127,12 @@ local function dissect(tvb, pinfo, tree)
 
     local isserver = (pinfo.src_port == GAME_PORT)
     local isencrypted = packet.is_encrypted_game_packet(tvb, isserver)
-    local xor_key = isencrypted and process_xor_key_cache(isserver) or ""
+    local xor_key = isencrypted and process_xor_key_cache(isserver) or nil
 
     local opcode_tvb
     local data_tvb
     if isencrypted then
-        if #xor_key == 0 then
+        if not xor_key then
             return tvb:len()
         end
 
