@@ -26,7 +26,7 @@ local _M = {}
 ---@param isencrypted boolean
 function _M.decode_server_data(tree, opcode, data, isencrypted)
     if opcode == SERVER_OPCODE.KeyInit then
-        cmn.add_le(tree, pf.bytes, packet.xor_key_tvb(data), "XOR key",
+        cmn.add_le(tree, pf.bytes, packet.xor_key_tvbr(data), "XOR key",
                    isencrypted)
     end
     -- TODO

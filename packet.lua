@@ -15,15 +15,15 @@ local _M = {}
 _M.HEADER_LEN = 2
 
 ---@param tvb Tvb
----@return Tvb
-function _M.length_tvb(tvb)
+---@return TvbRange
+function _M.length_tvbr(tvb)
     return tvb(0, _M.HEADER_LEN)
 end
 
 ---@param tvb Tvb
 ---@return number
 function _M.length(tvb)
-    return _M.length_tvb(tvb):le_uint()
+    return _M.length_tvbr(tvb):le_uint()
 end
 
 ---@param tvb Tvb
@@ -34,20 +34,21 @@ function _M.get_len(tvb, pinfo, offset)
 end
 
 ---@param tvb Tvb
----@return Tvb
-function _M.opcode_tvb(tvb)
-    return tvb(2, 1)
+---@return TvbRange
+function _M.opcode_tvbr(tvb)
+    return tvb(_M.HEADER_LEN, 1)
 end
 
 ---@param tvb Tvb
 ---@return number
 function _M.opcode(tvb)
-    return _M.opcode_tvb(tvb):le_uint()
+    return _M.opcode_tvbr(tvb):le_uint()
 end
 
+-- FIXME process long opcodes
 ---@param tvb Tvb
----@return Tvb
-function _M.data_tvb(tvb)
+---@return TvbRange
+function _M.data_tvbr(tvb)
     return tvb(3)
 end
 
@@ -58,21 +59,21 @@ function _M.encrypted_block(tvb)
 end
 
 ---@param data Tvb
----@return Tvb
-function _M.xor_key_tvb(data)
+---@return TvbRange
+function _M.xor_key_tvbr(data)
     return data(1, 4)
 end
 
 ---@param data Tvb
 ---@return string
 function _M.xor_key(data)
-    return _M.xor_key_tvb(data):bytes():raw()
+    return _M.xor_key_tvbr(data):bytes():raw()
 end
 
 ---@param tvb Tvb
 ---@param isserver boolean
 ---@return TvbRange
-function _M.decrypted_opcode_tvb(tvb, isserver)
+function _M.decrypted_opcode_tvbr(tvb, isserver)
     local opcode1 = tvb(0, 1):uint()
     local len = 1
     -- TODO generate extended opcode1 list from *_OPCODE table
@@ -91,7 +92,7 @@ end
 ---@param isserver boolean
 ---@return number
 function _M.decrypted_opcode(tvb, isserver)
-    return _M.decrypted_opcode_tvb(tvb, isserver):uint()
+    return _M.decrypted_opcode_tvbr(tvb, isserver):uint()
 end
 
 ---@param tvb Tvb

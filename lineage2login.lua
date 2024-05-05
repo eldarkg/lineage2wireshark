@@ -61,7 +61,7 @@ local function dissect(tvb, pinfo, tree)
     local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
     local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
 
-    cmn.add_le(tree, pf.uint16, packet.length_tvb(tvb), "Length", false)
+    cmn.add_le(tree, pf.uint16, packet.length_tvbr(tvb), "Length", false)
 
     if isencrypted then
         local label = "Blowfish PK"
@@ -69,29 +69,30 @@ local function dissect(tvb, pinfo, tree)
         cmn.add_le(tree, pf.bytes, bf_pk_tvb(), label, isencrypted)
     end
 
-    local opcode_tvb = nil
-    local data_tvb = nil
+    local opcode_tvbr
+    local data_tvbr
     if isencrypted then
         local dec = bf.decrypt(packet.encrypted_block(tvb), BLOWFISH_PK)
         local dec_tvb = ByteArray.tvb(ByteArray.new(dec, true), "Decrypted")
 
-        opcode_tvb = packet.decrypted_opcode_tvb(dec_tvb(), isserver)
-        data_tvb = dec_tvb(opcode_tvb:len())
+        opcode_tvbr = packet.decrypted_opcode_tvbr(dec_tvb(), isserver)
+        data_tvbr = dec_tvb(opcode_tvbr:len())
     else
-        opcode_tvb = packet.opcode_tvb(tvb)
-        data_tvb = packet.data_tvb(tvb)
+        opcode_tvbr = packet.opcode_tvbr(tvb)
+        data_tvbr = packet.data_tvbr(tvb)
     end
 
-    cmn.add_be(tree, pf_opcode, opcode_tvb, nil, isencrypted)
+    cmn.add_be(tree, pf_opcode, opcode_tvbr, nil, isencrypted)
 
     -- TODO move to tree
-    local data_st = cmn.generated(tree:add(lineage2login, data_tvb, "Data"),
+    local data_st = cmn.generated(tree:add(lineage2login, data_tvbr, "Data"),
                                   isencrypted)
 
-    local opcode = cmn.be(opcode_tvb)
+    local opcode = cmn.be(opcode_tvbr)
     local decode_data = isserver and decode_server_data or decode_client_data
-    decode_data(data_st, opcode, data_tvb, isencrypted)
+    decode_data(data_st, opcode, data_tvbr, isencrypted)
 
+    -- TODO use same algo as game
     cmn.set_info_field(pinfo, isserver, isencrypted, opcode_str(opcode, isserver))
 
     return tvb:len()
