@@ -25,10 +25,12 @@ local decode_client_data = require("login.decode.client").decode_client_data
 local SERVER_OPCODE_TXT = require("login.opcode.server").SERVER_OPCODE_TXT
 local CLIENT_OPCODE_TXT = require("login.opcode.client").CLIENT_OPCODE_TXT
 
--- TODO move to protocol preferences
-local LOGIN_PORT = 2106
-local BLOWFISH_PK =
-"\x64\x10\x30\x10\xAE\x06\x31\x10\x16\x95\x30\x10\x32\x65\x30\x10\x71\x44\x30\x10\x00"
+local DEFAULT_LOGIN_PORT = 2106
+local DEFAULT_BLOWFISH_PK_HEX =
+    "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
+
+local LOGIN_PORT = DEFAULT_LOGIN_PORT
+local BLOWFISH_PK = Struct.fromhex(DEFAULT_BLOWFISH_PK_HEX, " ")
 
 local lineage2login = Proto("lineage2login", "Lineage2 Login Protocol")
 lineage2login.fields = {
@@ -47,6 +49,12 @@ lineage2login.fields = {
     pf.play_fail_reason,
     pf.gg_auth_response,
 }
+lineage2login.prefs.login_port =
+    Pref.uint("Login server port", DEFAULT_LOGIN_PORT,
+              "Default: " .. tostring(DEFAULT_LOGIN_PORT))
+lineage2login.prefs.bf_pk_hex =
+    Pref.string("Blowfish private key", DEFAULT_BLOWFISH_PK_HEX,
+                "Default: " .. DEFAULT_BLOWFISH_PK_HEX)
 
 ---Init by lineage2login.init
 ---Last packet pinfo.number
@@ -140,6 +148,11 @@ function lineage2login.init()
     last_subpacket_number = 0
     last_opcode_stat = {}
     packet_count_cache = {}
+end
+
+function lineage2login.prefs_changed()
+    LOGIN_PORT = lineage2login.prefs.login_port
+    BLOWFISH_PK = Struct.fromhex(lineage2login.prefs.bf_pk_hex, " ")
 end
 
 ---@param tvb Tvb
