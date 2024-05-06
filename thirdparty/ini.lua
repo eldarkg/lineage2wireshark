@@ -37,29 +37,21 @@ local function convert(val)
     local str = tostring(val)
         :gsub('\'(.-)\'', '%1')
         :gsub('\"(.-)\"', '%1')
-    
+
     return str
 end
 
-local function file_read(path)
-    local fd = io.open(path, 'r')
-
-    if not io.type(fd) == 'file' then
-        return nil
-    end
-
-    local data = fd:read('*a')
-    fd:close()
-
-    return data
-end
-
--- Parse text-ini
-local function parse(str)
+-- Load and parse ini-file
+function ini.parse(file)
     local data = {}
     local section
 
-    for line in string.gmatch(str, '[^\n]+') do
+    for line in io.lines(file) do
+        line = line:match('[^\r\n]+')
+        if not line then
+            goto continue
+        end
+
         local comment = line:match('^[%#%;]')
         if comment then
             goto continue
@@ -68,9 +60,9 @@ local function parse(str)
         -- Add section
         local find_section = line:match('^%[(.+)%]$')
         if find_section then
-            -- Replace spaces 
+            -- Replace spaces
             find_section = find_section:gsub(' ', '_')
-            
+
             if not data[line] then
                 section = find_section
                 data[section] = {}
@@ -105,17 +97,6 @@ local function parse(str)
     end
 
     return data
-end
-
--- Load and parse ini-file
-function ini.parse(file)
-    local data = file_read(file)
-
-    if not data then
-        return nil
-    end
-
-    return parse(data)
 end
 
 -- Save ini-file
@@ -158,7 +139,7 @@ function ini.save(tbl, path)
 
     fd:write(global .. data)
     fd:close()
-    
+
     return true
 end
 
