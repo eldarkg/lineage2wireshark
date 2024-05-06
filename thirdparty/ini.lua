@@ -86,6 +86,10 @@ function ini.parse(file)
                 val = arr
             end
 
+            -- TODO variant
+            -- local key = tonumber(key) and "_" .. key or key
+            local keynum = tonumber(key, 16)
+            key = keynum and keynum or key
             if section then
                 data[section][key] = convert(val)
             else
