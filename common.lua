@@ -8,6 +8,12 @@
 
 local _M = {}
 
+---@param path string Relative path
+---@return string
+function _M.abs_path(path)
+    return Dir.personal_plugins_path() .. "/lineage2wireshark/" .. path
+end
+
 ---@param buf ByteArray|TvbRange
 ---@return number
 function _M.le(buf)
