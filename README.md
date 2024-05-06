@@ -24,6 +24,9 @@
 * luarocks
 * luacrypto2
 
+## Thirdparty
+* lua-ini (modified)
+
 ```shell
 sudo luarocks install luacrypto2
 ```
