@@ -83,8 +83,7 @@ local xor_key_cache
 ---@param isserver boolean
 ---@return string
 local function opcode_str(opcode, isserver)
-    return isserver and tostring(OPCODE_NAME.SERVER[opcode])
-                    or tostring(OPCODE_NAME.CLIENT[opcode])
+    return tostring(OPCODE_NAME[isserver and "server" or "client"][opcode])
 end
 
 ---@param isserver boolean
