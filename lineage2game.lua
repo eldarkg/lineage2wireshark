@@ -15,6 +15,7 @@ set_plugin_info({
 })
 
 local cmn = require("common")
+local decode = require("decode")
 local packet = require("packet")
 local pf = require("game.protofield")
 local xor = require("xor")
@@ -22,9 +23,9 @@ local xor = require("xor")
 local decode_server_data = require("game.decode.server").decode_server_data
 local decode_client_data = require("game.decode.client").decode_client_data
 
-local SERVER_OPCODE = require("game.opcode.server").SERVER_OPCODE
-local SERVER_OPCODE_TXT = require("game.opcode.server").SERVER_OPCODE_TXT
-local CLIENT_OPCODE_TXT = require("game.opcode.client").CLIENT_OPCODE_TXT
+-- TODO select protocol by preference
+decode.load(cmn.abs_path("content/packetsc5.ini"))
+local OPCODE_NAME = decode.OPCODE_NAME
 
 local DEFAULT_GAME_PORT = 7777
 local DEFAULT_STATIC_XOR_KEY_HEX = "A1 6C 54 87"
@@ -82,8 +83,8 @@ local xor_key_cache
 ---@param isserver boolean
 ---@return string
 local function opcode_str(opcode, isserver)
-    return isserver and tostring(SERVER_OPCODE_TXT[opcode])
-                    or tostring(CLIENT_OPCODE_TXT[opcode])
+    return isserver and tostring(OPCODE_NAME.SERVER[opcode])
+                    or tostring(OPCODE_NAME.CLIENT[opcode])
 end
 
 ---@param isserver boolean
@@ -146,7 +147,7 @@ local function dissect(tvb, pinfo, tree)
     last_subpacket_number = last_subpacket_number + 1
 
     local isserver = (pinfo.src_port == GAME_PORT)
-    local isencrypted = packet.is_encrypted_game_packet(tvb, isserver)
+    local isencrypted = packet.is_encrypted_game_packet(tvb, OPCODE_NAME, isserver)
 
     local xor_key = isencrypted and process_xor_key_cache(isserver) or nil
     if isencrypted and not xor_key then
@@ -163,7 +164,7 @@ local function dissect(tvb, pinfo, tree)
     update_last_opcode_stat(opcode)
 
     -- TODO only not in cache (flag). Check is isencrypted?
-    if isserver and opcode == SERVER_OPCODE.KeyInit then
+    if isserver and opcode_str(opcode, true) == "KeyInit" then
         init_xor_keys(packet.xor_key(packet.data(payload, opcode_len)))
     end
 

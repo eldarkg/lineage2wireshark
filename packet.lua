@@ -127,17 +127,21 @@ function _M.is_encrypted_login_packet(tvb, isserver)
     end
 end
 
+-- TODO take len and opcode_name as input instead tvb
 ---@param tvb Tvb Packet
+---@param opcode_name table
 ---@param isserver boolean
 ---@return boolean
-function _M.is_encrypted_game_packet(tvb, isserver)
+function _M.is_encrypted_game_packet(tvb, opcode_name, isserver)
+    -- TODO move to method: return len, opcode
     local len = _M.length(tvb)
     local payload = _M.payload_tvbr(tvb):bytes()
     local opcode = _M.opcode(payload, _M.opcode_len(payload, isserver))
+    -- TODO use len from content example packetsc5.ini
     if isserver then
-        return not (len == 16 and opcode == GAME_SERVER_OPCODE.KeyInit)
+        return not (len == 16 and opcode_name.SERVER[opcode] == "KeyInit")
     else
-        return not (len == 263 and opcode == GAME_CLIENT_OPCODE.ProtocolVersion)
+        return not (len == 263 and opcode_name.CLIENT[opcode] == "ProtocolVersion")
     end
 end
 

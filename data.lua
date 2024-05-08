@@ -21,43 +21,30 @@ function _M.load(path)
 end
 
 ---@param isserver boolean
----@return table opcode2name Key: opcode, Value: name
-function _M.opcode_names(isserver)
-    local tbl = {}
+---@return table names Opcode to name
+---@return table fmts Opcode to data format
+function _M.opcode_name_format(isserver)
+    local names = {}
+    local fmts = {}
+
     for opcode, desc in pairs(_M.packets[isserver and "server" or "client"]) do
-        local opname = desc:match("^(%w+):")
-        tbl[opcode] = opname
-    end
-    return tbl
-end
+        local opname = desc:match("^([%w_]+):")
+        names[opcode] = opname
 
----@param opcode number
----@param isserver boolean
----@return table
-function _M.data_format(opcode, isserver)
-    local desc = _M.packets[isserver and "server" or "client"][opcode]
-    local opname = desc:match("^(%w+):")
-    local fmt = desc:sub(#opname + 2)
+        local fmt_str = desc:sub(#opname + 2)
+        local fmt = {}
+        for typ, name, func in fmt_str:gmatch("(%a)%(([%w_]+):?(%g-)%)") do
+            local field = {}
+            field.type = typ
+            field.name = name
+            field.func = func
+            table.insert(fmt, field)
+        end
 
-    local data = {}
-    for typ, name, func in fmt:gmatch("(%a)%((%w+):?(%g-)%)") do
-        local field = {}
-        field.type = typ
-        field.name = name
-        field.func = func
-        table.insert(data, field)
+        fmts[opcode] = fmt
     end
 
-    return data
+    return names, fmts
 end
 
--- TODO TEST
--- _M.load("content/packetsc5.ini")
--- for key, value in pairs(_M.opcode_names(false)) do
---     print(key, value)
--- end
--- local fmt = _M.data_format(0x0C, true)
--- for index, value in ipairs(fmt) do
---     print(index, value.type, value.name, value.func)
--- end
 return _M
