@@ -32,16 +32,16 @@ function _M.opcode_name_format(isserver)
         names[opcode] = opname
 
         local fmt_str = desc:sub(#opname + 2)
-        local fmt = {}
+        local data_fmt = {}
         for typ, name, func in fmt_str:gmatch("(%a)%(([%w_]+):?(%g-)%)") do
-            local field = {}
-            field.type = typ
-            field.name = name
-            field.func = func
-            table.insert(fmt, field)
+            local field_fmt = {}
+            field_fmt.type = typ
+            field_fmt.name = name
+            field_fmt.func = func
+            table.insert(data_fmt, field_fmt)
         end
 
-        fmts[opcode] = fmt
+        fmts[opcode] = data_fmt
     end
 
     return names, fmts
