@@ -11,7 +11,6 @@ if not package.searchpath("data", package.path) then
     return
 end
 
-local cmn = require("common")
 local ini = require("thirdparty.ini")
 
 local _M = {}
