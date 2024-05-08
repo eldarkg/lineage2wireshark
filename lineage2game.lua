@@ -20,9 +20,6 @@ local packet = require("packet")
 local pf = require("game.protofield")
 local xor = require("xor")
 
-local decode_server_data = require("game.decode.server").decode_server_data
-local decode_client_data = require("game.decode.client").decode_client_data
-
 -- TODO select protocol by preference
 decode.load(cmn.abs_path("content/packetsc5.ini"))
 local OPCODE_NAME = decode.OPCODE_NAME
@@ -192,9 +189,7 @@ local function dissect(tvb, pinfo, tree)
     if data_tvbr then
         local data_st = cmn.generated(subtree:add(lineage2game, data_tvbr, "Data"),
                                       isencrypted)
-        -- TODO decode_data call server or client by isserver
-        local decode_data = isserver and decode_server_data or decode_client_data
-        decode_data(data_st, opcode, data_tvbr, isencrypted)
+        decode.decode(data_st, data_tvbr, opcode, isencrypted, isserver)
     end
 
     if is_last_subpacket() then
