@@ -64,25 +64,21 @@ function _M.opcode(tree, tvbr, isencrypted, isserver)
     end
 end
 
+-- TODO process field_fmt.action:
+-- for.{n} - repeat next n fields Count times (nocase)
+-- get.{term} - get description? (nocase)
+-- TODO use capital case for Hex values or field_fmt.action: Len.{n}?
+
 ---@param tree TreeItem
 ---@param tvbr TvbRange Data
----@param opcode number
+---@param data_fmt table Data format
 ---@param isencrypted boolean
----@param isserver boolean
-function _M.data(tree, tvbr, opcode, isencrypted, isserver)
-    local subtree = tree:add(tvbr, "Data")
-    if isencrypted then
-        subtree:set_generated()
-    end
-
-    local data_fmt = OPCODE_FMT[isserver and "server" or "client"][opcode]
+local function format(tree, tvbr, data_fmt, isencrypted)
+    -- local rep_scope
+    -- local rep_n
+    -- local rep_i
     local offset = 0
     for index, field_fmt in ipairs(data_fmt) do
-        -- TODO process field_fmt.func:
-        -- for.{n} - repeat next n fields Count times (nocase)
-        -- get.{term} - get description? (nocase)
-        -- TODO use capital case for Hex values or field_fmt.func: Len.{n}?
-        -- local len = 0 -- FIXME TEST
         local f
         local len
         local val
@@ -94,18 +90,22 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
         elseif typ == "c" then
             f = pf.u8
             len = 1
+            val = tvbr(offset, len):le_uint()
         elseif typ == "d" then
             f = pf.i32
             len = 4
+            val = tvbr(offset, len):le_int()
         elseif typ == "f" then
             f = pf.double
             len = 8
         elseif typ == "h" then
             f = pf.u16
             len = 2
+            val = tvbr(offset, len):le_uint()
         elseif typ == "q" then
             f = pf.i64
             len = 8
+            val = tvbr(offset, len):le_int64()
         elseif typ == "s" then
             f = pf.string
             val, len = tvbr(offset):le_ustringz()
@@ -124,16 +124,40 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
         end
 
         -- TODO select endian
-        local item = val and subtree:add_le(f, tvbr(offset, len), val)
-                         or subtree:add_le(f, tvbr(offset, len))
+        local item = val and tree:add_le(f, tvbr(offset, len), val)
+                         or tree:add_le(f, tvbr(offset, len))
         item:prepend_text(field_fmt.name)
         -- TODO show hex for number types too
         if isencrypted then
             item:set_generated()
         end
 
+        local act = field_fmt.action
+        if act == "for" then
+            -- rep_scope = tonumber(field_fmt.param, 10)
+            -- rep_i = 0
+            -- rep_n = val
+        elseif act == "get" then
+            print("Not implemented: get")
+        end
+
         offset = offset + len
     end
+end
+
+---@param tree TreeItem
+---@param tvbr TvbRange Data
+---@param opcode number
+---@param isencrypted boolean
+---@param isserver boolean
+function _M.data(tree, tvbr, opcode, isencrypted, isserver)
+    local subtree = tree:add(tvbr, "Data")
+    if isencrypted then
+        subtree:set_generated()
+    end
+
+    local data_fmt = OPCODE_FMT[isserver and "server" or "client"][opcode]
+    format(subtree, tvbr, data_fmt, isencrypted)
 end
 
 return _M
