@@ -31,7 +31,7 @@ end
 ---@param opcode number
 ---@param isencrypted boolean
 ---@param isserver boolean
-function _M.decode(tree, data, opcode, isencrypted, isserver)
+function _M.data(tree, data, opcode, isencrypted, isserver)
     local data_fmt = OPCODE_FMT[isserver and "server" or "client"][opcode]
     local offset = 0
     for index, field_fmt in ipairs(data_fmt) do

@@ -181,18 +181,18 @@ local function dissect(tvb, pinfo, tree)
 
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
                                      or packet.payload_tvbr(tvb)
-    local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
-    local data_tvbr = packet.data_tvbr(payload_tvbr, opcode_len)
 
+    local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
     if opcode_tvbr then
         local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
         cmn.add_be(subtree, pf_opcode, opcode_tvbr, nil, isencrypted)
     end
 
+    local data_tvbr = packet.data_tvbr(payload_tvbr, opcode_len)
     if data_tvbr then
         local data_st = cmn.generated(subtree:add(lineage2game, data_tvbr, "Data"),
                                       isencrypted)
-        decode.decode(data_st, data_tvbr, opcode, isencrypted, isserver)
+        decode.data(data_st, data_tvbr, opcode, isencrypted, isserver)
     end
 
     if is_last_subpacket() then
