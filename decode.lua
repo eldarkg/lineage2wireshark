@@ -79,8 +79,9 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
     local offset = 0
     for index, field_fmt in ipairs(data_fmt) do
         -- TODO process field_fmt.func:
-        -- For.{n} - repeat next n fields Count times
-        -- Get.{term} - get description?
+        -- for.{n} - repeat next n fields Count times (nocase)
+        -- get.{term} - get description? (nocase)
+        -- TODO use capital case for Hex values or field_fmt.func: Len.{n}?
         -- local len = 0 -- FIXME TEST
         local f
         local len
