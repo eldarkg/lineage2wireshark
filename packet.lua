@@ -7,8 +7,6 @@
 ]]--
 
 local LOGIN_SERVER_OPCODE = require("login.opcode.server").SERVER_OPCODE
-local GAME_SERVER_OPCODE = require("game.opcode.server").SERVER_OPCODE
-local GAME_CLIENT_OPCODE = require("game.opcode.client").CLIENT_OPCODE
 
 local _M = {}
 

@@ -27,9 +27,9 @@ function _M.init(path)
     pf.init(_M.OPCODE_NAME)
     _M.PF = {
         pf.bytes,
-        pf.uint8,
-        pf.uint16,
-        pf.uint32,
+        pf.u8,
+        pf.u16,
+        pf.u32,
         pf.double,
         pf.string,
         pf.server_opcode,
@@ -40,7 +40,7 @@ end
 ---@param tree TreeItem
 ---@param tvbr TvbRange Length
 function _M.length(tree, tvbr)
-    tree:add_le(pf.uint16, tvbr):prepend_text("Length")
+    tree:add_le(pf.u16, tvbr):prepend_text("Length")
 end
 
 ---@param tree TreeItem
@@ -88,18 +88,18 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
             len = -1
         elseif typ == "c" then
             -- TODO sign?
-            f = pf.uint8
+            f = pf.u8
             len = 1
         elseif typ == "d" then
             -- TODO sign?
-            f = pf.uint32
+            f = pf.u32
             len = 4
         elseif typ == "f" then
             f = pf.double
             len = 8
         elseif typ == "h" then
             -- TODO sign?
-            f = pf.uint16
+            f = pf.u16
             len = 2
         elseif typ == "q" then
             -- TODO check
