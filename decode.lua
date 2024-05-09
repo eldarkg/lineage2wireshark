@@ -27,6 +27,20 @@ function _M.init(path)
 end
 
 ---@param tree TreeItem
+---@param tvbr TvbRange Length
+function _M.length(tree, tvbr)
+    tree:add_le(pf.uint16, tvbr):prepend_text("Length")
+end
+
+---@param tree TreeItem
+---@param data ByteArray
+---@param label string
+function _M.bytes(tree, data, label)
+    local data_tvb = data:tvb(label)
+    tree:add_le(pf.bytes, data_tvb()):prepend_text(label):set_generated()
+end
+
+---@param tree TreeItem
 ---@param tvbr TvbRange Opcode
 ---@param isencrypted boolean
 ---@param isserver boolean
@@ -44,6 +58,11 @@ end
 ---@param isencrypted boolean
 ---@param isserver boolean
 function _M.data(tree, tvbr, opcode, isencrypted, isserver)
+    local subtree = tree:add(tvbr, "Data")
+    if isencrypted then
+        subtree:set_generated()
+    end
+
     local data_fmt = OPCODE_FMT[isserver and "server" or "client"][opcode]
     local offset = 0
     for index, field_fmt in ipairs(data_fmt) do
@@ -92,8 +111,8 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
         end
 
         -- TODO select endian
-        local item = val and tree:add_le(f, tvbr(offset, len), val)
-                         or tree:add_le(f, tvbr(offset, len))
+        local item = val and subtree:add_le(f, tvbr(offset, len), val)
+                         or subtree:add_le(f, tvbr(offset, len))
         item:prepend_text(field_fmt.name)
         if isencrypted then
             item:set_generated()

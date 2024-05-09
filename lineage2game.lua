@@ -170,13 +170,11 @@ local function dissect(tvb, pinfo, tree)
     local subtree = tree:add(lineage2game, tvb(),
                              tostring(last_subpacket_number) .. ". " ..
                              opcode_str(opcode, isserver))
-    cmn.add_le(subtree, pf.uint16, packet.length_tvbr(tvb), "Length", false)
+
+    decode.length(subtree, packet.length_tvbr(tvb))
 
     if xor_key then
-        local label = "XOR key"
-        -- TODO make hidden
-        local xor_key_tvb = xor_key:tvb(label)
-        cmn.add_le(subtree, pf.bytes, xor_key_tvb(), label, true)
+        decode.bytes(subtree, xor_key, "XOR key")
     end
 
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
@@ -189,10 +187,7 @@ local function dissect(tvb, pinfo, tree)
 
     local data_tvbr = packet.data_tvbr(payload_tvbr, opcode_len)
     if data_tvbr then
-        -- TODO refactor
-        local data_st = cmn.generated(subtree:add(lineage2game, data_tvbr, "Data"),
-                                      isencrypted)
-        decode.data(data_st, data_tvbr, opcode, isencrypted, isserver)
+        decode.data(subtree, data_tvbr, opcode, isencrypted, isserver)
     end
 
     if is_last_subpacket() then
