@@ -19,7 +19,7 @@ local _M = {}
 local OPCODE_FMT = {}
 
 ---@param path string
-function _M.load(path)
+function _M.init(path)
     data.load(path)
     _M.OPCODE_NAME = {}
     _M.OPCODE_NAME.server, OPCODE_FMT.server = data.opcode_name_format(true)

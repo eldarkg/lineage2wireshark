@@ -21,7 +21,7 @@ local pf = require("game.protofield")
 local xor = require("xor")
 
 -- TODO select protocol by preference
-decode.load(cmn.abs_path("content/packetsc5.ini"))
+decode.init(cmn.abs_path("content/packetsc5.ini"))
 local OPCODE_NAME = decode.OPCODE_NAME
 
 local DEFAULT_GAME_PORT = 7777
