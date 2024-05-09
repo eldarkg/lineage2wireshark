@@ -36,8 +36,11 @@ local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 lineage2game.fields = {
     pf.bytes,
+    pf.uint8,
     pf.uint16,
     pf.uint32,
+    pf.double,
+    pf.string,
     pf.server_opcode,
     pf.client_opcode,
 }
