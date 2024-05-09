@@ -114,7 +114,6 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
             len = -1 -- TODO take remains len
         elseif typ == "-" then
             -- TODO check (script)
-            print("-")
             f = pf.string
             len = -1
         else
