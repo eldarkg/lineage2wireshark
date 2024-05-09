@@ -69,58 +69,79 @@ end
 -- get.{term} - get description? (nocase)
 -- TODO use capital case for Hex values or field_fmt.action: Len.{n}?
 
+-- FIXME !!! number replace with integer (every place)
+
+---@param tvbr TvbRange Field data
+---@param type string Field format type
+---@return ProtoField f
+---@return integer len
+---@return any val
+local function parse_field(tvbr, type)
+    local f
+    local len
+    local val
+
+    if type == "b" then
+        -- TODO check (bitmap)
+        f = pf.bytes
+        len = -1
+    elseif type == "c" then
+        f = pf.u8
+        len = 1
+        val = tvbr(0, len):le_uint()
+    elseif type == "d" then
+        f = pf.i32
+        len = 4
+        val = tvbr(0, len):le_int()
+    elseif type == "f" then
+        f = pf.double
+        len = 8
+    elseif type == "h" then
+        f = pf.u16
+        len = 2
+        val = tvbr(0, len):le_uint()
+    elseif type == "q" then
+        f = pf.i64
+        len = 8
+        val = tvbr(0, len):le_int64()
+    elseif type == "s" then
+        f = pf.string
+        val, len = tvbr:le_ustringz()
+    elseif type == "z" then
+        f = pf.bytes
+        -- TODO check
+        len = -1 -- TODO take remains len
+    elseif type == "-" then
+        -- TODO check (script)
+        f = pf.string
+        len = -1
+    else
+        -- TODO error
+        print("Unknown type")
+    end
+
+    return f, len, val
+end
+
 ---@param tree TreeItem
 ---@param tvbr TvbRange Data
 ---@param data_fmt table Data format
 ---@param isencrypted boolean
-local function format(tree, tvbr, data_fmt, isencrypted)
-    -- local rep_scope
-    -- local rep_n
-    -- local rep_i
+---@return integer offset Data offset
+local function decode_data(tree, tvbr, data_fmt, isencrypted)
     local offset = 0
-    for index, field_fmt in ipairs(data_fmt) do
+    local i = 1
+    while i <= #data_fmt do
+        local field_fmt = data_fmt[i]
+
         local f
         local len
         local val
-        local typ = field_fmt.type
-        if typ == "b" then
-            -- TODO check (bitmap)
-            f = pf.bytes
-            len = -1
-        elseif typ == "c" then
-            f = pf.u8
-            len = 1
-            val = tvbr(offset, len):le_uint()
-        elseif typ == "d" then
-            f = pf.i32
-            len = 4
-            val = tvbr(offset, len):le_int()
-        elseif typ == "f" then
-            f = pf.double
-            len = 8
-        elseif typ == "h" then
-            f = pf.u16
-            len = 2
-            val = tvbr(offset, len):le_uint()
-        elseif typ == "q" then
-            f = pf.i64
-            len = 8
-            val = tvbr(offset, len):le_int64()
-        elseif typ == "s" then
-            f = pf.string
-            val, len = tvbr(offset):le_ustringz()
-        elseif typ == "z" then
-            f = pf.bytes
-            -- TODO check
-            len = -1 -- TODO take remains len
-        elseif typ == "-" then
-            -- TODO check (script)
-            f = pf.string
-            len = -1
-        else
-            -- TODO error
-            print("Unknown type")
-            break
+        f, len, val = parse_field(tvbr(offset), field_fmt.type)
+
+        local act = field_fmt.action
+        if act == "get" then
+            print("Not implemented: get")
         end
 
         -- TODO select endian
@@ -132,17 +153,28 @@ local function format(tree, tvbr, data_fmt, isencrypted)
             item:set_generated()
         end
 
-        local act = field_fmt.action
+        -- FIXME make work
         if act == "for" then
-            -- rep_scope = tonumber(field_fmt.param, 10)
-            -- rep_i = 0
-            -- rep_n = val
-        elseif act == "get" then
-            print("Not implemented: get")
-        end
+            local iend = i + tonumber(field_fmt.param, 10)
 
-        offset = offset + len
+            for j = 1, val, 1 do
+                local subtree = tree:add(tvbr, tostring(j))
+                if isencrypted then
+                    subtree:set_generated()
+                end
+                offset = offset + decode_data(subtree, tvbr(offset),
+                                              {data_fmt:unpack(i + 1, iend)},
+                                              isencrypted)
+            end
+
+            i = iend + 1
+        else
+            offset = offset + len
+            i = i + 1
+        end
     end
+
+    return offset
 end
 
 ---@param tree TreeItem
@@ -157,7 +189,7 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
     end
 
     local data_fmt = OPCODE_FMT[isserver and "server" or "client"][opcode]
-    format(subtree, tvbr, data_fmt, isencrypted)
+    decode_data(subtree, tvbr, data_fmt, isencrypted)
 end
 
 return _M
