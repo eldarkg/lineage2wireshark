@@ -12,7 +12,6 @@ if not package.searchpath("decode", package.path) then
 end
 
 local data = require("data")
--- TODO set from load
 local pf = require("game.protofield")
 
 local _M = {}
@@ -24,6 +23,18 @@ function _M.init(path)
     _M.OPCODE_NAME = {}
     _M.OPCODE_NAME.server, OPCODE_FMT.server = data.opcode_name_format(true)
     _M.OPCODE_NAME.client, OPCODE_FMT.client = data.opcode_name_format(false)
+
+    pf.init(_M.OPCODE_NAME)
+    _M.PF = {
+        pf.bytes,
+        pf.uint8,
+        pf.uint16,
+        pf.uint32,
+        pf.double,
+        pf.string,
+        pf.server_opcode,
+        pf.client_opcode,
+    }
 end
 
 ---@param tree TreeItem

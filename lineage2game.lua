@@ -17,7 +17,6 @@ set_plugin_info({
 local cmn = require("common")
 local decode = require("decode")
 local packet = require("packet")
-local pf = require("game.protofield")
 local xor = require("xor")
 
 -- TODO select protocol by preference
@@ -34,16 +33,7 @@ local INIT_SERVER_XOR_KEY = ByteArray.new("00 00 00 00")
 local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
-lineage2game.fields = {
-    pf.bytes,
-    pf.uint8,
-    pf.uint16,
-    pf.uint32,
-    pf.double,
-    pf.string,
-    pf.server_opcode,
-    pf.client_opcode,
-}
+lineage2game.fields = decode.PF
 lineage2game.prefs.game_port =
     Pref.uint("Game server port", DEFAULT_GAME_PORT,
               "Default: " .. DEFAULT_GAME_PORT)
