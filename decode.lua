@@ -29,7 +29,8 @@ function _M.init(path)
         pf.bytes,
         pf.u8,
         pf.u16,
-        pf.u32,
+        pf.i32,
+        pf.i64,
         pf.double,
         pf.string,
         pf.server_opcode,
@@ -77,6 +78,9 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
     local data_fmt = OPCODE_FMT[isserver and "server" or "client"][opcode]
     local offset = 0
     for index, field_fmt in ipairs(data_fmt) do
+        -- TODO process field_fmt.func:
+        -- For.{n} - repeat next n fields Count times
+        -- Get.{term} - get description?
         -- local len = 0 -- FIXME TEST
         local f
         local len
@@ -87,24 +91,20 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
             f = pf.bytes
             len = -1
         elseif typ == "c" then
-            -- TODO sign?
             f = pf.u8
             len = 1
         elseif typ == "d" then
-            -- TODO sign?
-            f = pf.u32
+            f = pf.i32
             len = 4
         elseif typ == "f" then
             f = pf.double
             len = 8
         elseif typ == "h" then
-            -- TODO sign?
             f = pf.u16
             len = 2
         elseif typ == "q" then
-            -- TODO check
-            f = pf.bytes
-            len = 4
+            f = pf.i64
+            len = 8
         elseif typ == "s" then
             f = pf.string
             val, len = tvbr(offset):le_ustringz()
@@ -117,13 +117,16 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
             f = pf.string
             len = -1
         else
-            break -- TODO error
+            -- TODO error
+            print("Unknown type")
+            break
         end
 
         -- TODO select endian
         local item = val and subtree:add_le(f, tvbr(offset, len), val)
                          or subtree:add_le(f, tvbr(offset, len))
         item:prepend_text(field_fmt.name)
+        -- TODO show hex for number types too
         if isencrypted then
             item:set_generated()
         end
