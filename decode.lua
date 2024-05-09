@@ -153,25 +153,25 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
             item:set_generated()
         end
 
-        -- FIXME make work
+        offset = offset + len
+
         if act == "for" then
             local iend = i + tonumber(field_fmt.param, 10)
-
             for j = 1, val, 1 do
-                local subtree = tree:add(tvbr, tostring(j))
+                local subtree = tree:add(tvbr(offset), tostring(j))
                 if isencrypted then
                     subtree:set_generated()
                 end
-                offset = offset + decode_data(subtree, tvbr(offset),
-                                              {data_fmt:unpack(i + 1, iend)},
-                                              isencrypted)
+                offset = offset +
+                         decode_data(subtree, tvbr(offset),
+                                     {table.unpack(data_fmt, i + 1, iend)},
+                                     isencrypted)
             end
 
-            i = iend + 1
-        else
-            offset = offset + len
-            i = i + 1
+            i = iend
         end
+
+        i = i + 1
     end
 
     return offset
