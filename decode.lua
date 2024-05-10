@@ -15,6 +15,8 @@ local data = require("data")
 local pe = require("game.protoexpert")
 local pf = require("game.protofield")
 
+local ICON_SIZE_LEN = 4
+
 local _M = {}
 local OPCODE_FMT = {}
 
@@ -82,9 +84,11 @@ end
 ---@param len integer
 ---@return any val
 ---@return integer len Refined length
-local function get_value(tvbr, type, len)
+local function get_value_len(tvbr, type, len)
     local val
-    if type == "c" then
+    if type == "b" then
+        len = tvbr(0, len):le_uint()
+    elseif type == "c" then
         val = tvbr(0, len):le_uint()
     elseif type == "d" then
         val = tvbr(0, len):le_int()
@@ -110,9 +114,8 @@ local function parse_field(tvbr, fmt)
 
     local type = fmt.type
     if type == "b" then
-        -- TODO check (bitmap)
         f = pf.bytes
-        len = -1
+        len = ICON_SIZE_LEN
     elseif type == "c" then
         f = pf.u8
         len = 1
@@ -130,7 +133,7 @@ local function parse_field(tvbr, fmt)
         len = 8
     elseif type == "s" then
         f = pf.string
-        len = 2 -- min len of empty unicode string
+        len = 2 -- min length of empty unicode string
     elseif type == "z" then
         f = pf.bytes
         local s = fmt.name:match("(%d+)")
@@ -148,7 +151,7 @@ local function parse_field(tvbr, fmt)
 
     if len then
         if len <= tvbr:len() then
-            val, len = get_value(tvbr, type, len)
+            val, len = get_value_len(tvbr, type, len)
         else
             len = nil
         end
@@ -189,6 +192,21 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
         if act == "get" then
             -- TODO process field_fmt.action:
             -- get.{term} - get description? (nocase)
+        end
+
+        if field_fmt.type == "b" then
+            local item = tree:add_le(pf.i32, tvbr(offset, ICON_SIZE_LEN))
+            item:prepend_text("Icon size")
+            if isencrypted then
+                item:set_generated()
+            end
+            offset = offset + ICON_SIZE_LEN
+
+            if tvbr:len() < offset + len then
+                tree:add_proto_expert_info(pe.undecoded, "incomplete icon \"" ..
+                                           field_fmt.name .. "\"")
+                return nil
+            end
         end
 
         -- TODO select endian
