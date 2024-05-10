@@ -140,7 +140,7 @@ local function parse_field(tvbr, fmt)
         len = tonumber(s, 10)
     elseif type == "-" then
         -- TODO check (script)
-        f = pf.string
+        f = pf.bytes
         len = -1
     else
         len = tonumber(type, 10)
