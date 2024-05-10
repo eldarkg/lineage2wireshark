@@ -34,6 +34,7 @@ local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 lineage2game.fields = decode.PF
+lineage2game.experts = decode.PE
 lineage2game.prefs.game_port =
     Pref.uint("Game server port", DEFAULT_GAME_PORT,
               "Default: " .. DEFAULT_GAME_PORT)
@@ -173,12 +174,12 @@ local function dissect(tvb, pinfo, tree)
     local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
     if opcode_tvbr then
         decode.opcode(subtree, opcode_tvbr, isencrypted, isserver)
-    end
 
-    -- TODO simple packet.data_tvbr, opcode_len = 1 always
-    local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
-    if data_tvbr then
-        decode.data(subtree, data_tvbr, opcode, isencrypted, isserver)
+        -- TODO simple packet.data_tvbr, opcode_len = 1 always
+        local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
+        if data_tvbr then
+            decode.data(subtree, data_tvbr, opcode, isencrypted, isserver)
+        end
     end
 
     if is_last_subpacket() then

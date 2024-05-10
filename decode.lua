@@ -12,11 +12,14 @@ if not package.searchpath("decode", package.path) then
 end
 
 local data = require("data")
+-- TODO instead init input Proto to set fields and experts
+local pe = require("game.protoexpert")
 local pf = require("game.protofield")
 
 local _M = {}
 local OPCODE_FMT = {}
 
+-- TODO input Proto to set fields and experts
 ---@param path string
 function _M.init(path)
     data.load(path)
@@ -35,6 +38,10 @@ function _M.init(path)
         pf.string,
         pf.server_opcode,
         pf.client_opcode,
+    }
+
+    _M.PE = {
+        pe.undecoded
     }
 end
 
@@ -56,12 +63,14 @@ end
 ---@param tvbr TvbRange Opcode
 ---@param isencrypted boolean
 ---@param isserver boolean
+---@return TreeItem item
 function _M.opcode(tree, tvbr, isencrypted, isserver)
     local f = isserver and pf.server_opcode or pf.client_opcode
     local item = tree:add(f, tvbr(offset, len))
     if isencrypted then
         item:set_generated()
     end
+    return item
 end
 
 -- TODO process field_fmt.action:
@@ -72,9 +81,30 @@ end
 -- FIXME !!! number replace with integer (every place)
 
 ---@param tvbr TvbRange Field data
+---@param type string Field type
+---@param len integer
+---@return any val
+---@return integer len Refined length
+local function get_value(tvbr, type, len)
+    local val
+    if type == "c" then
+        val = tvbr(0, len):le_uint()
+    elseif type == "d" then
+        val = tvbr(0, len):le_int()
+    elseif type == "h" then
+        val = tvbr(0, len):le_uint()
+    elseif type == "q" then
+        val = tvbr(0, len):le_int64()
+    elseif type == "s" then
+        val, len = tvbr:le_ustringz()
+    end
+    return val, len
+end
+
+---@param tvbr TvbRange Field data
 ---@param fmt table Field format
 ---@return ProtoField f
----@return integer len
+---@return integer|nil len Length. nil - memory range is out of bounds
 ---@return any val
 local function parse_field(tvbr, fmt)
     local f
@@ -89,25 +119,21 @@ local function parse_field(tvbr, fmt)
     elseif type == "c" then
         f = pf.u8
         len = 1
-        val = tvbr(0, len):le_uint()
     elseif type == "d" then
         f = pf.i32
         len = 4
-        val = tvbr(0, len):le_int()
     elseif type == "f" then
         f = pf.double
         len = 8
     elseif type == "h" then
         f = pf.u16
         len = 2
-        val = tvbr(0, len):le_uint()
     elseif type == "q" then
         f = pf.i64
         len = 8
-        val = tvbr(0, len):le_int64()
     elseif type == "s" then
         f = pf.string
-        val, len = tvbr:le_ustringz()
+        len = 2 -- min len of empty unicode string
     elseif type == "z" then
         f = pf.bytes
         local s = fmt.name:match("(%d+)")
@@ -126,6 +152,12 @@ local function parse_field(tvbr, fmt)
         end
     end
 
+    if len <= tvbr:len() then
+        val, len = get_value(tvbr, type, len)
+    else
+        len = nil
+    end
+
     return f, len, val
 end
 
@@ -133,21 +165,32 @@ end
 ---@param tvbr TvbRange Data
 ---@param data_fmt table Data format
 ---@param isencrypted boolean
----@return integer offset Data offset
+---@return integer|nil len Decode length. nil - memory range is out of bounds
 local function decode_data(tree, tvbr, data_fmt, isencrypted)
     local offset = 0
     local i = 1
     while i <= #data_fmt do
         local field_fmt = data_fmt[i]
 
+        if tvbr:len() <= offset then
+            tree:add_proto_expert_info(pe.undecoded, "not found field \"" ..
+                                       field_fmt.name .. "\"")
+            return nil
+        end
+
         local f
         local len
         local val
         f, len, val = parse_field(tvbr(offset), field_fmt)
+        if not len then
+            tree:add_proto_expert_info(pe.undecoded, "parse field \"" ..
+                                       field_fmt.name .. "\"")
+            return nil
+        end
 
         local act = field_fmt.action
         if act == "get" then
-            print("Not implemented: get")
+            -- print("Not implemented: get")
         end
 
         -- TODO select endian
@@ -164,14 +207,25 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
         if act == "for" then
             local iend = i + tonumber(field_fmt.param, 10)
             for j = 1, val, 1 do
+                if tvbr:len() <= offset then
+                    tree:add_proto_expert_info(pe.undecoded,
+                                        "not found repeat #" .. tostring(j) ..
+                                        " of group " .. field_fmt.name)
+                    return nil
+                end
+
                 local subtree = tree:add(tvbr(offset), tostring(j))
                 if isencrypted then
                     subtree:set_generated()
                 end
-                offset = offset +
-                         decode_data(subtree, tvbr(offset),
-                                     {table.unpack(data_fmt, i + 1, iend)},
-                                     isencrypted)
+
+                len = decode_data(subtree, tvbr(offset),
+                                  {table.unpack(data_fmt, i + 1, iend)},
+                                  isencrypted)
+                if not len then
+                    return nil
+                end
+                offset = offset + len
             end
 
             i = iend
@@ -188,6 +242,7 @@ end
 ---@param opcode integer
 ---@param isencrypted boolean
 ---@param isserver boolean
+---@return integer|nil len Decode length. nil - error
 function _M.data(tree, tvbr, opcode, isencrypted, isserver)
     local subtree = tree:add(tvbr, "Data")
     if isencrypted then
@@ -196,9 +251,11 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
 
     local data_fmt = OPCODE_FMT[isserver and "server" or "client"][opcode]
     if data_fmt then
-        decode_data(subtree, tvbr, data_fmt, isencrypted)
+        return decode_data(subtree, tvbr, data_fmt, isencrypted)
     else
+        -- TODO use experts
         print("decode.data: unknown opcode format")
+        return nil
     end
 end
 
