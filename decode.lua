@@ -250,8 +250,8 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
     if data_fmt then
         return decode_data(subtree, tvbr, data_fmt, isencrypted)
     else
-        tree:add_proto_expert_info(pe.unk_opcode, "not found field \"" ..
-                                    field_fmt.name .. "\"")
+        tree:add_proto_expert_info(pe.unk_opcode, "unknown opcode \"" ..
+                                   string.format("0x%X", opcode) .. "\"")
         return nil
     end
 end

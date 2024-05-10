@@ -15,7 +15,7 @@ local _M = {}
 
 _M.undecoded = ProtoExpert.new("undecoded", "Decode error",
                                expert.group.UNDECODED, expert.severity.ERROR)
-_M.unk_opcode = ProtoExpert.new("unk_opcode", "Unknown Opcode",
+_M.unk_opcode = ProtoExpert.new("unknown_opcode", "Unknown Opcode",
                                 expert.group.UNDECODED, expert.severity.ERROR)
 
 return _M
