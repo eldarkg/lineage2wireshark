@@ -34,7 +34,7 @@ function _M.opcode_name_format(isserver)
         local fmt_str = desc:sub(#opname + 2)
         local data_fmt = {}
         for typ, name, action, param
-            in fmt_str:gmatch("([%a-])%(([^:)]+):?([^.)]-)%.?([^.]-)%)") do
+            in fmt_str:gmatch("([%w-]+)%(([^:)]+):?([^.)]-)%.?([^.]-)%)") do
 
             local field_fmt = {}
             field_fmt.type = typ

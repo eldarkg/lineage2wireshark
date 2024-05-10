@@ -116,8 +116,13 @@ local function parse_field(tvbr, type)
         f = pf.string
         len = -1
     else
-        -- TODO error
-        print("Unknown type")
+        len = tonumber(type, 10)
+        if len then
+            f = pf.bytes
+        else
+            -- TODO error
+            print("Unknown type")
+        end
     end
 
     return f, len, val
