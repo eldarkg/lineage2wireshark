@@ -52,7 +52,7 @@ function ini.parse(file)
             goto continue
         end
 
-        local comment = line:match('^[%#%;%/]')
+        local comment = line:match('^[%#%;]')
         if comment then
             goto continue
         end
