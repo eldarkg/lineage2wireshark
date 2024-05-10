@@ -195,7 +195,11 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
     end
 
     local data_fmt = OPCODE_FMT[isserver and "server" or "client"][opcode]
-    decode_data(subtree, tvbr, data_fmt, isencrypted)
+    if data_fmt then
+        decode_data(subtree, tvbr, data_fmt, isencrypted)
+    else
+        print("decode.data: unknown opcode format")
+    end
 end
 
 return _M
