@@ -41,7 +41,8 @@ function _M.init(path)
     }
 
     _M.PE = {
-        pe.undecoded
+        pe.undecoded,
+        pe.unk_opcode,
     }
 end
 
@@ -253,8 +254,8 @@ function _M.data(tree, tvbr, opcode, isencrypted, isserver)
     if data_fmt then
         return decode_data(subtree, tvbr, data_fmt, isencrypted)
     else
-        -- TODO use experts
-        print("decode.data: unknown opcode format")
+        tree:add_proto_expert_info(pe.unk_opcode, "not found field \"" ..
+                                    field_fmt.name .. "\"")
         return nil
     end
 end
