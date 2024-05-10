@@ -18,7 +18,6 @@ local pf = require("game.protofield")
 local _M = {}
 local OPCODE_FMT = {}
 
--- TODO input Proto to set fields and experts
 ---@param proto Proto
 ---@param path string
 function _M.init(proto, path)
@@ -74,10 +73,7 @@ function _M.opcode(tree, tvbr, isencrypted, isserver)
     return item
 end
 
--- TODO process field_fmt.action:
--- for.{n} - repeat next n fields Count times (nocase)
--- get.{term} - get description? (nocase)
--- TODO use capital case for Hex values or field_fmt.action: Len.{n}?
+-- TODO use capital case for Big endian values or field_fmt.action: Len.{n}?
 
 -- FIXME !!! number replace with integer (every place)
 
@@ -191,7 +187,8 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
 
         local act = field_fmt.action
         if act == "get" then
-            -- print("Not implemented: get")
+            -- TODO process field_fmt.action:
+            -- get.{term} - get description? (nocase)
         end
 
         -- TODO select endian
