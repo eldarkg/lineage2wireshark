@@ -122,7 +122,8 @@ local function dissect(tvb, pinfo, tree)
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
                                      or packet.payload_tvbr(tvb)
     local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
-    local data_tvbr = packet.data_tvbr(payload_tvbr, opcode_len)
+    -- TODO simple packet.data_tvbr, opcode_len = 1 always
+    local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
 
     if opcode_tvbr then
         local pf_opcode = isserver and pf.server_opcode or pf.client_opcode

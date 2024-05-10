@@ -175,7 +175,8 @@ local function dissect(tvb, pinfo, tree)
         decode.opcode(subtree, opcode_tvbr, isencrypted, isserver)
     end
 
-    local data_tvbr = packet.data_tvbr(payload_tvbr, opcode_len)
+    -- TODO simple packet.data_tvbr, opcode_len = 1 always
+    local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
     if data_tvbr then
         decode.data(subtree, data_tvbr, opcode, isencrypted, isserver)
     end
