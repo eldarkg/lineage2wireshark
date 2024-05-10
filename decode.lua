@@ -220,10 +220,12 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
                 len = decode_data(subtree, tvbr(offset),
                                   {table.unpack(data_fmt, i + 1, iend)},
                                   isencrypted)
-                if not len then
+                if len then
+                    subtree:set_len(len)
+                    offset = offset + len
+                else
                     return nil
                 end
-                offset = offset + len
             end
 
             i = iend
