@@ -28,13 +28,13 @@ function _M.opcode_name_format(isserver)
     local fmts = {}
 
     for opcode, desc in pairs(_M.packets[isserver and "server" or "client"]) do
-        local opname = desc:match("^([%w_]+):")
+        local opname = desc:match("^([^:]+):")
         names[opcode] = opname
 
         local fmt_str = desc:sub(#opname + 2)
         local data_fmt = {}
         for typ, name, action, param
-            in fmt_str:gmatch("([%w-]+)%(([^:)]+):?([^.)]-)%.?([^.]-)%)") do
+            in fmt_str:gmatch("([^(]+)%(([^:)]+):?([^.)]-)%.?([^.]-)%)") do
 
             local field_fmt = {}
             field_fmt.type = typ
