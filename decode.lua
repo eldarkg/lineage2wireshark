@@ -184,7 +184,7 @@ end
 
 ---@param tree TreeItem
 ---@param tvbr TvbRange Data
----@param opcode number
+---@param opcode integer
 ---@param isencrypted boolean
 ---@param isserver boolean
 function _M.data(tree, tvbr, opcode, isencrypted, isserver)
