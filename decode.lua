@@ -72,15 +72,16 @@ end
 -- FIXME !!! number replace with integer (every place)
 
 ---@param tvbr TvbRange Field data
----@param type string Field format type
+---@param fmt table Field format
 ---@return ProtoField f
 ---@return integer len
 ---@return any val
-local function parse_field(tvbr, type)
+local function parse_field(tvbr, fmt)
     local f
     local len
     local val
 
+    local type = fmt.type
     if type == "b" then
         -- TODO check (bitmap)
         f = pf.bytes
@@ -109,8 +110,8 @@ local function parse_field(tvbr, type)
         val, len = tvbr:le_ustringz()
     elseif type == "z" then
         f = pf.bytes
-        -- TODO check
-        len = -1 -- TODO take remains len
+        local s = fmt.name:match("(%d+)")
+        len = tonumber(s, 10)
     elseif type == "-" then
         -- TODO check (script)
         f = pf.string
@@ -142,7 +143,7 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
         local f
         local len
         local val
-        f, len, val = parse_field(tvbr(offset), field_fmt.type)
+        f, len, val = parse_field(tvbr(offset), field_fmt)
 
         local act = field_fmt.action
         if act == "get" then
