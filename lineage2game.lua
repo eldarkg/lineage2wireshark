@@ -19,10 +19,6 @@ local decode = require("decode")
 local packet = require("packet")
 local xor = require("xor")
 
--- TODO select protocol by preference
-decode.init(cmn.abs_path("content/game/packets/709.ini"))
-local OPCODE_NAME = decode.OPCODE_NAME
-
 local DEFAULT_GAME_PORT = 7777
 local DEFAULT_STATIC_XOR_KEY_HEX = "A1 6C 54 87"
 
@@ -33,8 +29,6 @@ local INIT_SERVER_XOR_KEY = ByteArray.new("00 00 00 00")
 local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
-lineage2game.fields = decode.PF
-lineage2game.experts = decode.PE
 lineage2game.prefs.game_port =
     Pref.uint("Game server port", DEFAULT_GAME_PORT,
               "Default: " .. DEFAULT_GAME_PORT)
@@ -48,6 +42,10 @@ lineage2game.prefs.init_server_xor_key_hex =
     Pref.string("Init server part of XOR key", "", "Format: 00 00 00 00")
 lineage2game.prefs.init_client_xor_key_hex =
     Pref.string("Init client part of XOR key", "", "Format: 00 00 00 00")
+
+-- TODO select protocol by preference
+decode.init(lineage2game, cmn.abs_path("content/game/packets/709.ini"))
+local OPCODE_NAME = decode.OPCODE_NAME
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)
 

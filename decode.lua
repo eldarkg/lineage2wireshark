@@ -12,7 +12,6 @@ if not package.searchpath("decode", package.path) then
 end
 
 local data = require("data")
--- TODO instead init input Proto to set fields and experts
 local pe = require("game.protoexpert")
 local pf = require("game.protofield")
 
@@ -20,15 +19,16 @@ local _M = {}
 local OPCODE_FMT = {}
 
 -- TODO input Proto to set fields and experts
+---@param proto Proto
 ---@param path string
-function _M.init(path)
+function _M.init(proto, path)
     data.load(path)
     _M.OPCODE_NAME = {}
     _M.OPCODE_NAME.server, OPCODE_FMT.server = data.opcode_name_format(true)
     _M.OPCODE_NAME.client, OPCODE_FMT.client = data.opcode_name_format(false)
 
     pf.init(_M.OPCODE_NAME)
-    _M.PF = {
+    proto.fields = {
         pf.bytes,
         pf.u8,
         pf.u16,
@@ -40,7 +40,7 @@ function _M.init(path)
         pf.client_opcode,
     }
 
-    _M.PE = {
+    proto.experts = {
         pe.undecoded,
         pe.unk_opcode,
     }
