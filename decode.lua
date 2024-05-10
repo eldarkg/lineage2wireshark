@@ -180,7 +180,8 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
         f, len, val = parse_field(tvbr(offset), field_fmt)
         if not len then
             tree:add_proto_expert_info(pe.undecoded, "parse field \"" ..
-                                       field_fmt.name .. "\"")
+                                       field_fmt.name ..
+                                       "(" .. field_fmt.type .. ")\"")
             return nil
         end
 
