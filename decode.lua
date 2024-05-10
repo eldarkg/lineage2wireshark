@@ -143,16 +143,15 @@ local function parse_field(tvbr, fmt)
         len = tonumber(type, 10)
         if len then
             f = pf.bytes
-        else
-            -- TODO error
-            print("Unknown type")
         end
     end
 
-    if len <= tvbr:len() then
-        val, len = get_value(tvbr, type, len)
-    else
-        len = nil
+    if len then
+        if len <= tvbr:len() then
+            val, len = get_value(tvbr, type, len)
+        else
+            len = nil
+        end
     end
 
     return f, len, val
