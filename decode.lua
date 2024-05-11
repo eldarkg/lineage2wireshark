@@ -53,10 +53,10 @@ function _M.init(proto, path, lang)
     local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
     local id = require("id")
     -- TODO:
-    -- Get.FSup
     -- Get.Func02
     -- Get.Func09
     ID["ClassID"] = id.load(content_abs_path .. "ClassId.ini", 0)
+    ID["FSup"] = id.load(content_abs_path .. "AttributesId.ini", 0)
     ID["Func01"] = id.load(content_abs_path .. "ItemsId.ini", 0)
     ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini", 0)
     ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini", 1000000) -- From C4
