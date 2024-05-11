@@ -54,6 +54,7 @@ function _M.init(proto, path, lang)
     local id = require("id")
     -- TODO:
     -- Get.Func09
+    ID["Block"] = id.load(content_abs_path .. "Blocks.ini", 0)
     ID["ClassID"] = id.load(content_abs_path .. "ClassId.ini", 0)
     ID["FSup"] = id.load(content_abs_path .. "AttributesId.ini", 0)
     ID["Func01"] = id.load(content_abs_path .. "ItemsId.ini", 0)
