@@ -11,7 +11,7 @@ if not package.searchpath("decode", package.path) then
     return
 end
 
-local data = require("data")
+local op = require("opcode")
 local pe = require("game.protoexpert")
 local pf = require("game.protofield")
 
@@ -23,10 +23,10 @@ local OPCODE_FMT = {}
 ---@param proto Proto
 ---@param path string
 function _M.init(proto, path)
-    data.load(path)
+    op.load(path)
     _M.OPCODE_NAME = {}
-    _M.OPCODE_NAME.server, OPCODE_FMT.server = data.opcode_name_format(true)
-    _M.OPCODE_NAME.client, OPCODE_FMT.client = data.opcode_name_format(false)
+    _M.OPCODE_NAME.server, OPCODE_FMT.server = op.opcode_name_format(true)
+    _M.OPCODE_NAME.client, OPCODE_FMT.client = op.opcode_name_format(false)
 
     pf.init(_M.OPCODE_NAME)
     proto.fields = {
