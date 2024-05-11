@@ -51,8 +51,17 @@ function _M.init(proto, path, lang)
     local cmn = require("common")
     local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
     local id = require("id")
+    -- TODO:
+    -- Get.FCol
+    -- Get.FSup
+    -- Get.Func02
+    -- Get.Func09
     ID["ClassID"] = id.load(content_abs_path .. "ClassId.ini")
     ID["Func01"] = id.load(content_abs_path .. "ItemsId.ini")
+    ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini")
+    -- TODO is it need to convert npcid?
+    ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini")
+    ID["Skill"] = id.load(content_abs_path .. "SkillsId.ini")
 end
 
 ---@param tree TreeItem
@@ -216,14 +225,6 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
 
         local act = field_fmt.action
         if act == "get" then
-            -- TODO:
-            -- Get.FCol
-            -- Get.FSup
-            -- Get.Func02
-            -- Get.Func09
-            -- Get.MsgID
-            -- Get.NpcId
-            -- Get.Skill
             local id = ID[field_fmt.param]
             if id then
                 local msg = id[val]
