@@ -56,12 +56,11 @@ function _M.init(proto, path, lang)
     -- Get.FSup
     -- Get.Func02
     -- Get.Func09
-    ID["ClassID"] = id.load(content_abs_path .. "ClassId.ini")
-    ID["Func01"] = id.load(content_abs_path .. "ItemsId.ini")
-    ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini")
-    -- TODO is it need to convert npcid?
-    ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini")
-    ID["Skill"] = id.load(content_abs_path .. "SkillsId.ini")
+    ID["ClassID"] = id.load(content_abs_path .. "ClassId.ini", 0)
+    ID["Func01"] = id.load(content_abs_path .. "ItemsId.ini", 0)
+    ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini", 0)
+    ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini", 1000000) -- From C4
+    ID["Skill"] = id.load(content_abs_path .. "SkillsId.ini", 0)
 end
 
 ---@param tree TreeItem
@@ -227,8 +226,8 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
         if act == "get" then
             local id = ID[field_fmt.param]
             if id then
-                local msg = id[val]
-                item:append_text(" (" .. tostring(msg) .. ")")
+                local desc = id[val]
+                item:append_text(" (" .. tostring(desc) .. ")")
             end
         end
 

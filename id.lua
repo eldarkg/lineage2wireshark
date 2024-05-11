@@ -16,11 +16,13 @@ local ini = require("thirdparty.ini")
 local _M = {}
 
 ---@param path string
-function _M.load(path)
+---@param offset integer
+---@return table id_desc
+function _M.load(path, offset)
     local tbl = ini.parse(path)
     local id_desc = {}
     for id, desc in pairs(tbl) do
-        id_desc[tonumber(id, 10)] = desc
+        id_desc[tonumber(id, 10) + offset] = desc
     end
     return id_desc
 end
