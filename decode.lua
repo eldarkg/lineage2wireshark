@@ -36,6 +36,7 @@ function _M.init(proto, path, lang)
         pf.u8,
         pf.u16,
         pf.i32,
+        pf.r32,
         pf.i64,
         pf.double,
         pf.string,
@@ -52,7 +53,6 @@ function _M.init(proto, path, lang)
     local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
     local id = require("id")
     -- TODO:
-    -- Get.FCol
     -- Get.FSup
     -- Get.Func02
     -- Get.Func09
@@ -134,7 +134,11 @@ local function parse_field(tvbr, fmt)
         f = pf.u8
         len = 1
     elseif type == "d" then
-        f = pf.i32
+        if fmt.param == "FCol" then
+            f = pf.r32
+        else
+            f = pf.i32
+        end
         len = 4
     elseif type == "f" then
         f = pf.double
