@@ -27,7 +27,10 @@ function _M.opcode_name_format(isserver)
     local names = {}
     local fmts = {}
 
-    for opcode, desc in pairs(_M.packets[isserver and "server" or "client"]) do
+    for opcode_s, desc
+        in pairs(_M.packets[isserver and "server" or "client"]) do
+
+        local opcode = tonumber(opcode_s, 16)
         local opname = desc:match("^([^:]+):")
         names[opcode] = opname
 
