@@ -18,7 +18,7 @@ local ICON_SIZE_LEN = 4
 
 local _M = {}
 local OPCODE_FMT = {}
-local ITEMS_ID = {}
+local ID = {}
 
 ---@param proto Proto
 ---@param path string
@@ -51,7 +51,8 @@ function _M.init(proto, path, lang)
     local cmn = require("common")
     local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
     local id = require("id")
-    ITEMS_ID = id.load(content_abs_path .. "ItemsId.ini")
+    ID["ClassID"] = id.load(content_abs_path .. "ClassId.ini")
+    ID["Func01"] = id.load(content_abs_path .. "ItemsId.ini")
 end
 
 ---@param tree TreeItem
@@ -216,7 +217,6 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
         local act = field_fmt.action
         if act == "get" then
             -- TODO:
-            -- Get.ClassID
             -- Get.FCol
             -- Get.FSup
             -- Get.Func02
@@ -224,9 +224,10 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
             -- Get.MsgID
             -- Get.NpcId
             -- Get.Skill
-            local param = field_fmt.param
-            if param == "Func01" then
-                item:append_text(" (" .. tostring(ITEMS_ID[val]) .. ")")
+            local id = ID[field_fmt.param]
+            if id then
+                local msg = id[val]
+                item:append_text(" (" .. tostring(msg) .. ")")
             end
         end
 
