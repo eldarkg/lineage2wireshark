@@ -52,13 +52,12 @@ function _M.init(proto, path, lang)
     local cmn = require("common")
     local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
     local id = require("id")
-    -- TODO:
-    -- Get.Func09
     ID["Block"] = id.load(content_abs_path .. "Blocks.ini", 0)
     ID["ClassID"] = id.load(content_abs_path .. "ClassId.ini", 0)
     ID["FSup"] = id.load(content_abs_path .. "AttributesId.ini", 0)
     ID["Func01"] = id.load(content_abs_path .. "ItemsId.ini", 0)
     ID["Func02"] = id.load(content_abs_path .. "TextType.ini", 0)
+    ID["GMCmd"] = id.load(content_abs_path .. "GMCmds.ini", 0)
     ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini", 0)
     ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini", 1000000) -- From C4
     ID["RestartPoint"] = id.load(content_abs_path .. "RestartPoints.ini", 0)
