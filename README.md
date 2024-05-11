@@ -18,6 +18,12 @@
 * Do not call subdissectors for error packets (?)
 ![Preferences](doc/wireshark_pref.png)
 
+## Utility
+Convert binary to image
+```sh
+convert -depth 8 -size 16x16+0 gray:in.bin out.png
+```
+
 ## Dependency
 * Wireshark 4.2.2 (other not tested)
 * Lua 5.2
