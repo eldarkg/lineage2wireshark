@@ -68,7 +68,7 @@ local client_xor_key
 ---Key: pinfo.number. Value: XOR key
 local xor_key_cache
 
----@param opcode number
+---@param opcode integer
 ---@param isserver boolean
 ---@return string
 local function opcode_str(opcode, isserver)
@@ -100,7 +100,7 @@ local function init_xor_keys(key)
     client_xor_key = server_xor_key
 end
 
----@param plen number Previous decrypted data length
+---@param plen integer Previous decrypted data length
 ---@param isserver boolean
 local function update_xor_key(plen, isserver)
     xor_accum_len = xor_accum_len + plen
@@ -112,7 +112,7 @@ local function update_xor_key(plen, isserver)
     end
 end
 
----@param opcode number
+---@param opcode integer
 local function update_last_opcode_stat(opcode)
     local count = last_opcode_stat[opcode]
     last_opcode_stat[opcode] = count and count + 1 or 1

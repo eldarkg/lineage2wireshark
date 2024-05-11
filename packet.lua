@@ -28,14 +28,14 @@ function _M.length_tvbr(tvb)
 end
 
 ---@param tvb Tvb Packet
----@return number
+---@return integer
 function _M.length(tvb)
     return _M.length_tvbr(tvb):le_uint()
 end
 
 ---@param tvb Tvb Packet
 ---@param pinfo Pinfo
----@param offset number
+---@param offset integer
 function _M.get_len(tvb, pinfo, offset)
     return _M.length(tvb(offset))
 end
@@ -54,7 +54,7 @@ end
 
 ---@param payload ByteArray Payload
 ---@param isserver boolean
----@return number
+---@return integer
 function _M.opcode_len(payload, isserver)
     local len = 1
     local opcode1 = payload:uint(OPCODE_PAYLOAD_OFFSET, len)
@@ -70,28 +70,28 @@ function _M.opcode_len(payload, isserver)
 end
 
 ---@param tvbr TvbRange Payload
----@param op_len number Opcode length
+---@param op_len integer Opcode length
 ---@return TvbRange
 function _M.opcode_tvbr(tvbr, op_len)
     return tvbr(OPCODE_PAYLOAD_OFFSET, op_len)
 end
 
 ---@param payload ByteArray Payload
----@param op_len number Opcode length
----@return number
+---@param op_len integer Opcode length
+---@return integer
 function _M.opcode(payload, op_len)
     return payload:uint(OPCODE_PAYLOAD_OFFSET, op_len)
 end
 
 ---@param tvbr TvbRange Payload
----@param op_len number Opcode length
+---@param op_len integer Opcode length
 ---@return TvbRange|nil
 function _M.data_tvbr(tvbr, op_len)
     return op_len < tvbr:len() and tvbr(op_len) or nil
 end
 
 ---@param payload ByteArray Payload
----@param op_len number Opcode length
+---@param op_len integer Opcode length
 ---@return ByteArray
 function _M.data(payload, op_len)
     return op_len < payload:len()

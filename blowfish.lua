@@ -11,7 +11,7 @@ local crypto = require("crypto")
 local _M = {}
 
 ---@param data ByteArray
----@param bs number
+---@param bs integer
 ---@return ByteArray
 local function align_size(data, bs)
     local alen = (bs - data:len() % bs) % bs
@@ -20,7 +20,7 @@ local function align_size(data, bs)
 end
 
 ---@param data ByteArray
----@param bs number
+---@param bs integer
 ---@return ByteArray
 local function swap_endian(data, bs)
     local swapped = ByteArray.new()

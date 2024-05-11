@@ -77,8 +77,6 @@ end
 
 -- TODO use capital case for Big endian values or field_fmt.action: Len.{n}?
 
--- FIXME !!! number replace with integer (every place)
-
 ---@param tvbr TvbRange Field data
 ---@param type string Field type
 ---@param len integer

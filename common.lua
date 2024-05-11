@@ -15,13 +15,13 @@ function _M.abs_path(path)
 end
 
 ---@param buf ByteArray|TvbRange
----@return number
+---@return integer
 function _M.le(buf)
     return buf:le_uint()
 end
 
 ---@param buf ByteArray|TvbRange
----@return number
+---@return integer
 function _M.be(buf)
     return buf:uint()
 end

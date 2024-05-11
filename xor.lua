@@ -19,7 +19,7 @@ function _M.create_key(server_key, static_key)
 end
 
 ---@param key ByteArray
----@param plen number Previous crypt data length
+---@param plen integer Previous crypt data length
 ---@return ByteArray
 function _M.next_key(key, plen)
     local dkey = key:le_uint(0, DYNAMIC_KEY_LEN)

@@ -67,7 +67,7 @@ local last_opcode_stat
 ---Key: pinfo.number. Value: sub packet count
 local packet_count_cache
 
----@param opcode number
+---@param opcode integer
 ---@param isserver boolean
 ---@return string
 local function opcode_str(opcode, isserver)
@@ -75,7 +75,7 @@ local function opcode_str(opcode, isserver)
                     or tostring(CLIENT_OPCODE_TXT[opcode])
 end
 
----@param opcode number
+---@param opcode integer
 local function update_last_opcode_stat(opcode)
     local count = last_opcode_stat[opcode]
     last_opcode_stat[opcode] = count and count + 1 or 1
