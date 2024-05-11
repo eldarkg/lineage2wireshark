@@ -60,6 +60,7 @@ function _M.init(proto, path, lang)
     ID["Func02"] = id.load(content_abs_path .. "TextType.ini", 0)
     ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini", 0)
     ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini", 1000000) -- From C4
+    ID["RestartPoint"] = id.load(content_abs_path .. "RestartPoints.ini", 0)
     ID["Skill"] = id.load(content_abs_path .. "SkillsId.ini", 0)
     ID["Social"] = id.load(content_abs_path .. "SocialActions.ini", 0)
     ID["SSQ"] = id.load(content_abs_path .. "SSQInfos.ini", 256)
