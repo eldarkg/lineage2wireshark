@@ -61,6 +61,7 @@ function _M.init(proto, path, lang)
     ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini", 0)
     ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini", 1000000) -- From C4
     ID["Skill"] = id.load(content_abs_path .. "SkillsId.ini", 0)
+    ID["Social"] = id.load(content_abs_path .. "SocialActions.ini", 0)
 end
 
 ---@param tree TreeItem
