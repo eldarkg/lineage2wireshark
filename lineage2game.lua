@@ -44,7 +44,8 @@ lineage2game.prefs.init_client_xor_key_hex =
     Pref.string("Init client part of XOR key", "", "Format: 00 00 00 00")
 
 -- TODO select protocol by preference
-decode.init(lineage2game, cmn.abs_path("content/game/packets/709.ini"))
+-- TODO select lang by preference
+decode.init(lineage2game, cmn.abs_path("content/game/packets/709.ini"), "en")
 local OPCODE_NAME = decode.OPCODE_NAME
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)

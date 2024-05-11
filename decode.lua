@@ -11,7 +11,6 @@ if not package.searchpath("decode", package.path) then
     return
 end
 
-local op = require("opcode")
 local pe = require("game.protoexpert")
 local pf = require("game.protofield")
 
@@ -19,10 +18,13 @@ local ICON_SIZE_LEN = 4
 
 local _M = {}
 local OPCODE_FMT = {}
+local ITEMS_ID = {}
 
 ---@param proto Proto
 ---@param path string
-function _M.init(proto, path)
+---@param lang string Language: see content/game (en, ru)
+function _M.init(proto, path, lang)
+    local op = require("opcode")
     op.load(path)
     _M.OPCODE_NAME = {}
     _M.OPCODE_NAME.server, OPCODE_FMT.server = op.opcode_name_format(true)
@@ -45,6 +47,11 @@ function _M.init(proto, path)
         pe.undecoded,
         pe.unk_opcode,
     }
+
+    local cmn = require("common")
+    local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
+    local id = require("id")
+    ITEMS_ID = id.load(content_abs_path .. "ItemsId.ini")
 end
 
 ---@param tree TreeItem
@@ -186,12 +193,6 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
             return nil
         end
 
-        local act = field_fmt.action
-        if act == "get" then
-            -- TODO process field_fmt.action:
-            -- get.{term} - get description? (nocase)
-        end
-
         if field_fmt.type == "b" then
             local item = tree:add_le(pf.i32, tvbr(offset, ICON_SIZE_LEN))
             item:prepend_text("Icon size")
@@ -211,6 +212,24 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
         local item = val and tree:add_le(f, tvbr(offset, len), val)
                          or tree:add_le(f, tvbr(offset, len))
         item:prepend_text(field_fmt.name)
+
+        local act = field_fmt.action
+        if act == "get" then
+            -- TODO:
+            -- Get.ClassID
+            -- Get.FCol
+            -- Get.FSup
+            -- Get.Func02
+            -- Get.Func09
+            -- Get.MsgID
+            -- Get.NpcId
+            -- Get.Skill
+            local param = field_fmt.param
+            if param == "Func01" then
+                item:append_text(" (" .. tostring(ITEMS_ID[val]) .. ")")
+            end
+        end
+
         -- TODO show hex for number types too
         if isencrypted then
             item:set_generated()
