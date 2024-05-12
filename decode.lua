@@ -58,6 +58,7 @@ function _M.init(proto, path, lang)
     ID["Func01"] = id.load(content_abs_path .. "ItemsId.ini", 0)
     ID["Func02"] = id.load(content_abs_path .. "TextType.ini", 0)
     ID["GMCmd"] = id.load(content_abs_path .. "GMCmds.ini", 0)
+    ID["Macro"] = id.load(content_abs_path .. "MacroTypes.ini", 0)
     ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini", 0)
     ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini", 1000000) -- From C4
     ID["Race"] = id.load(content_abs_path .. "Races.ini", 0)
@@ -162,7 +163,7 @@ local function parse_field(tvbr, fmt)
         local s = fmt.name:match("(%d+)")
         len = tonumber(s, 10)
     elseif type == "-" then
-        -- TODO check (script)
+        -- TODO decode ShortCuts
         f = pf.bytes
         len = -1
     else
