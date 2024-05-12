@@ -164,7 +164,9 @@ local function parse_field(tvbr, fmt)
         local s = fmt.name:match("(%d+)")
         len = tonumber(s, 10)
     elseif type == "-" then
-        -- TODO decode ShortCuts
+        -- TODO decode Script:
+        -- implement to ini operator Switch, Case.{scope}[.{n}]
+        -- implement to ini For.{scope}[.{count_field}]
         f = pf.bytes
         len = -1
     else
