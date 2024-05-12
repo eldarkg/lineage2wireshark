@@ -61,6 +61,7 @@ function _M.init(proto, path, lang)
     ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini", 0)
     ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini", 1000000) -- From C4
     ID["RestartPoint"] = id.load(content_abs_path .. "RestartPoints.ini", 0)
+    ID["Sex"] = id.load(content_abs_path .. "Sex.ini", 0)
     ID["Skill"] = id.load(content_abs_path .. "SkillsId.ini", 0)
     ID["Social"] = id.load(content_abs_path .. "SocialActions.ini", 0)
     ID["SSQ"] = id.load(content_abs_path .. "SSQInfos.ini", 256)
@@ -94,7 +95,7 @@ function _M.opcode(tree, tvbr, isencrypted, isserver)
     return item
 end
 
--- TODO use capital case for Big endian values or field_fmt.action: Len.{n}?
+-- TODO use capital case for Big endian or HEX values or field_fmt.action: Len.{n}?
 
 ---@param tvbr TvbRange Field data
 ---@param type string Field type
