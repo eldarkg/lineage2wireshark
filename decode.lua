@@ -67,6 +67,7 @@ function _M.init(proto, path, lang)
     ID["Shortcut"] = id.load(content_abs_path .. "ShortcutTypes.ini", 0)
     ID["Skill"] = id.load(content_abs_path .. "SkillsId.ini", 0)
     ID["Social"] = id.load(content_abs_path .. "SocialActions.ini", 0)
+    ID["SocialClass"] = id.load(content_abs_path .. "SocialClasses.ini", 0)
     ID["SSQ"] = id.load(content_abs_path .. "SSQInfos.ini", 256)
 end
 
