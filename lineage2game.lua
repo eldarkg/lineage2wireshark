@@ -125,6 +125,7 @@ local function is_last_subpacket()
            last_subpacket_number == packet_count_cache[last_packet_number]
 end
 
+-- FIXME make work in run time
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
