@@ -55,11 +55,10 @@ local OPCODE_NAME = decode.OPCODE_NAME
 local last_packet_number
 ---Last sub packet number
 local last_subpacket_number
+local is_last_subpacket
 ---Opcode stat in last packet
 ---Key: opcode. Value: sub packet count
 local last_opcode_stat
----Key: pinfo.number. Value: sub packet count
-local packet_count_cache
 
 ---Accumulator XOR decrypt length in current pinfo.number
 local xor_accum_len
@@ -119,13 +118,6 @@ local function update_last_opcode_stat(opcode)
     last_opcode_stat[opcode] = count and count + 1 or 1
 end
 
----@return boolean false on 1st dissection pass
-local function is_last_subpacket()
-    return packet_count_cache[last_packet_number] and
-           last_subpacket_number == packet_count_cache[last_packet_number]
-end
-
--- FIXME make work in run time
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
@@ -182,7 +174,7 @@ local function dissect(tvb, pinfo, tree)
         end
     end
 
-    if is_last_subpacket() then
+    if is_last_subpacket then
         cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
                                 opcode_str)
     end
@@ -190,11 +182,25 @@ local function dissect(tvb, pinfo, tree)
     return tvb:len()
 end
 
+---@param tvb Tvb Packet
+---@param pinfo Pinfo
+---@param offset integer
+local function get_len(tvb, pinfo, offset)
+    local len = packet.length(tvb(offset))
+    local len_tvb = tvb(offset):len()
+
+    -- TODO process check is last reassembled???
+    is_last_subpacket = not (len + packet.HEADER_LEN <= len_tvb and
+        packet.length(tvb(offset + len)) <= tvb(offset + len):len())
+
+    return len
+end
+
 function lineage2game.init()
     last_packet_number = nil
     last_subpacket_number = 0
+    is_last_subpacket = false
     last_opcode_stat = {}
-    packet_count_cache = {}
 
     xor_accum_len = 0
     server_xor_key = nil
@@ -226,18 +232,7 @@ function lineage2game.dissector(tvb, pinfo, tree)
     pinfo.cols.protocol = lineage2game.name
     pinfo.cols.info = ""
 
-    if pinfo.number == last_packet_number then
-        if packet_count_cache[last_packet_number] and
-           packet_count_cache[last_packet_number] <= last_subpacket_number then
-            last_subpacket_number = 0
-            xor_accum_len = 0
-        end
-    else
-        if last_packet_number and
-           packet_count_cache[last_packet_number] == nil then
-            packet_count_cache[last_packet_number] = last_subpacket_number
-        end
-
+    if pinfo.number ~= last_packet_number then
         last_packet_number = pinfo.number
         last_subpacket_number = 0
         last_opcode_stat = {}
@@ -245,7 +240,7 @@ function lineage2game.dissector(tvb, pinfo, tree)
     end
 
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
-    dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
+    dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, get_len, dissect)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
