@@ -10,13 +10,15 @@
 * Show only packets: && tcp.len != 0
 
 ## Wireshark Preferences
+### Protocols
+![Preferences](doc/wireshark_pref_prot.png)
 ### Protocols -> TCP
 * Validate the TCP checksum if possible (?)
 * Allow subdissector to reassemble TCP streams
 * Reassemble out-of-order segments
 * Analyze TCP sequence numbers
 * Do not call subdissectors for error packets (?)
-![Preferences](doc/wireshark_pref.png)
+![Preferences](doc/wireshark_pref_tcp.png)
 
 ## Utility
 Convert binary to image
