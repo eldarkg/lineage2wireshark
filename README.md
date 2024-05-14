@@ -20,6 +20,11 @@
 * Do not call subdissectors for error packets (?)
 ![Preferences](doc/wireshark_pref_tcp.png)
 
+## Wireshark cautions
+* After `Reload Lua Plugins` need to `Reload this file` (otherwise invalid sequence)
+* Switch between LINEAGE packet and TCP error packet break sequence crypt
+(to restore switch to LINEAGE packet)
+
 ## Utility
 Convert binary to image
 ```sh
