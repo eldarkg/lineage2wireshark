@@ -5,8 +5,8 @@
 * Game server: 709
 
 ## Wireshark Filters
-* Login server: (tcp.srcport == 2106 || tcp.dstport == 2106)
-* Game server: (tcp.srcport == 7777 || tcp.dstport == 7777)
+* Login server: lineage2login (tcp.srcport == 2106 || tcp.dstport == 2106)
+* Game server: lineage2game (tcp.srcport == 7777 || tcp.dstport == 7777)
 * Show only packets: && tcp.len != 0
 
 ## Wireshark Preferences
