@@ -54,12 +54,17 @@ function _M.add_be(item, protofield, tvbrange, label, isgen)
     add_generic(item.add, item, protofield, tvbrange, label, isgen)
 end
 
--- FIXME deprecated
+---@param pinfo Pinfo
+---@param isserver boolean
+---@param isgen boolean
+---@param str string
 function _M.set_info_field(pinfo, isserver, isgen, str)
     local src_role = isserver and "Server" or "Client"
-    pinfo.cols.info =
+    pinfo.cols.info:clear_fence()
+    pinfo.cols.info:set(
         tostring(pinfo.src_port) .. " → " .. tostring(pinfo.dst_port) ..
-        " " .. src_role .. ": " .. (isgen and ("[" .. str .. "]") or str)
+        " " .. src_role .. ": " .. (isgen and ("[" .. str .. "]") or str))
+    pinfo.cols.info:fence()
 end
 
 ---@param pinfo Pinfo
