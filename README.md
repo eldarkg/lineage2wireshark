@@ -1,5 +1,7 @@
 # lineage2wireshark
 
+Now static only dissector.
+
 ## Support Protocols
 * Login server: 785a
 * Game server: 709

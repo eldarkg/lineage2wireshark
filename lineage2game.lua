@@ -256,5 +256,6 @@ function lineage2game.dissector(tvb, pinfo, tree)
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, get_len, dissect)
 end
 
+-- FIXME work in runtime???
 local tcp_port = DissectorTable.get("tcp.port")
 tcp_port:add(GAME_PORT, lineage2game)
