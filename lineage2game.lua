@@ -55,7 +55,7 @@ local OPCODE_NAME = decode.OPCODE_NAME
 local last_packet_number
 ---Last sub packet number
 local last_subpacket_number
-local is_last_subpacket_1pass
+local is_last_subpacket
 ---Opcode stat in last packet
 ---Key: opcode. Value: sub packet count
 local last_opcode_stat
@@ -120,13 +120,6 @@ local function update_last_opcode_stat(opcode)
     last_opcode_stat[opcode] = count and count + 1 or 1
 end
 
----@return boolean false
-local function is_last_subpacket()
-    return subpacket_count_cache[last_packet_number] and
-           last_subpacket_number == subpacket_count_cache[last_packet_number] or
-           is_last_subpacket_1pass
-end
-
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
@@ -183,7 +176,7 @@ local function dissect(tvb, pinfo, tree)
         end
     end
 
-    if is_last_subpacket() then
+    if is_last_subpacket then
         cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
                                 opcode_str)
     end
@@ -198,7 +191,7 @@ local function get_len(tvb, pinfo, offset)
     local len = packet.length(tvb(offset))
     local len_tvb = tvb(offset):len()
 
-    is_last_subpacket_1pass = not (len + packet.HEADER_LEN <= len_tvb and
+    is_last_subpacket = not (len + packet.HEADER_LEN <= len_tvb and
         packet.length(tvb(offset + len)) <= tvb(offset + len):len())
 
     return len
@@ -207,7 +200,7 @@ end
 function lineage2game.init()
     last_packet_number = nil
     last_subpacket_number = 0
-    is_last_subpacket_1pass = false
+    is_last_subpacket = false
     last_opcode_stat = {}
     subpacket_count_cache = {}
 
