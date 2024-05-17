@@ -206,7 +206,6 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 local function dissect(tvb, pinfo, tree)
-    print(pinfo.number, pinfo.visited)
     if tvb:len() == 0 then
         return 0
     end
