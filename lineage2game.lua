@@ -55,7 +55,6 @@ local OPCODE_NAME = decode.OPCODE_NAME
 local last_packet_number
 ---Last sub packet number
 local last_subpacket_number
-local is_last_subpacket
 ---Opcode stat in last packet
 ---Key: opcode. Value: sub packet count
 local last_opcode_stat
@@ -75,25 +74,6 @@ local xor_key_cache
 ---@return string
 local function opcode_str(opcode, isserver)
     return tostring(OPCODE_NAME[isserver and "server" or "client"][opcode])
-end
-
----@param isserver boolean
----@return ByteArray xor_key
-local function process_xor_key_cache(isserver)
-    local pnum = last_packet_number
-    local xor_key
-    if xor_key_cache[pnum] then
-        xor_key = xor.next_key(xor_key_cache[pnum], xor_accum_len)
-        if isserver then
-            server_xor_key = xor_key
-        else
-            client_xor_key = xor_key
-        end
-    else
-        xor_key = isserver and server_xor_key or client_xor_key
-        xor_key_cache[pnum] = xor_key
-    end
-    return xor_key
 end
 
 ---@param key ByteArray Server XOR key
@@ -123,34 +103,71 @@ end
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
-local function dissect(tvb, pinfo, tree)
-    if tvb:len() == 0 then
-        return 0
+---@param isserver boolean
+local function dissect_1pass(tvb, pinfo, tree, isserver)
+    local isencrypted = packet.is_encrypted_game_packet(tvb, OPCODE_NAME,
+                                                        isserver)
+    if pinfo.number == last_packet_number then
+        subpacket_count_cache[pinfo.number] =
+            subpacket_count_cache[pinfo.number] + 1
+    else
+        subpacket_count_cache[pinfo.number] = 1
+        last_packet_number = pinfo.number
+
+        if isencrypted then
+            xor_accum_len = 0
+            xor_key_cache[pinfo.number] = isserver and server_xor_key
+                                                    or client_xor_key
+        end
     end
 
-    last_subpacket_number = last_subpacket_number + 1
-
-    local isserver = (pinfo.src_port == GAME_PORT)
-    local isencrypted = packet.is_encrypted_game_packet(tvb, OPCODE_NAME, isserver)
-
-    local xor_key = isencrypted and process_xor_key_cache(isserver) or nil
-    if isencrypted and not xor_key then
-        return tvb:len()
-    end
-    local payload = xor_key and xor.decrypt(packet.payload(tvb), xor_key)
-                            or packet.payload(tvb)
+    local payload = packet.payload(tvb)
     if isencrypted then
         update_xor_key(payload:len(), isserver)
+    elseif isserver then
+        local opcode_len = packet.opcode_len(payload, isserver)
+        local opcode = packet.opcode(payload, opcode_len)
+        if opcode_str(opcode, isserver) == "KeyInit" then
+            init_xor_keys(packet.xor_key(packet.data(payload, opcode_len)))
+        end
+    end
+
+    return tvb:len()
+end
+
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param tree TreeItem
+---@param isserver boolean
+local function dissect_2pass(tvb, pinfo, tree, isserver)
+    if pinfo.number == last_packet_number then
+        if subpacket_count_cache[pinfo.number] <= last_subpacket_number then
+            last_subpacket_number = 1
+            xor_accum_len = 0
+        else
+            last_subpacket_number = last_subpacket_number + 1
+        end
+    else
+        last_packet_number = pinfo.number
+        last_subpacket_number = 1
+        last_opcode_stat = {}
+        xor_accum_len = 0
+    end
+
+    local isencrypted = (xor_key_cache[pinfo.number] ~= nil)
+    local xor_key
+    local payload
+    if isencrypted then
+        xor_key = xor.next_key(xor_key_cache[pinfo.number], xor_accum_len)
+        payload = xor.decrypt(packet.payload(tvb), xor_key)
+        xor_accum_len = xor_accum_len + payload:len()
+    else
+        payload = packet.payload(tvb)
     end
 
     local opcode_len = packet.opcode_len(payload, isserver)
     local opcode = packet.opcode(payload, opcode_len)
     update_last_opcode_stat(opcode)
-
-    -- TODO only not in cache (flag). Check is isencrypted?
-    if isserver and opcode_str(opcode, true) == "KeyInit" then
-        init_xor_keys(packet.xor_key(packet.data(payload, opcode_len)))
-    end
 
     local subtree = tree:add(lineage2game, tvb(),
                              tostring(last_subpacket_number) .. ". " ..
@@ -176,37 +193,36 @@ local function dissect(tvb, pinfo, tree)
         end
     end
 
-    if is_last_subpacket then
+    if subpacket_count_cache[pinfo.number] <= last_subpacket_number then
         cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
                                 opcode_str)
     end
 
     return tvb:len()
+
 end
 
----@param tvb Tvb Packet
+---@param tvb Tvb
 ---@param pinfo Pinfo
----@param offset integer
-local function get_len(tvb, pinfo, offset)
-    local len = packet.length(tvb(offset))
-    local len_tvb = tvb(offset):len()
+---@param tree TreeItem
+local function dissect(tvb, pinfo, tree)
+    print(pinfo.number, pinfo.visited)
+    if tvb:len() == 0 then
+        return 0
+    end
 
-    is_last_subpacket = not (len + packet.HEADER_LEN <= len_tvb and
-        packet.length(tvb(offset + len)) <= tvb(offset + len):len())
-
-    return len
+    local isserver = (pinfo.src_port == GAME_PORT)
+    return pinfo.visited and dissect_2pass(tvb, pinfo, tree, isserver)
+                         or dissect_1pass(tvb, pinfo, tree, isserver)
 end
 
 function lineage2game.init()
     last_packet_number = nil
-    last_subpacket_number = 0
-    is_last_subpacket = false
-    last_opcode_stat = {}
+    last_subpacket_number = nil
+    last_opcode_stat = nil
     subpacket_count_cache = {}
 
-    xor_accum_len = 0
-    server_xor_key = nil
-    client_xor_key = nil
+    xor_accum_len = nil
     xor_key_cache = {}
 
     server_xor_key = xor.create_key(INIT_SERVER_XOR_KEY, STATIC_XOR_KEY)
@@ -234,28 +250,9 @@ function lineage2game.dissector(tvb, pinfo, tree)
     pinfo.cols.protocol = lineage2game.name
     pinfo.cols.info = ""
 
-    if pinfo.number == last_packet_number then
-        if subpacket_count_cache[last_packet_number] and
-           subpacket_count_cache[last_packet_number] <= last_subpacket_number then
-            last_subpacket_number = 0
-            xor_accum_len = 0
-        end
-    else
-        if last_packet_number and
-           subpacket_count_cache[last_packet_number] == nil then
-            subpacket_count_cache[last_packet_number] = last_subpacket_number
-        end
-
-        last_packet_number = pinfo.number
-        last_subpacket_number = 0
-        last_opcode_stat = {}
-        xor_accum_len = 0
-    end
-
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
-    dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, get_len, dissect)
+    dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
 
--- FIXME work in runtime???
 local tcp_port = DissectorTable.get("tcp.port")
 tcp_port:add(GAME_PORT, lineage2game)
