@@ -35,7 +35,7 @@ local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 lineage2game.experts = require("game.protoexpert").init()
-local pf = require("protofields").init("lineage2game")
+local pf = require("common.protofields").init("lineage2game")
 lineage2game.fields = pf
 lineage2game.prefs.protocol =
     Pref.enum("Protocol Version", DEFAULT_PROTOCOL,

@@ -7,7 +7,7 @@
 ]]--
 
 ---Workaround: skip 1st pass without root path
-if not package.searchpath("protofields", package.path) then
+if not package.searchpath("common.protofields", package.path) then
     return
 end
 
