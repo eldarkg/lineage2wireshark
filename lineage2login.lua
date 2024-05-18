@@ -72,7 +72,6 @@ end
 ---@param tree TreeItem
 ---@param isserver boolean
 local function dissect_1pass(tvb, pinfo, tree, isserver)
-    local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
     if pinfo.number == last_packet_number then
         subpacket_count_cache[pinfo.number] =
             subpacket_count_cache[pinfo.number] + 1
