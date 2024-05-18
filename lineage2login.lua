@@ -17,6 +17,7 @@ set_plugin_info({
 local bf = require("blowfish")
 local cmn = require("common")
 local packet = require("packet")
+-- TODO use decode
 local pf = require("login.protofield")
 
 local decode_server_data = require("login.decode.server").decode_server_data
@@ -50,7 +51,7 @@ local last_subpacket_number
 ---Key: opcode. Value: sub packet count
 local last_opcode_stat
 ---Key: pinfo.number. Value: sub packet count
-local packet_count_cache
+local subpacket_count_cache
 
 ---@param opcode integer
 ---@param isserver boolean
@@ -66,25 +67,41 @@ local function update_last_opcode_stat(opcode)
     last_opcode_stat[opcode] = count and count + 1 or 1
 end
 
----@return boolean false on 1st dissection pass
-local function is_last_subpacket()
-    return packet_count_cache[last_packet_number] and
-           last_subpacket_number == packet_count_cache[last_packet_number]
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param tree TreeItem
+---@param isserver boolean
+local function dissect_1pass(tvb, pinfo, tree, isserver)
+    local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
+    if pinfo.number == last_packet_number then
+        subpacket_count_cache[pinfo.number] =
+            subpacket_count_cache[pinfo.number] + 1
+    else
+        subpacket_count_cache[pinfo.number] = 1
+        last_packet_number = pinfo.number
+    end
+
+    return tvb:len()
 end
 
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
-local function dissect(tvb, pinfo, tree)
-    if tvb:len() == 0 then
-        return 0
+---@param isserver boolean
+local function dissect_2pass(tvb, pinfo, tree, isserver)
+    if pinfo.number == last_packet_number then
+        if subpacket_count_cache[pinfo.number] <= last_subpacket_number then
+            last_subpacket_number = 1
+        else
+            last_subpacket_number = last_subpacket_number + 1
+        end
+    else
+        last_packet_number = pinfo.number
+        last_subpacket_number = 1
+        last_opcode_stat = {}
     end
 
-    last_subpacket_number = last_subpacket_number + 1
-
-    local isserver = (pinfo.src_port == LOGIN_PORT)
     local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
-
     local payload = isencrypted
                         and bf.decrypt(packet.payload(tvb), BLOWFISH_PK:raw())
                         or packet.payload(tvb)
@@ -106,15 +123,15 @@ local function dissect(tvb, pinfo, tree)
 
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
                                      or packet.payload_tvbr(tvb)
-    local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
-    -- TODO simple packet.data_tvbr, opcode_len = 1 always
-    local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
 
+    local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
     if opcode_tvbr then
         local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
         cmn.add_be(subtree, pf_opcode, opcode_tvbr, nil, isencrypted)
     end
 
+    -- TODO simple packet.data_tvbr, opcode_len = 1 always
+    local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
     if data_tvbr then
         local data_st = cmn.generated(subtree:add(lineage2login, data_tvbr, "Data"),
                                       isencrypted)
@@ -122,7 +139,7 @@ local function dissect(tvb, pinfo, tree)
         decode_data(data_st, opcode, data_tvbr, isencrypted)
     end
 
-    if is_last_subpacket() then
+    if subpacket_count_cache[pinfo.number] <= last_subpacket_number then
         cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
                                 opcode_str)
     end
@@ -130,11 +147,24 @@ local function dissect(tvb, pinfo, tree)
     return tvb:len()
 end
 
+---@param tvb Tvb
+---@param pinfo Pinfo
+---@param tree TreeItem
+local function dissect(tvb, pinfo, tree)
+    if tvb:len() == 0 then
+        return 0
+    end
+
+    local isserver = (pinfo.src_port == LOGIN_PORT)
+    return pinfo.visited and dissect_2pass(tvb, pinfo, tree, isserver)
+                         or dissect_1pass(tvb, pinfo, tree, isserver)
+end
+
 function lineage2login.init()
     last_packet_number = nil
-    last_subpacket_number = 0
-    last_opcode_stat = {}
-    packet_count_cache = {}
+    last_subpacket_number = nil
+    last_opcode_stat = nil
+    subpacket_count_cache = {}
 end
 
 function lineage2login.prefs_changed()
@@ -149,22 +179,7 @@ function lineage2login.dissector(tvb, pinfo, tree)
     pinfo.cols.protocol = lineage2login.name
     pinfo.cols.info = ""
 
-    if pinfo.number == last_packet_number then
-        if packet_count_cache[last_packet_number] and
-           packet_count_cache[last_packet_number] <= last_subpacket_number then
-            last_subpacket_number = 0
-        end
-    else
-        if last_packet_number and
-           packet_count_cache[last_packet_number] == nil then
-            packet_count_cache[last_packet_number] = last_subpacket_number
-        end
-
-        last_packet_number = pinfo.number
-        last_subpacket_number = 0
-        last_opcode_stat = {}
-    end
-
+    -- TODO multi instance by pinfo.src_port
     local subtree = tree:add(lineage2login, tvb(), "Lineage2 Login Protocol")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
