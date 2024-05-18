@@ -6,6 +6,11 @@
     Description: Packet
 ]]--
 
+---Workaround: skip 1st pass without root path
+if not package.searchpath("packet", package.path) then
+    return
+end
+
 local LOGIN_SERVER_OPCODE = require("login.opcode.server").SERVER_OPCODE
 
 local _M = {}

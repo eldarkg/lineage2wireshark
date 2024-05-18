@@ -12,7 +12,7 @@ if not package.searchpath("login.decode.server", package.path) then
     return
 end
 
-local cmn = require("common")
+local cmn = require("common.utils")
 local pf = require("login.protofield")
 
 local SERVER_OPCODE = require("login.opcode.server").SERVER_OPCODE

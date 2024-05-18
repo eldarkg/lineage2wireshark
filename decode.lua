@@ -29,7 +29,7 @@ function _M.init(path, lang)
     _M.OPCODE_NAME.client, OPCODE_FMT.client = op:opcode_name_format(false)
 
     -- TODO move to file
-    local cmn = require("common")
+    local cmn = require("common.utils")
     local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
     local id = require("id")
     ID["Block"] = id.load(content_abs_path .. "Blocks.ini", 0)

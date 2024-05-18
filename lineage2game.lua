@@ -13,7 +13,7 @@ set_plugin_info({
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
 })
 
-local cmn = require("common")
+local cmn = require("common.utils")
 local decode = require("decode")
 local packet = require("packet")
 local xor = require("decrypt.xor")

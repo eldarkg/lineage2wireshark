@@ -8,11 +8,11 @@
 ]]--
 
 ---Workaround: skip 1st pass without root path
-if not package.searchpath("common", package.path) then
+if not package.searchpath("common.utils", package.path) then
     return
 end
 
-local cmn = require("common")
+local cmn = require("common.utils")
 
 local _M = {}
 

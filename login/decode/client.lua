@@ -12,7 +12,7 @@ if not package.searchpath("login.decode.client", package.path) then
     return
 end
 
-local cmn = require("common")
+local cmn = require("common.utils")
 local pf = require("login.protofield")
 
 local CLIENT_OPCODE = require("login.opcode.client").CLIENT_OPCODE
