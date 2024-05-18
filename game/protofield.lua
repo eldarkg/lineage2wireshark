@@ -4,7 +4,6 @@
     Email: eldar.khayrullin@mail.ru
     Date: 2024
     Description: Game Proto Fields
-    Protocol: 709?
 ]]--
 
 ---Workaround: skip 1st pass without root path
@@ -26,12 +25,18 @@ _M.string = ProtoField.string("lineage2game.string", " ", base.ASCII)
 _M.stringz = ProtoField.stringz("lineage2game.stringz", " ", base.ASCII)
 _M.ipv4 = ProtoField.ipv4("lineage2game.ipv4", " ")
 
----@param opcode_name table
-function _M.init(opcode_name)
-    _M.server_opcode = ProtoField.uint8("lineage2game.server_opcode", "Opcode",
-                                        base.HEX, opcode_name.server)
-    _M.client_opcode = ProtoField.uint8("lineage2game.client_opcode", "Opcode",
-                                        base.HEX, opcode_name.client)
+---@return table
+function _M.init()
+    return {
+        _M.bytes,
+        _M.u8,
+        _M.u16,
+        _M.i32,
+        _M.r32,
+        _M.i64,
+        _M.double,
+        _M.string,
+    }
 end
 
 return _M

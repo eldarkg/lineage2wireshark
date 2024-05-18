@@ -136,6 +136,7 @@ function _M.is_encrypted_game_packet(tvb, opcode_name, isserver)
     local payload = _M.payload_tvbr(tvb):bytes()
     local opcode = _M.opcode(payload, _M.opcode_len(payload, isserver))
     -- TODO use len from content example packetsc5.ini
+    -- TODO test by opcode number 0x00 ?
     if isserver then
         return not (len == 16 and opcode_name.server[opcode] == "KeyInit")
     else

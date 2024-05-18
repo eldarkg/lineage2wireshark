@@ -20,34 +20,14 @@ local _M = {}
 local OPCODE_FMT = {}
 local ID = {}
 
----@param proto Proto
 ---@param path string
 ---@param lang string Language: see content/game (en, ru)
-function _M.init(proto, path, lang)
+function _M.init(path, lang)
     local op = require("opcode")
     op.load(path)
     _M.OPCODE_NAME = {}
     _M.OPCODE_NAME.server, OPCODE_FMT.server = op.opcode_name_format(true)
     _M.OPCODE_NAME.client, OPCODE_FMT.client = op.opcode_name_format(false)
-
-    pf.init(_M.OPCODE_NAME)
-    proto.fields = {
-        pf.bytes,
-        pf.u8,
-        pf.u16,
-        pf.i32,
-        pf.r32,
-        pf.i64,
-        pf.double,
-        pf.string,
-        pf.server_opcode,
-        pf.client_opcode,
-    }
-
-    proto.experts = {
-        pe.undecoded,
-        pe.unk_opcode,
-    }
 
     local cmn = require("common")
     local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
@@ -88,11 +68,9 @@ end
 ---@param tree TreeItem
 ---@param tvbr TvbRange Opcode
 ---@param isencrypted boolean
----@param isserver boolean
 ---@return TreeItem item
-function _M.opcode(tree, tvbr, isencrypted, isserver)
-    local f = isserver and pf.server_opcode or pf.client_opcode
-    local item = tree:add(f, tvbr(offset, len))
+function _M.opcode(tree, tvbr, isencrypted)
+    local item = tree:add(pf.bytes, tvbr(offset, len)):prepend_text("Opcode")
     if isencrypted then
         item:set_generated()
     end

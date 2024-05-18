@@ -4,7 +4,6 @@
     Email: eldar.khayrullin@mail.ru
     Date: 2024
     Description: Wireshark Dissector for Lineage2Game
-    Protocol: 709
 ]]--
 
 set_plugin_info({
@@ -22,6 +21,12 @@ local xor = require("xor")
 local DEFAULT_GAME_PORT = 7777
 local DEFAULT_STATIC_XOR_KEY_HEX = "A1 6C 54 87"
 
+-- TODO generate by list of names vs protocol version
+local PROTOCOLS = {
+    {1, "C4 Update 1 (660)", "660"},
+    {2, "C5 Update 2 (709)", "709"},
+}
+local DEFAULT_PROTOCOL = PROTOCOLS[1][3]
 local GAME_PORT = DEFAULT_GAME_PORT
 local STATIC_XOR_KEY = ByteArray.new(DEFAULT_STATIC_XOR_KEY_HEX)
 local START_PNUM = 0
@@ -29,6 +34,11 @@ local INIT_SERVER_XOR_KEY = ByteArray.new("00 00 00 00")
 local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
+lineage2game.experts = require("game.protoexpert").init()
+lineage2game.fields = require("game.protofield").init()
+lineage2game.prefs.protocol =
+    Pref.enum("Protocol Version", DEFAULT_PROTOCOL,
+              "Protocol Version", PROTOCOLS, false)
 lineage2game.prefs.game_port =
     Pref.uint("Game server port", DEFAULT_GAME_PORT,
               "Default: " .. DEFAULT_GAME_PORT)
@@ -43,10 +53,14 @@ lineage2game.prefs.init_server_xor_key_hex =
 lineage2game.prefs.init_client_xor_key_hex =
     Pref.string("Init client part of XOR key", "", "Format: 00 00 00 00")
 
--- TODO select protocol by preference
--- TODO select lang by preference
-decode.init(lineage2game, cmn.abs_path("content/game/packets/709.ini"), "en")
-local OPCODE_NAME = decode.OPCODE_NAME
+local OPCODE_NAME
+---@param ver string
+local function init_decode(ver)
+    decode.init(cmn.abs_path("content/game/packets/" .. ver .. ".ini"), "en")
+    OPCODE_NAME = decode.OPCODE_NAME
+end
+
+init_decode(DEFAULT_PROTOCOL)
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)
 
@@ -127,6 +141,7 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
     elseif isserver then
         local opcode_len = packet.opcode_len(payload, isserver)
         local opcode = packet.opcode(payload, opcode_len)
+        -- TODO test by opcode number "0x00" KeyInit ?
         if opcode_str(opcode, isserver) == "KeyInit" then
             init_xor_keys(packet.xor_key(packet.data(payload, opcode_len)))
         end
@@ -184,7 +199,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
 
     local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
     if opcode_tvbr then
-        decode.opcode(subtree, opcode_tvbr, isencrypted, isserver)
+        decode.opcode(subtree, opcode_tvbr, isencrypted)
 
         -- TODO simple packet.data_tvbr, opcode_len = 1 always
         local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
@@ -229,6 +244,10 @@ function lineage2game.init()
 end
 
 function lineage2game.prefs_changed()
+    -- TODO select protocol by preference or by catch ProtocolVersion?
+    -- TODO select lang by preference
+    init_decode(lineage2game.prefs.protocol)
+
     GAME_PORT = lineage2game.prefs.game_port
     STATIC_XOR_KEY = ByteArray.new(lineage2game.prefs.static_xor_key_hex)
     START_PNUM = lineage2game.prefs.start_pnum
@@ -249,6 +268,7 @@ function lineage2game.dissector(tvb, pinfo, tree)
     pinfo.cols.protocol = lineage2game.name
     pinfo.cols.info = ""
 
+    -- TODO multi instance by pinfo.src_port
     local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
