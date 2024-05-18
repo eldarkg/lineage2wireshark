@@ -1,7 +1,5 @@
 # lineage2wireshark
 
-Login server: now static only dissector.
-
 ## Support Protocols
 * Login server: 785a
 * Game server: 660, 709
@@ -24,7 +22,7 @@ Login server: now static only dissector.
 
 ## Wireshark cautions
 * After `Reload Lua Plugins` need to `Reload this file` (otherwise invalid sequence)
-* Switch between LINEAGE packet and TCP error packet break sequence crypt
+* ?Switch between LINEAGE packet and TCP error packet break sequence crypt
 (to restore switch to LINEAGE packet)
 
 ## Find client static BlowFish private key
