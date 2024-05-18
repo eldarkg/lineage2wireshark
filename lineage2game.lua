@@ -14,7 +14,6 @@ set_plugin_info({
 })
 
 local util = require("common.utils")
-local decode = require("common.decode")
 local packet = require("common.packet")
 local xor = require("decrypt.xor")
 
@@ -55,12 +54,11 @@ lineage2game.prefs.init_server_xor_key_hex =
 lineage2game.prefs.init_client_xor_key_hex =
     Pref.string("Init client part of XOR key", "", "Format: 00 00 00 00")
 
-local OPCODE_NAME
+local decode
 ---@param ver string
 local function init_decode(ver)
-    decode.init(pf, pe,
+    decode = require("common.decode").init(pf, pe,
         util.abs_path("content/game/packets/" .. ver .. ".ini"), "en")
-    OPCODE_NAME = decode.OPCODE_NAME
 end
 
 init_decode(DEFAULT_PROTOCOL)
@@ -90,7 +88,7 @@ local xor_key_cache
 ---@param isserver boolean
 ---@return string
 local function opcode_str(opcode, isserver)
-    return tostring(OPCODE_NAME[isserver and "server" or "client"][opcode])
+    return tostring(decode.OPCODE_NAME[isserver and "server" or "client"][opcode])
 end
 
 ---@param key ByteArray Server XOR key
@@ -122,7 +120,7 @@ end
 ---@param tree TreeItem
 ---@param isserver boolean
 local function dissect_1pass(tvb, pinfo, tree, isserver)
-    local isencrypted = packet.is_encrypted_game_packet(tvb, OPCODE_NAME,
+    local isencrypted = packet.is_encrypted_game_packet(tvb, decode.OPCODE_NAME,
                                                         isserver)
     if pinfo.number == last_packet_number then
         subpacket_count_cache[pinfo.number] =
@@ -191,10 +189,10 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
                              tostring(last_subpacket_number) .. ". " ..
                              opcode_str(opcode, isserver))
 
-    decode.length(subtree, packet.length_tvbr(tvb))
+    decode:length(subtree, packet.length_tvbr(tvb))
 
     if xor_key then
-        decode.bytes(subtree, xor_key, "XOR key")
+        decode:bytes(subtree, xor_key, "XOR key")
     end
 
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
@@ -202,12 +200,12 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
 
     local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
     if opcode_tvbr then
-        decode.opcode(subtree, opcode_tvbr, isencrypted)
+        decode:opcode(subtree, opcode_tvbr, isencrypted)
 
         -- TODO simple packet.data_tvbr, opcode_len = 1 always
         local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
         if data_tvbr then
-            decode.data(subtree, data_tvbr, opcode, isencrypted, isserver)
+            decode:data(subtree, data_tvbr, opcode, isencrypted, isserver)
         end
     end
 

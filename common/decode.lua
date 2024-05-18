@@ -11,53 +11,33 @@ if not package.searchpath("common.decode", package.path) then
     return
 end
 
--- TODO create instance
-local pe
-local pf
-
 local ICON_SIZE_LEN = 4
 
 local _M = {}
-local OPCODE_FMT = {}
-local ID = {}
 
----@param _pf table
----@param _pe table
----@param path string
----@param lang string Language: see content/game (en, ru)
-function _M.init(_pf, _pe, path, lang)
-    -- FIXME
-    pf = _pf
-    pe = _pe
-    local op = require("common.opcode").load(path)
-    _M.OPCODE_NAME = {}
-    _M.OPCODE_NAME.server, OPCODE_FMT.server = op:opcode_name_format(true)
-    _M.OPCODE_NAME.client, OPCODE_FMT.client = op:opcode_name_format(false)
-
-    -- TODO select game or login
-    ID = require("game.id").init(lang)
-end
-
+---@param self table
 ---@param tree TreeItem
 ---@param tvbr TvbRange Length
-function _M.length(tree, tvbr)
-    tree:add_le(pf.u16, tvbr):prepend_text("Length")
+local function length(self, tree, tvbr)
+    tree:add_le(self.pf.u16, tvbr):prepend_text("Length")
 end
 
+---@param self table
 ---@param tree TreeItem
 ---@param data ByteArray
 ---@param label string
-function _M.bytes(tree, data, label)
+local function bytes(self, tree, data, label)
     local data_tvb = data:tvb(label)
-    tree:add_le(pf.bytes, data_tvb()):prepend_text(label):set_generated()
+    tree:add_le(self.pf.bytes, data_tvb()):prepend_text(label):set_generated()
 end
 
+---@param self table
 ---@param tree TreeItem
 ---@param tvbr TvbRange Opcode
 ---@param isencrypted boolean
 ---@return TreeItem item
-function _M.opcode(tree, tvbr, isencrypted)
-    local item = tree:add(pf.bytes, tvbr(offset, len)):prepend_text("Opcode")
+local function opcode(self, tree, tvbr, isencrypted)
+    local item = tree:add(self.pf.bytes, tvbr(offset, len)):prepend_text("Opcode")
     if isencrypted then
         item:set_generated()
     end
@@ -89,56 +69,57 @@ local function get_value_len(tvbr, type, len)
     return val, len
 end
 
+---@param self table
 ---@param tvbr TvbRange Field data
 ---@param fmt table Field format
 ---@return ProtoField f
 ---@return integer|nil len Length. nil - memory range is out of bounds
 ---@return any val
-local function parse_field(tvbr, fmt)
+local function parse_field(self, tvbr, fmt)
     local f
     local len
     local val
 
     local type = fmt.type
     if type == "b" then
-        f = pf.bytes
+        f = self.pf.bytes
         len = ICON_SIZE_LEN
     elseif type == "c" then
-        f = pf.u8
+        f = self.pf.u8
         len = 1
     elseif type == "d" then
         if fmt.param == "FCol" then
-            f = pf.r32
+            f = self.pf.r32
         else
-            f = pf.i32
+            f = self.pf.i32
         end
         len = 4
     elseif type == "f" then
-        f = pf.double
+        f = self.pf.double
         len = 8
     elseif type == "h" then
-        f = pf.u16
+        f = self.pf.u16
         len = 2
     elseif type == "q" then
-        f = pf.i64
+        f = self.pf.i64
         len = 8
     elseif type == "s" then
-        f = pf.string
+        f = self.pf.string
         len = 2 -- min length of empty unicode string
     elseif type == "z" then
-        f = pf.bytes
+        f = self.pf.bytes
         local s = fmt.name:match("(%d+)")
         len = tonumber(s, 10)
     elseif type == "-" then
         -- TODO decode Script:
         -- implement to ini operator Switch, Case.{scope}[.{n}]
         -- implement to ini For.{scope}[.{count_field}]
-        f = pf.bytes
+        f = self.pf.bytes
         len = -1
     else
         len = tonumber(type, 10)
         if len then
-            f = pf.bytes
+            f = self.pf.bytes
         end
     end
 
@@ -153,19 +134,20 @@ local function parse_field(tvbr, fmt)
     return f, len, val
 end
 
+---@param self table
 ---@param tree TreeItem
 ---@param tvbr TvbRange Data
 ---@param data_fmt table Data format
 ---@param isencrypted boolean
 ---@return integer|nil len Decode length. nil - memory range is out of bounds
-local function decode_data(tree, tvbr, data_fmt, isencrypted)
+local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
     local offset = 0
     local i = 1
     while i <= #data_fmt do
         local field_fmt = data_fmt[i]
 
         if tvbr:len() <= offset then
-            tree:add_proto_expert_info(pe.undecoded, "not found field \"" ..
+            tree:add_proto_expert_info(self.pe.undecoded, "not found field \"" ..
                                        field_fmt.name .. "\"")
             return nil
         end
@@ -173,16 +155,16 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
         local f
         local len
         local val
-        f, len, val = parse_field(tvbr(offset), field_fmt)
+        f, len, val = parse_field(self, tvbr(offset), field_fmt)
         if not len then
-            tree:add_proto_expert_info(pe.undecoded, "parse field \"" ..
+            tree:add_proto_expert_info(self.pe.undecoded, "parse field \"" ..
                                        field_fmt.name ..
                                        "(" .. field_fmt.type .. ")\"")
             return nil
         end
 
         if field_fmt.type == "b" then
-            local item = tree:add_le(pf.i32, tvbr(offset, ICON_SIZE_LEN))
+            local item = tree:add_le(self.pf.i32, tvbr(offset, ICON_SIZE_LEN))
             item:prepend_text("Icon size")
             if isencrypted then
                 item:set_generated()
@@ -190,7 +172,8 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
             offset = offset + ICON_SIZE_LEN
 
             if tvbr:len() < offset + len then
-                tree:add_proto_expert_info(pe.undecoded, "incomplete icon \"" ..
+                tree:add_proto_expert_info(self.pe.undecoded,
+                                           "incomplete icon \"" ..
                                            field_fmt.name .. "\"")
                 return nil
             end
@@ -203,7 +186,7 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
 
         local act = field_fmt.action
         if act == "get" then
-            local id = ID[field_fmt.param]
+            local id = self.ID[field_fmt.param]
             if id then
                 local desc = id[val]
                 item:append_text(" (" .. tostring(desc) .. ")")
@@ -221,7 +204,7 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
             local iend = i + tonumber(field_fmt.param, 10)
             for j = 1, val, 1 do
                 if tvbr:len() <= offset then
-                    tree:add_proto_expert_info(pe.undecoded,
+                    tree:add_proto_expert_info(self.pe.undecoded,
                                         "not found repeat #" .. tostring(j) ..
                                         " of group " .. field_fmt.name)
                     return nil
@@ -232,7 +215,7 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
                     subtree:set_generated()
                 end
 
-                len = decode_data(subtree, tvbr(offset),
+                len = decode_data(self, subtree, tvbr(offset),
                                   {table.unpack(data_fmt, i + 1, iend)},
                                   isencrypted)
                 if len then
@@ -254,26 +237,52 @@ end
 
 -- TODO save ID from CharInfo, NpcInfo and etc for later link ID by packet number
 
+---@param self table
 ---@param tree TreeItem
 ---@param tvbr TvbRange Data
 ---@param opcode integer
 ---@param isencrypted boolean
 ---@param isserver boolean
 ---@return integer|nil len Decode length. nil - error
-function _M.data(tree, tvbr, opcode, isencrypted, isserver)
+local function data(self, tree, tvbr, opcode, isencrypted, isserver)
     local subtree = tree:add(tvbr, "Data")
     if isencrypted then
         subtree:set_generated()
     end
 
-    local data_fmt = OPCODE_FMT[isserver and "server" or "client"][opcode]
+    local data_fmt = self.OPCODE_FMT[isserver and "server" or "client"][opcode]
     if data_fmt then
-        return decode_data(subtree, tvbr, data_fmt, isencrypted)
+        return decode_data(self, subtree, tvbr, data_fmt, isencrypted)
     else
-        tree:add_proto_expert_info(pe.unk_opcode, "unknown opcode \"" ..
+        tree:add_proto_expert_info(self.pe.unk_opcode, "unknown opcode \"" ..
                                    string.format("0x%X", opcode) .. "\"")
         return nil
     end
+end
+
+---@param pf table Proto fields
+---@param pe table Proto experts
+---@param path string
+---@param lang string Language: see content/game (en, ru)
+function _M.init(pf, pe, path, lang)
+    local op = require("common.opcode").load(path)
+    local OPCODE_NAME = {}
+    local OPCODE_FMT = {}
+    OPCODE_NAME.server, OPCODE_FMT.server = op:opcode_name_format(true)
+    OPCODE_NAME.client, OPCODE_FMT.client = op:opcode_name_format(false)
+    return {
+        pf = pf,
+        pe = pe,
+        OPCODE_NAME = OPCODE_NAME,
+        OPCODE_FMT = OPCODE_FMT,
+        -- TODO select game or login
+        ID = require("game.id").init(lang),
+
+        length = length,
+        bytes = bytes,
+        opcode = opcode,
+        data = data,
+    }
 end
 
 return _M
