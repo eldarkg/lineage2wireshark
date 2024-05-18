@@ -1,6 +1,6 @@
 # Packets Description File Format
 ```ini
-; comments
+; Comment
 [client] ; client packets section
 Packet
 ...
@@ -40,6 +40,6 @@ Type(Name[:Func.FuncParam])
 | Func | Description |
 |:----:|-------------|
 | For  | Repeat field `value` times next `FuncParam` fields |
-| Get  | Get description from accordance content file to `FuncParam` |
+| Get  | Get description by `value` index from accordance content file to `FuncParam` |
 
 * Func is case insensetive.
