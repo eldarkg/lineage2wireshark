@@ -266,6 +266,8 @@ local function decode_data(tree, tvbr, data_fmt, isencrypted)
     return offset
 end
 
+-- TODO save ID from CharInfo, NpcInfo and etc for later link ID by packet number
+
 ---@param tree TreeItem
 ---@param tvbr TvbRange Data
 ---@param opcode integer
