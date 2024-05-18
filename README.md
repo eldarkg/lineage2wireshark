@@ -1,6 +1,6 @@
 # lineage2wireshark
 
-Now static only dissector.
+Login server: now static only dissector.
 
 ## Support Protocols
 * Login server: 785a
