@@ -16,7 +16,7 @@ set_plugin_info({
 
 local bf = require("decrypt.blowfish")
 local cmn = require("common.utils")
-local packet = require("packet")
+local packet = require("common.packet")
 -- TODO use decode
 local pf = require("login.protofield")
 

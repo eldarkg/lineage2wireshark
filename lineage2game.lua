@@ -14,8 +14,8 @@ set_plugin_info({
 })
 
 local cmn = require("common.utils")
-local decode = require("decode")
-local packet = require("packet")
+local decode = require("common.decode")
+local packet = require("common.packet")
 local xor = require("decrypt.xor")
 
 local DEFAULT_GAME_PORT = 7777

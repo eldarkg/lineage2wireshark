@@ -7,7 +7,7 @@
 ]]--
 
 ---Workaround: skip 1st pass without root path
-if not package.searchpath("decode", package.path) then
+if not package.searchpath("common.decode", package.path) then
     return
 end
 
@@ -23,7 +23,7 @@ local ID = {}
 ---@param path string
 ---@param lang string Language: see content/game (en, ru)
 function _M.init(path, lang)
-    local op = require("opcode").load(path)
+    local op = require("common.opcode").load(path)
     _M.OPCODE_NAME = {}
     _M.OPCODE_NAME.server, OPCODE_FMT.server = op:opcode_name_format(true)
     _M.OPCODE_NAME.client, OPCODE_FMT.client = op:opcode_name_format(false)
@@ -31,7 +31,7 @@ function _M.init(path, lang)
     -- TODO move to file
     local cmn = require("common.utils")
     local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
-    local id = require("id")
+    local id = require("common.id")
     ID["Block"] = id.load(content_abs_path .. "Blocks.ini", 0)
     ID["ClassID"] = id.load(content_abs_path .. "ClassId.ini", 0)
     ID["FSup"] = id.load(content_abs_path .. "AttributesId.ini", 0)

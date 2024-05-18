@@ -7,7 +7,7 @@
 ]]--
 
 ---Workaround: skip 1st pass without root path
-if not package.searchpath("id", package.path) then
+if not package.searchpath("common.id", package.path) then
     return
 end
 
