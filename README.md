@@ -4,7 +4,7 @@ Login server: now static only dissector.
 
 ## Support Protocols
 * Login server: 785a
-* Game server: 709
+* Game server: 660, 709
 
 ## Wireshark Filters
 * Login server: lineage2login (tcp.srcport == 2106 || tcp.dstport == 2106)

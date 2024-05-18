@@ -40,6 +40,7 @@ function _M.init(path, lang)
     ID["GMCmd"] = id.load(content_abs_path .. "GMCmds.ini", 0)
     ID["Macro"] = id.load(content_abs_path .. "MacroTypes.ini", 0)
     ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini", 0)
+    -- TODO offset from protocol version
     ID["NpcId"] = id.load(content_abs_path .. "NpcsId.ini", 1000000) -- From C4
     ID["Race"] = id.load(content_abs_path .. "Races.ini", 0)
     ID["RestartPoint"] = id.load(content_abs_path .. "RestartPoints.ini", 0)
