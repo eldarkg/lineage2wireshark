@@ -14,7 +14,7 @@ set_plugin_info({
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
 })
 
-local bf = require("blowfish")
+local bf = require("decrypt.blowfish")
 local cmn = require("common")
 local packet = require("packet")
 -- TODO use decode

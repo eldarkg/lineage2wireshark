@@ -16,7 +16,7 @@ set_plugin_info({
 local cmn = require("common")
 local decode = require("decode")
 local packet = require("packet")
-local xor = require("xor")
+local xor = require("decrypt.xor")
 
 local DEFAULT_GAME_PORT = 7777
 local DEFAULT_STATIC_XOR_KEY_HEX = "A1 6C 54 87"
