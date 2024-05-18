@@ -3,7 +3,7 @@
     Author: Eldar Khayrullin
     Email: eldar.khayrullin@mail.ru
     Date: 2024
-    Description: Data
+    Description: Opcodes
 ]]--
 
 ---Workaround: skip 1st pass without root path
@@ -15,20 +15,16 @@ local ini = require("thirdparty.ini")
 
 local _M = {}
 
----@param path string
-function _M.load(path)
-    _M.packets = ini.parse(path)
-end
-
+---@param self table
 ---@param isserver boolean
 ---@return table names Opcode to name
 ---@return table fmts Opcode to data format
-function _M.opcode_name_format(isserver)
+local function opcode_name_format(self, isserver)
     local names = {}
     local fmts = {}
 
     for opcode_s, desc
-        in pairs(_M.packets[isserver and "server" or "client"]) do
+        in pairs(self.packets[isserver and "server" or "client"]) do
 
         local opcode = tonumber(opcode_s, 16)
         local opname = desc:match("^([^:]+):")
@@ -51,6 +47,14 @@ function _M.opcode_name_format(isserver)
     end
 
     return names, fmts
+end
+
+---@param path string
+function _M.load(path)
+    return {
+        packets = ini.parse(path),
+        opcode_name_format = opcode_name_format
+    }
 end
 
 return _M

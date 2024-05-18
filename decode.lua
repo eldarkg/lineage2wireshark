@@ -23,12 +23,12 @@ local ID = {}
 ---@param path string
 ---@param lang string Language: see content/game (en, ru)
 function _M.init(path, lang)
-    local op = require("opcode")
-    op.load(path)
+    local op = require("opcode").load(path)
     _M.OPCODE_NAME = {}
-    _M.OPCODE_NAME.server, OPCODE_FMT.server = op.opcode_name_format(true)
-    _M.OPCODE_NAME.client, OPCODE_FMT.client = op.opcode_name_format(false)
+    _M.OPCODE_NAME.server, OPCODE_FMT.server = op:opcode_name_format(true)
+    _M.OPCODE_NAME.client, OPCODE_FMT.client = op:opcode_name_format(false)
 
+    -- TODO move to file
     local cmn = require("common")
     local content_abs_path = cmn.abs_path("content/game/" .. lang .. "/")
     local id = require("id")
