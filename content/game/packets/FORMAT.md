@@ -19,7 +19,7 @@ OpcodeHex=OpcodeName:[Field[...Field]]
 
 ### Field
 ```ini
-Type(Name[:Func.FuncParam])
+Type(Name[:Action.Param])
 ```
 
 #### Type
@@ -36,10 +36,10 @@ Type(Name[:Func.FuncParam])
 | s        | string UTF-16 |
 | z        | bytes array with size equal `Name` number (like 256fixed or 32) |
 
-#### Func
-| Func | Description |
+#### Action
+| Action | Description |
 |:----:|-------------|
-| For  | Repeat field `value` times next `FuncParam` fields |
-| Get  | Get description by `value` index from accordance content file to `FuncParam` |
+| For  | Repeat field `value` times next `Param` fields |
+| Get  | Get description by `value` index from accordance content file to `Param` |
 
-* Func is case insensetive.
+* Action is case insensetive.
