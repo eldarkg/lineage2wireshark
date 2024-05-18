@@ -27,6 +27,12 @@ Login server: now static only dissector.
 * Switch between LINEAGE packet and TCP error packet break sequence crypt
 (to restore switch to LINEAGE packet)
 
+## Find client static BlowFish private key
+```
+system/engine.dll -> Ghidra -> Search call InitializeBlowfish -> Arg 2 -> key
+```
+* Try all found keys and find one valid.
+
 ## Utility
 Convert binary to image
 ```sh
