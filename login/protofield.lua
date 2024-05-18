@@ -21,13 +21,14 @@ local _M = {}
 
 _M.bytes = ProtoField.bytes("lineage2game.bytes", " ", base.NONE)
 _M.bool = ProtoField.bool("lineage2login.bool", " ")
-_M.uint8 = ProtoField.uint8("lineage2login.uint8", " ", base.DEC)
-_M.uint16 = ProtoField.uint16("lineage2login.uint16", " ", base.DEC)
-_M.uint32 = ProtoField.uint32("lineage2login.uint32", " ", base.DEC)
-_M.bin32 = ProtoField.uint32("lineage2login.bin32", " ", base.HEX)
+_M.u8 = ProtoField.uint8("lineage2login.u8", " ", base.DEC)
+_M.u16 = ProtoField.uint16("lineage2login.u16", " ", base.DEC)
+_M.r32 = ProtoField.uint32("lineage2login.r32", " ", base.HEX)
+_M.i32 = ProtoField.int32("lineage2login.i32", " ", base.DEC)
 _M.string = ProtoField.string("lineage2login.string", " ", base.ASCII)
 _M.ipv4 = ProtoField.ipv4("lineage2login.ipv4", " ")
 
+-- TODO move to decode tables
 _M.server_opcode = ProtoField.uint8("lineage2login.server_opcode",
                                     "Opcode", base.HEX, SERVER_OPCODE_TXT)
 _M.client_opcode = ProtoField.uint8("lineage2login.client_opcode",
@@ -45,5 +46,25 @@ _M.play_fail_reason = ProtoField.uint32("lineage2login.play_fail_reason",
 _M.gg_auth_response = ProtoField.uint32("lineage2login.gg_auth_response",
                                         "Response", base.HEX,
                                         msg.GG_AUTH_RESPONSE)
+
+---@return table
+function _M.init()
+    return {
+        _M.bytes,
+        _M.bool,
+        _M.u8,
+        _M.u16,
+        _M.i32,
+        _M.r32,
+        _M.string,
+        _M.ipv4,
+        _M.server_opcode,
+        _M.client_opcode,
+        _M.login_fail_reason,
+        _M.account_kicked_reason,
+        _M.play_fail_reason,
+        _M.gg_auth_response,
+    }
+end
 
 return _M

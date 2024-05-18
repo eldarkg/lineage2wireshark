@@ -33,22 +33,7 @@ local LOGIN_PORT = DEFAULT_LOGIN_PORT
 local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
 
 local lineage2login = Proto("lineage2login", "Lineage2 Login Protocol")
-lineage2login.fields = {
-    pf.bytes,
-    pf.bool,
-    pf.uint8,
-    pf.uint16,
-    pf.uint32,
-    pf.bin32,
-    pf.string,
-    pf.ipv4,
-    pf.server_opcode,
-    pf.client_opcode,
-    pf.login_fail_reason,
-    pf.account_kicked_reason,
-    pf.play_fail_reason,
-    pf.gg_auth_response,
-}
+lineage2login.fields = require("login.protofield").init()
 lineage2login.prefs.login_port =
     Pref.uint("Login server port", DEFAULT_LOGIN_PORT,
               "Default: " .. tostring(DEFAULT_LOGIN_PORT))
@@ -111,7 +96,7 @@ local function dissect(tvb, pinfo, tree)
     local subtree = tree:add(lineage2login, tvb(),
                              tostring(last_subpacket_number) .. ". " ..
                              opcode_str(opcode, isserver))
-    cmn.add_le(subtree, pf.uint16, packet.length_tvbr(tvb), "Length", false)
+    cmn.add_le(subtree, pf.u16, packet.length_tvbr(tvb), "Length", false)
 
     if isencrypted then
         local label = "Blowfish PK"

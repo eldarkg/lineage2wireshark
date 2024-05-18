@@ -28,14 +28,14 @@ function _M.decode_client_data(tree, opcode, data, isencrypted)
         cmn.add_le(tree, pf.string, data(0, 14), "Login", isencrypted)
         cmn.add_le(tree, pf.string, data(14, 16), "Password", isencrypted)
     elseif opcode == CLIENT_OPCODE.RequestServerLogin then
-        cmn.add_le(tree, pf.bin32, data(0, 4), "Session Key 1.1", isencrypted)
-        cmn.add_le(tree, pf.bin32, data(4, 4), "Session Key 1.2", isencrypted)
-        cmn.add_le(tree, pf.uint8, data(8, 1), "Server ID", isencrypted)
+        cmn.add_le(tree, pf.r32, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, pf.r32, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, pf.u8, data(8, 1), "Server ID", isencrypted)
     elseif opcode == CLIENT_OPCODE.RequestServerList then
-        cmn.add_le(tree, pf.bin32, data(0, 4), "Session Key 1.1", isencrypted)
-        cmn.add_le(tree, pf.bin32, data(4, 4), "Session Key 1.2", isencrypted)
+        cmn.add_le(tree, pf.r32, data(0, 4), "Session Key 1.1", isencrypted)
+        cmn.add_le(tree, pf.r32, data(4, 4), "Session Key 1.2", isencrypted)
     elseif opcode == CLIENT_OPCODE.RequestGGAuth then
-        cmn.add_le(tree, pf.bin32, data(0, 4), "Session ID", isencrypted)
+        cmn.add_le(tree, pf.r32, data(0, 4), "Session ID", isencrypted)
     end
 end
 
