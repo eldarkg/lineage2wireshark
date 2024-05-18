@@ -35,7 +35,8 @@ local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 
 local lineage2game = Proto("lineage2game", "Lineage2 Game Protocol")
 lineage2game.experts = require("game.protoexpert").init()
-lineage2game.fields = require("game.protofield").init()
+local pf = require("protofields").init("lineage2game")
+lineage2game.fields = pf
 lineage2game.prefs.protocol =
     Pref.enum("Protocol Version", DEFAULT_PROTOCOL,
               "Protocol Version", PROTOCOLS, false)
@@ -56,7 +57,8 @@ lineage2game.prefs.init_client_xor_key_hex =
 local OPCODE_NAME
 ---@param ver string
 local function init_decode(ver)
-    decode.init(util.abs_path("content/game/packets/" .. ver .. ".ini"), "en")
+    decode.init(pf,
+        util.abs_path("content/game/packets/" .. ver .. ".ini"), "en")
     OPCODE_NAME = decode.OPCODE_NAME
 end
 

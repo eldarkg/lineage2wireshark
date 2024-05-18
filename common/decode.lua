@@ -11,8 +11,10 @@ if not package.searchpath("common.decode", package.path) then
     return
 end
 
+-- TODO create instance
+
 local pe = require("game.protoexpert")
-local pf = require("game.protofield")
+local pf
 
 local ICON_SIZE_LEN = 4
 
@@ -20,9 +22,12 @@ local _M = {}
 local OPCODE_FMT = {}
 local ID = {}
 
+---@param _pf table
 ---@param path string
 ---@param lang string Language: see content/game (en, ru)
-function _M.init(path, lang)
+function _M.init(_pf, path, lang)
+    -- FIXME
+    pf = _pf
     local op = require("common.opcode").load(path)
     _M.OPCODE_NAME = {}
     _M.OPCODE_NAME.server, OPCODE_FMT.server = op:opcode_name_format(true)
