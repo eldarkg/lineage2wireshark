@@ -13,7 +13,7 @@ set_plugin_info({
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
 })
 
-local cmn = require("common.utils")
+local util = require("common.utils")
 local decode = require("common.decode")
 local packet = require("common.packet")
 local xor = require("decrypt.xor")
@@ -56,7 +56,7 @@ lineage2game.prefs.init_client_xor_key_hex =
 local OPCODE_NAME
 ---@param ver string
 local function init_decode(ver)
-    decode.init(cmn.abs_path("content/game/packets/" .. ver .. ".ini"), "en")
+    decode.init(util.abs_path("content/game/packets/" .. ver .. ".ini"), "en")
     OPCODE_NAME = decode.OPCODE_NAME
 end
 
@@ -209,8 +209,8 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     end
 
     if subpacket_count_cache[pinfo.number] <= last_subpacket_number then
-        cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
-                                opcode_str)
+        util.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
+                                 opcode_str)
     end
 
     return tvb:len()

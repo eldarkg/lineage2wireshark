@@ -15,7 +15,7 @@ set_plugin_info({
 })
 
 local bf = require("decrypt.blowfish")
-local cmn = require("common.utils")
+local util = require("common.utils")
 local packet = require("common.packet")
 -- TODO use decode
 local pf = require("login.protofield")
@@ -113,12 +113,12 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     local subtree = tree:add(lineage2login, tvb(),
                              tostring(last_subpacket_number) .. ". " ..
                              opcode_str(opcode, isserver))
-    cmn.add_le(subtree, pf.u16, packet.length_tvbr(tvb), "Length", false)
+    util.add_le(subtree, pf.u16, packet.length_tvbr(tvb), "Length", false)
 
     if isencrypted then
         local label = "Blowfish PK"
         local bf_pk_tvb = BLOWFISH_PK:tvb(label)
-        cmn.add_le(subtree, pf.bytes, bf_pk_tvb(), label, true)
+        util.add_le(subtree, pf.bytes, bf_pk_tvb(), label, true)
     end
 
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
@@ -127,21 +127,21 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
     if opcode_tvbr then
         local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
-        cmn.add_be(subtree, pf_opcode, opcode_tvbr, nil, isencrypted)
+        util.add_be(subtree, pf_opcode, opcode_tvbr, nil, isencrypted)
     end
 
     -- TODO simple packet.data_tvbr, opcode_len = 1 always
     local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
     if data_tvbr then
-        local data_st = cmn.generated(subtree:add(lineage2login, data_tvbr, "Data"),
-                                      isencrypted)
+        local data_st = util.generated(subtree:add(lineage2login, data_tvbr, "Data"),
+                                       isencrypted)
         local decode_data = isserver and decode_server_data or decode_client_data
         decode_data(data_st, opcode, data_tvbr, isencrypted)
     end
 
     if subpacket_count_cache[pinfo.number] <= last_subpacket_number then
-        cmn.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
-                                opcode_str)
+        util.set_info_field_stat(pinfo, isserver, isencrypted, last_opcode_stat,
+                                 opcode_str)
     end
 
     return tvb:len()
