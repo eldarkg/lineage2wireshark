@@ -269,7 +269,9 @@ function lineage2game.dissector(tvb, pinfo, tree)
     pinfo.cols.info = ""
 
     -- TODO multi instance by pinfo.src_port
-    local subtree = tree:add(lineage2game, tvb(), "Lineage2 Game Protocol")
+    local subtree = tree:add(lineage2game, tvb(),
+                             "Lineage2 Game Protocol " .. "(" ..
+                             lineage2game.prefs.protocol .. ")")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
 
