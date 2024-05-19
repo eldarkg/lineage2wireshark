@@ -23,8 +23,8 @@ Type(Name[:Action.Param])
 ```
 
 #### Type
-| Type | Description |
-|:----:|-------------|
+| Type     | Description |
+|:--------:|-------------|
 | -        | script decoded |
 | `number` | bytes array with size equal `number` |
 | b        | bitmap: icon size (4 bytes) + data |
@@ -32,14 +32,17 @@ Type(Name[:Action.Param])
 | d        | i32 (Exception: `FCol` - r32) |
 | f        | double |
 | h        | u16 |
+| i        | IPv4 |
 | q        | i64 |
 | s        | string UTF-16 |
+| S        | string ASCII |
 | z        | bytes array with size equal `Name` number (like 256fixed or 32) |
 
 #### Action
 | Action | Description |
-|:----:|-------------|
-| For  | Repeat field `value` times next `Param` fields |
-| Get  | Get description by `value` index from accordance content file to `Param` |
+|:------:|-------------|
+| For    | Repeat field `value` times next `Param` fields |
+| Get    | Get description by `value` index from accordance content file to `Param` |
+| Len    | Limit length `Param` for string |
 
 * Action is case insensetive.
