@@ -122,6 +122,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     end
 
     local isencrypted = packet.is_encrypted_login_packet(tvb, decode.OPCODE_NAME,
+                                                         proto.prefs.version,
                                                          isserver)
     local payload
     if isencrypted then

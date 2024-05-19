@@ -116,14 +116,17 @@ end
 
 ---@param tvb Tvb Packet
 ---@param opcode_name table
+---@param ver integer
 ---@param isserver boolean
 ---@return boolean
-function _M.is_encrypted_login_packet(tvb, opcode_name, isserver)
+function _M.is_encrypted_login_packet(tvb, opcode_name, ver, isserver)
     if isserver then
         local len = _M.length(tvb)
         local payload = _M.payload_tvbr(tvb):bytes()
         local opcode = _M.opcode(payload, _M.opcode_len(payload, isserver))
-        return not (len == 11 and opcode_name.server[opcode] == "Init")
+        -- FIXME use opcode content info
+        return not ((ver == 0x785A and len == 11 or ver == 0xC621 and len == 155)
+                    and opcode_name.server[opcode] == "Init")
     else
         return true
     end
