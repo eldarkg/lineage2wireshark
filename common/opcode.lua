@@ -32,13 +32,24 @@ local function opcode_name_format(self, isserver)
 
         local fmt_str = desc:sub(#opname + 2)
         local data_fmt = {}
-        for typ, name, action, param
-            in fmt_str:gmatch("([^(]+)%(([^:)]+):?([^.)]-)%.?([^.]-)%)") do
+        for type, content in fmt_str:gmatch("([^(]+)%(([^)]+)%)") do
+            local name = content:match("^([^:.]+)")
+            local action
+            local param
+            if name then
+                local pos = #name + 1
+                action = content:match("^:([^.]+)", pos)
+                if action then
+                    action = string.lower(action)
+                    pos = pos + #action + 1
+                    param = content:match("^%.([^.]+)", pos)
+                end
+            end
 
             local field_fmt = {}
-            field_fmt.type = typ
+            field_fmt.type = type
             field_fmt.name = name
-            field_fmt.action = action:lower()
+            field_fmt.action = action
             field_fmt.param = param
             table.insert(data_fmt, field_fmt)
         end
