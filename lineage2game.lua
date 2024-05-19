@@ -6,9 +6,12 @@
     Description: Wireshark Dissector for Lineage2Game
 ]]--
 
+local DESC = "Lineage2 Game Protocol"
+local NAME = "LINEAGE2GAME"
+
 set_plugin_info({
     version = "0.1.0",
-    description = "Lineage2Game",
+    description = DESC,
     author = "Eldar Khayrullin",
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
 })
@@ -17,55 +20,63 @@ local util = require("common.utils")
 local packet = require("common.packet")
 local xor = require("decrypt.xor")
 
-local DEFAULT_GAME_PORT = 7777
+-- TODO generate by list of names vs protocol version
+local VERSIONS = {
+    {1, "C4 Update 1 (660)", 660},
+    {2, "C5 Update 2 (709)", 709},
+}
+local DEFAULT_VERSION = VERSIONS[1][3]
+local DEFAULT_PORT = 7777
 local DEFAULT_STATIC_XOR_KEY_HEX = "A1 6C 54 87"
 
--- TODO generate by list of names vs protocol version
-local PROTOCOLS = {
-    {1, "C4 Update 1 (660)", "660"},
-    {2, "C5 Update 2 (709)", "709"},
-}
-local DEFAULT_PROTOCOL = PROTOCOLS[1][3]
-local GAME_PORT = DEFAULT_GAME_PORT
+local PORT = DEFAULT_PORT
 local STATIC_XOR_KEY = ByteArray.new(DEFAULT_STATIC_XOR_KEY_HEX)
 local START_PNUM = 0
 local INIT_SERVER_XOR_KEY = ByteArray.new("00 00 00 00")
 local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 
-local proto = Proto("LINEAGE2GAME", "Lineage2 Game Protocol")
+local proto = Proto(NAME, DESC)
 local pf = require("common.protofields").init(proto.name)
 proto.fields = pf
 local pe = require("common.protoexperts").init(proto.name)
 proto.experts = pe
-proto.prefs.protocol =
-    Pref.enum("Protocol Version", DEFAULT_PROTOCOL,
-              "Protocol Version", PROTOCOLS, false)
-proto.prefs.game_port =
-    Pref.uint("Game server port", DEFAULT_GAME_PORT,
-              "Default: " .. DEFAULT_GAME_PORT)
-proto.prefs.static_xor_key_hex =
-    Pref.string("Static part of XOR key", DEFAULT_STATIC_XOR_KEY_HEX,
-                "Default: " .. DEFAULT_STATIC_XOR_KEY_HEX)
-proto.prefs.start_pnum =
-    Pref.uint("Start packet number", START_PNUM,
-              "Start analyze from selected packet number")
-proto.prefs.init_server_xor_key_hex =
-    Pref.string("Init server part of XOR key", "", "Format: 00 00 00 00")
-proto.prefs.init_client_xor_key_hex =
-    Pref.string("Init client part of XOR key", "", "Format: 00 00 00 00")
+proto.prefs.version = Pref.enum("Protocol Version",
+                                DEFAULT_VERSION,
+                                "Protocol Version", VERSIONS, false)
+proto.prefs.port = Pref.uint("Server port",
+                             DEFAULT_PORT,
+                             "Default: " .. DEFAULT_PORT)
+proto.prefs.static_xor_key_hex = Pref.string("Static part of XOR key",
+                                             DEFAULT_STATIC_XOR_KEY_HEX,
+                                             "Default: " ..
+                                             DEFAULT_STATIC_XOR_KEY_HEX)
+proto.prefs.start_pnum = Pref.uint("Start packet number",
+                                   START_PNUM,
+                                   "Start analyze from selected packet number")
+proto.prefs.init_server_xor_key_hex = Pref.string("Init server part of XOR key",
+                                                  "", "Format: 00 00 00 00")
+proto.prefs.init_client_xor_key_hex = Pref.string("Init client part of XOR key",
+                                                  "", "Format: 00 00 00 00")
+
+---@param ver integer
+---@return string
+local function version_str(ver)
+    return string.format("%d", ver)
+end
 
 local decode
 ---@param ver string
 local function init_decode(ver)
+    local ver_str = version_str(ver)
     decode = require("common.decode").init(pf, pe,
-        util.abs_path("content/game/packets/" .. ver .. ".ini"), "en")
+        util.abs_path("content/game/packets/" .. ver_str .. ".ini"), "en")
 end
 
-init_decode(DEFAULT_PROTOCOL)
+init_decode(DEFAULT_VERSION)
 
--- TODO implement module cache. Methods: new, set(number, val), last, get(number)
+-- TODO implement module cache. Methods: new, set(number, val), last, get(number)?
 
----Init by lineage2game.init
+---Init by proto.init
 ---Last packet pinfo.number
 local last_packet_number
 ---Last sub packet number
@@ -225,7 +236,7 @@ local function dissect(tvb, pinfo, tree)
         return 0
     end
 
-    local isserver = (pinfo.src_port == GAME_PORT)
+    local isserver = (pinfo.src_port == PORT)
     return pinfo.visited and dissect_2pass(tvb, pinfo, tree, isserver)
                          or dissect_1pass(tvb, pinfo, tree, isserver)
 end
@@ -246,9 +257,9 @@ end
 function proto.prefs_changed()
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
-    init_decode(proto.prefs.protocol)
+    init_decode(proto.prefs.version)
 
-    GAME_PORT = proto.prefs.game_port
+    PORT = proto.prefs.port
     STATIC_XOR_KEY = ByteArray.new(proto.prefs.static_xor_key_hex)
     START_PNUM = proto.prefs.start_pnum
     INIT_SERVER_XOR_KEY =
@@ -269,11 +280,10 @@ function proto.dissector(tvb, pinfo, tree)
     pinfo.cols.info = ""
 
     -- TODO multi instance by pinfo.src_port
-    local subtree = tree:add(proto, tvb(),
-                             "Lineage2 Game Protocol " .. "(" ..
-                             proto.prefs.protocol .. ")")
+    local ver = version_str(proto.prefs.version)
+    local subtree = tree:add(proto, tvb(), DESC .. " (" .. ver .. ")")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
-tcp_port:add(GAME_PORT, proto)
+tcp_port:add(PORT, proto)
