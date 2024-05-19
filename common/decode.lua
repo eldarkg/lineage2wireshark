@@ -108,10 +108,10 @@ local function parse_field(self, tvbr, fmt)
         f = self.pf.i64
         len = 8
     elseif type == "s" then
-        f = self.pf.string
+        f = self.pf.utf16z
         len = 2 -- min length of empty unicode string
     elseif type == "S" then
-        f = self.pf.stringz
+        f = self.pf.asciiz
         if fmt.action == "len" then
             len = tonumber(fmt.param, 10)
         else
