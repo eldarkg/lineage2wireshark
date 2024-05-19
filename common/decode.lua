@@ -65,6 +65,8 @@ local function get_value_len(tvbr, type, len)
         val = tvbr(0, len):le_int64()
     elseif type == "s" then
         val, len = tvbr:le_ustringz()
+    elseif type == "S" then
+        -- TODO use Param: Len
     end
     return val, len
 end
@@ -80,6 +82,7 @@ local function parse_field(self, tvbr, fmt)
     local len
     local val
 
+    -- TODO use Param: Hex
     local type = fmt.type
     if type == "b" then
         f = self.pf.bytes
@@ -88,7 +91,7 @@ local function parse_field(self, tvbr, fmt)
         f = self.pf.u8
         len = 1
     elseif type == "d" then
-        if fmt.param == "FCol" then
+        if fmt.action == "hex" or fmt.param == "FCol" then
             f = self.pf.r32
         else
             f = self.pf.i32
@@ -100,12 +103,18 @@ local function parse_field(self, tvbr, fmt)
     elseif type == "h" then
         f = self.pf.u16
         len = 2
+    elseif type == "i" then
+        f = self.pf.ipv4
+        len = 4
     elseif type == "q" then
         f = self.pf.i64
         len = 8
     elseif type == "s" then
         f = self.pf.string
         len = 2 -- min length of empty unicode string
+    elseif type == "S" then
+        f = self.pf.string
+        len = 1 -- min length of empty ASCII string
     elseif type == "z" then
         f = self.pf.bytes
         local s = fmt.name:match("(%d+)")
@@ -184,6 +193,7 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
                          or tree:add_le(f, tvbr(offset, len))
         item:prepend_text(field_fmt.name)
 
+        -- TODO warn if action not found
         local act = field_fmt.action
         if act == "get" then
             local id = self.ID[field_fmt.param]
@@ -193,7 +203,6 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
             end
         end
 
-        -- TODO show hex for number types too
         if isencrypted then
             item:set_generated()
         end

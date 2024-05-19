@@ -34,8 +34,8 @@ Type(Name[:Action.Param])
 | h        | u16 |
 | i        | IPv4 |
 | q        | i64 |
-| s        | string UTF-16 |
-| S        | string ASCII |
+| s        | zero terminated string UTF-16 |
+| S        | zero terminated string ASCII |
 | z        | bytes array with size equal `Name` number (like 256fixed or 32) |
 
 #### Action
