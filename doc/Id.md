@@ -5,5 +5,5 @@ Index=Description
 ...
 ```
 
-* Index: decimal number
+* Index: decimal or hex (begin with 0x) number
 * Description: arbitrary string
