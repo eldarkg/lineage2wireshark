@@ -122,7 +122,8 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
         last_opcode_stat = {}
     end
 
-    local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
+    local isencrypted = packet.is_encrypted_login_packet(tvb, decode.OPCODE_NAME,
+                                                         isserver)
     local payload
     if isencrypted then
         payload = bf.decrypt(packet.payload(tvb), BLOWFISH_PK:raw())

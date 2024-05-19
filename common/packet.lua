@@ -11,8 +11,6 @@ if not package.searchpath("common.packet", package.path) then
     return
 end
 
-local LOGIN_SERVER_OPCODE = require("login.opcode.server").SERVER_OPCODE
-
 local _M = {}
 
 _M.HEADER_LEN = 2
@@ -117,14 +115,15 @@ function _M.xor_key(data)
 end
 
 ---@param tvb Tvb Packet
+---@param opcode_name table
 ---@param isserver boolean
 ---@return boolean
-function _M.is_encrypted_login_packet(tvb, isserver)
+function _M.is_encrypted_login_packet(tvb, opcode_name, isserver)
     if isserver then
         local len = _M.length(tvb)
         local payload = _M.payload_tvbr(tvb):bytes()
         local opcode = _M.opcode(payload, _M.opcode_len(payload, isserver))
-        return not (len == 11 and opcode == LOGIN_SERVER_OPCODE.Init)
+        return not (len == 11 and opcode_name.server[opcode] == "Init")
     else
         return true
     end
