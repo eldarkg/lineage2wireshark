@@ -201,12 +201,11 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
 
         -- TODO warn if action not found
         local act = field_fmt.action
-        if act == "get" then
+        local param = field_fmt.param
+        if act == "get" and param ~= "FCol" then
             local id = self.ID[field_fmt.param]
-            if id then
-                local desc = id[val]
-                item:append_text(" (" .. tostring(desc) .. ")")
-            end
+            local desc = id and id[val] or nil
+            item:append_text(" (" .. tostring(desc) .. ")")
         end
 
         if isencrypted then
