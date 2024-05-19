@@ -49,10 +49,16 @@ proto.prefs.bf_pk_hex = Pref.string("Blowfish private key",
                                     DEFAULT_BLOWFISH_PK_HEX,
                                     "Default: " .. DEFAULT_BLOWFISH_PK_HEX)
 
+---@param ver integer
+---@return string
+local function version_str(ver)
+    return string.format("%x", ver)
+end
+
 local decode
 ---@param ver string
 local function init_decode(ver)
-    local ver_str = string.format("%x", ver)
+    local ver_str = version_str(ver)
     decode = require("common.decode").init(pf, pe,
         util.abs_path("content/login/packets/" .. ver_str .. ".ini"), "en")
 end
@@ -197,7 +203,7 @@ function proto.dissector(tvb, pinfo, tree)
     pinfo.cols.info = ""
 
     -- TODO multi instance by pinfo.src_port
-    local ver = string.format("%x", proto.prefs.version)
+    local ver = version_str(proto.prefs.version)
     local subtree = tree:add(proto, tvb(), DESC .. " (" .. ver .. ")")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
