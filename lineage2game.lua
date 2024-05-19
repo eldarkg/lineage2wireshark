@@ -68,7 +68,8 @@ local decode
 ---@param ver string
 local function init_decode(ver)
     local ver_str = version_str(ver)
-    decode = require("common.decode").init(pf, pe,
+    -- TODO move path to init
+    decode = require("common.decode").init(pf, pe, true,
         util.abs_path("content/game/packets/" .. ver_str .. ".ini"), "en")
 end
 

@@ -277,21 +277,22 @@ end
 
 ---@param pf table Proto fields
 ---@param pe table Proto experts
+---@param isgame boolean False - Login
 ---@param path string
 ---@param lang string Language: see content/game (en, ru)
-function _M.init(pf, pe, path, lang)
+function _M.init(pf, pe, isgame, path, lang)
     local op = require("common.opcode").load(path)
     local OPCODE_NAME = {}
     local OPCODE_FMT = {}
     OPCODE_NAME.server, OPCODE_FMT.server = op:opcode_name_format(true)
     OPCODE_NAME.client, OPCODE_FMT.client = op:opcode_name_format(false)
+    local name = isgame and "game" or "login"
     return {
         pf = pf,
         pe = pe,
         OPCODE_NAME = OPCODE_NAME,
         OPCODE_FMT = OPCODE_FMT,
-        -- TODO select game or login
-        ID = require("game.id").init(lang),
+        ID = require(name .. ".id").init(lang),
 
         length = length,
         bytes = bytes,
