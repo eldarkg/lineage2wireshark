@@ -43,6 +43,7 @@ Type(Name[:Action.Param])
 |:------:|-------------|
 | For    | Repeat field `value` times next `Param` fields |
 | Get    | Get description by `value` index from accordance content file to `Param` |
+| Hex    | Show `value` as hex |
 | Len    | Limit length `Param` for string |
 
 * Action is case insensetive.
