@@ -65,8 +65,6 @@ local function get_value_len(tvbr, type, len)
         val = tvbr(0, len):le_int64()
     elseif type == "s" then
         val, len = tvbr:le_ustringz()
-    elseif type == "S" then
-        -- TODO use Param: Len
     end
     return val, len
 end
@@ -113,8 +111,12 @@ local function parse_field(self, tvbr, fmt)
         f = self.pf.string
         len = 2 -- min length of empty unicode string
     elseif type == "S" then
-        f = self.pf.string
-        len = 1 -- min length of empty ASCII string
+        f = self.pf.stringz
+        if fmt.action == "len" then
+            len = tonumber(fmt.param, 10)
+        else
+            len = 1 -- min length of empty ASCII string
+        end
     elseif type == "z" then
         f = self.pf.bytes
         local s = fmt.name:match("(%d+)")
