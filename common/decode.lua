@@ -75,10 +75,12 @@ end
 ---@return ProtoField f
 ---@return integer|nil len Length. nil - memory range is out of bounds
 ---@return any val
+---@return boolean le Is Little Endian else Big Endian
 local function parse_field(self, tvbr, fmt)
     local f
     local len
     local val
+    local le = true
 
     -- TODO use Param: Hex
     local type = fmt.type
@@ -104,6 +106,7 @@ local function parse_field(self, tvbr, fmt)
     elseif type == "i" then
         f = self.pf.ipv4
         len = 4
+        le = false
     elseif type == "q" then
         f = self.pf.i64
         len = 8
@@ -142,7 +145,7 @@ local function parse_field(self, tvbr, fmt)
         end
     end
 
-    return f, len, val
+    return f, len, val, le
 end
 
 ---@param self table
@@ -166,7 +169,8 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
         local f
         local len
         local val
-        f, len, val = parse_field(self, tvbr(offset), field_fmt)
+        local le
+        f, len, val, le = parse_field(self, tvbr(offset), field_fmt)
         if not len then
             tree:add_proto_expert_info(self.pe.undecoded, "parse field \"" ..
                                        field_fmt.name ..
@@ -190,9 +194,9 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
             end
         end
 
-        -- TODO select endian
-        local item = val and tree:add_le(f, tvbr(offset, len), val)
-                         or tree:add_le(f, tvbr(offset, len))
+        local add = le and TreeItem.add_le or TreeItem.add
+        local item = val and add(tree, f, tvbr(offset, len), val)
+                         or add(tree, f, tvbr(offset, len))
         item:prepend_text(field_fmt.name)
 
         -- TODO warn if action not found
