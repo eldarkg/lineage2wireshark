@@ -33,7 +33,7 @@ local DEFAULT_BLOWFISH_PK_HEX =
 local LOGIN_PORT = DEFAULT_LOGIN_PORT
 local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
 
-local lineage2login = Proto("lineage2login", "Lineage2 Login Protocol")
+local lineage2login = Proto("LINEAGE2LOGIN", "Lineage2 Login Protocol")
 lineage2login.fields = require("login.protofield").init()
 lineage2login.prefs.login_port =
     Pref.uint("Login server port", DEFAULT_LOGIN_PORT,
