@@ -19,7 +19,7 @@ OpcodeHex=OpcodeName:[Field[...Field]]
 
 ### Field
 ```ini
-Type(Name[:Action.Param])
+Type(Name[:Action[.Param]])
 ```
 
 #### Type
