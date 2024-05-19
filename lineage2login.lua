@@ -7,9 +7,12 @@
     Protocol: 785a
 ]]--
 
+local DESC = "Lineage2 Login Protocol"
+local NAME = "LINEAGE2LOGIN"
+
 set_plugin_info({
     version = "0.1.0",
-    description = "Lineage2Login",
+    description = DESC,
     author = "Eldar Khayrullin",
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
 })
@@ -18,33 +21,33 @@ local bf = require("decrypt.blowfish")
 local util = require("common.utils")
 local packet = require("common.packet")
 
-local DEFAULT_LOGIN_PORT = 2106
-local DEFAULT_BLOWFISH_PK_HEX =
-    "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
-
 -- TODO generate by list of names vs protocol version
-local PROTOCOLS = {
+local VERSION = {
     {1, "Without GG (785a)", 0x785A},
     {2, "With GG (c621)", 0xC621}, -- TODO implement
 }
-local DEFAULT_PROTOCOL = PROTOCOLS[1][3]
-local LOGIN_PORT = DEFAULT_LOGIN_PORT
+local DEFAULT_VERSION = VERSION[1][3]
+local DEFAULT_PORT = 2106
+local DEFAULT_BLOWFISH_PK_HEX =
+    "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
+
+local PORT = DEFAULT_PORT
 local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
 
-local proto = Proto("LINEAGE2LOGIN", "Lineage2 Login Protocol")
+local proto = Proto(NAME, DESC)
 local pf = require("common.protofields").init(proto.name)
 proto.fields = pf
 local pe = require("common.protoexperts").init(proto.name)
 proto.experts = pe
-proto.prefs.protocol =
-    Pref.enum("Protocol Version", DEFAULT_PROTOCOL,
-              "Protocol Version", PROTOCOLS, false)
-proto.prefs.login_port =
-    Pref.uint("Login server port", DEFAULT_LOGIN_PORT,
-              "Default: " .. DEFAULT_LOGIN_PORT)
-proto.prefs.bf_pk_hex =
-    Pref.string("Blowfish private key", DEFAULT_BLOWFISH_PK_HEX,
-                "Default: " .. DEFAULT_BLOWFISH_PK_HEX)
+proto.prefs.version = Pref.enum("Protocol Version",
+                                DEFAULT_VERSION,
+                                "Protocol Version", VERSION, false)
+proto.prefs.port = Pref.uint("Server port",
+                             DEFAULT_PORT,
+                             "Default: " .. DEFAULT_PORT)
+proto.prefs.bf_pk_hex = Pref.string("Blowfish private key",
+                                    DEFAULT_BLOWFISH_PK_HEX,
+                                    "Default: " .. DEFAULT_BLOWFISH_PK_HEX)
 
 local decode
 ---@param ver string
@@ -54,9 +57,9 @@ local function init_decode(ver)
         util.abs_path("content/login/packets/" .. ver_str .. ".ini"), "en")
 end
 
-init_decode(DEFAULT_PROTOCOL)
+init_decode(DEFAULT_VERSION)
 
----Init by lineage2login.init
+---Init by proto.init
 ---Last packet pinfo.number
 local last_packet_number
 ---Last sub packet number
@@ -165,7 +168,7 @@ local function dissect(tvb, pinfo, tree)
         return 0
     end
 
-    local isserver = (pinfo.src_port == LOGIN_PORT)
+    local isserver = (pinfo.src_port == PORT)
     return pinfo.visited and dissect_2pass(tvb, pinfo, tree, isserver)
                          or dissect_1pass(tvb, pinfo, tree, isserver)
 end
@@ -180,9 +183,9 @@ end
 function proto.prefs_changed()
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
-    init_decode(proto.prefs.protocol)
+    init_decode(proto.prefs.version)
 
-    LOGIN_PORT = proto.prefs.login_port
+    PORT = proto.prefs.port
     BLOWFISH_PK = ByteArray.new(proto.prefs.bf_pk_hex)
 end
 
@@ -194,11 +197,10 @@ function proto.dissector(tvb, pinfo, tree)
     pinfo.cols.info = ""
 
     -- TODO multi instance by pinfo.src_port
-    local ver = string.format("%x", proto.prefs.protocol)
-    local subtree = tree:add(proto, tvb(),
-                             "Lineage2 Login Protocol " .. "(" .. ver .. ")")
+    local ver = string.format("%x", proto.prefs.version)
+    local subtree = tree:add(proto, tvb(), DESC .. " (" .. ver .. ")")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
-tcp_port:add(LOGIN_PORT, proto)
+tcp_port:add(PORT, proto)
