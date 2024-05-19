@@ -22,11 +22,11 @@ local util = require("common.utils")
 local packet = require("common.packet")
 
 -- TODO generate by list of names vs protocol version
-local VERSION = {
+local VERSIONS = {
     {1, "Without GG (785a)", 0x785A},
     {2, "With GG (c621)", 0xC621}, -- TODO implement
 }
-local DEFAULT_VERSION = VERSION[1][3]
+local DEFAULT_VERSION = VERSIONS[1][3]
 local DEFAULT_PORT = 2106
 local DEFAULT_BLOWFISH_PK_HEX =
     "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
@@ -41,7 +41,7 @@ local pe = require("common.protoexperts").init(proto.name)
 proto.experts = pe
 proto.prefs.version = Pref.enum("Protocol Version",
                                 DEFAULT_VERSION,
-                                "Protocol Version", VERSION, false)
+                                "Protocol Version", VERSIONS, false)
 proto.prefs.port = Pref.uint("Server port",
                              DEFAULT_PORT,
                              "Default: " .. DEFAULT_PORT)
