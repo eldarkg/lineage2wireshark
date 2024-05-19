@@ -17,31 +17,44 @@ set_plugin_info({
 local bf = require("decrypt.blowfish")
 local util = require("common.utils")
 local packet = require("common.packet")
--- TODO use decode
-local pf = require("login.protofield")
-
-local decode_server_data = require("login.decode.server").decode_server_data
-local decode_client_data = require("login.decode.client").decode_client_data
-
-local SERVER_OPCODE_TXT = require("login.opcode.server").SERVER_OPCODE_TXT
-local CLIENT_OPCODE_TXT = require("login.opcode.client").CLIENT_OPCODE_TXT
 
 local DEFAULT_LOGIN_PORT = 2106
 local DEFAULT_BLOWFISH_PK_HEX =
     "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
 
+-- TODO generate by list of names vs protocol version
+local PROTOCOLS = {
+    {1, "Without GG (785a)", 0x785A},
+    {2, "With GG (c621)", 0xC621}, -- TODO implement
+}
+local DEFAULT_PROTOCOL = PROTOCOLS[1][3]
 local LOGIN_PORT = DEFAULT_LOGIN_PORT
 local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
 
 local proto = Proto("LINEAGE2LOGIN", "Lineage2 Login Protocol")
--- TODO see lineage2game
-proto.fields = require("login.protofield").init()
+local pf = require("common.protofields").init(proto.name)
+proto.fields = pf
+local pe = require("common.protoexperts").init(proto.name)
+proto.experts = pe
+proto.prefs.protocol =
+    Pref.enum("Protocol Version", DEFAULT_PROTOCOL,
+              "Protocol Version", PROTOCOLS, false)
 proto.prefs.login_port =
     Pref.uint("Login server port", DEFAULT_LOGIN_PORT,
-              "Default: " .. tostring(DEFAULT_LOGIN_PORT))
+              "Default: " .. DEFAULT_LOGIN_PORT)
 proto.prefs.bf_pk_hex =
     Pref.string("Blowfish private key", DEFAULT_BLOWFISH_PK_HEX,
                 "Default: " .. DEFAULT_BLOWFISH_PK_HEX)
+
+local decode
+---@param ver string
+local function init_decode(ver)
+    local ver_str = string.format("%x", ver)
+    decode = require("common.decode").init(pf, pe,
+        util.abs_path("content/login/packets/" .. ver_str .. ".ini"), "en")
+end
+
+init_decode(DEFAULT_PROTOCOL)
 
 ---Init by lineage2login.init
 ---Last packet pinfo.number
@@ -58,8 +71,7 @@ local subpacket_count_cache
 ---@param isserver boolean
 ---@return string
 local function opcode_str(opcode, isserver)
-    return isserver and tostring(SERVER_OPCODE_TXT[opcode])
-                    or tostring(CLIENT_OPCODE_TXT[opcode])
+    return tostring(decode.OPCODE_NAME[isserver and "server" or "client"][opcode])
 end
 
 ---@param opcode integer
@@ -102,9 +114,12 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     end
 
     local isencrypted = packet.is_encrypted_login_packet(tvb, isserver)
-    local payload = isencrypted
-                        and bf.decrypt(packet.payload(tvb), BLOWFISH_PK:raw())
-                        or packet.payload(tvb)
+    local payload
+    if isencrypted then
+        payload = bf.decrypt(packet.payload(tvb), BLOWFISH_PK:raw())
+    else
+        payload = packet.payload(tvb)
+    end
 
     local opcode_len = packet.opcode_len(payload, isserver)
     local opcode = packet.opcode(payload, opcode_len)
@@ -113,12 +128,11 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     local subtree = tree:add(proto, tvb(),
                              tostring(last_subpacket_number) .. ". " ..
                              opcode_str(opcode, isserver))
-    util.add_le(subtree, pf.u16, packet.length_tvbr(tvb), "Length", false)
+
+    decode:length(subtree, packet.length_tvbr(tvb))
 
     if isencrypted then
-        local label = "Blowfish PK"
-        local bf_pk_tvb = BLOWFISH_PK:tvb(label)
-        util.add_le(subtree, pf.bytes, bf_pk_tvb(), label, true)
+        decode:bytes(subtree, BLOWFISH_PK, "Blowfish PK")
     end
 
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
@@ -126,17 +140,13 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
 
     local opcode_tvbr = packet.opcode_tvbr(payload_tvbr, opcode_len)
     if opcode_tvbr then
-        local pf_opcode = isserver and pf.server_opcode or pf.client_opcode
-        util.add_be(subtree, pf_opcode, opcode_tvbr, nil, isencrypted)
-    end
+        decode:opcode(subtree, opcode_tvbr, isencrypted)
 
-    -- TODO simple packet.data_tvbr, opcode_len = 1 always
-    local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
-    if data_tvbr then
-        local data_st = util.generated(subtree:add(proto, data_tvbr, "Data"),
-                                       isencrypted)
-        local decode_data = isserver and decode_server_data or decode_client_data
-        decode_data(data_st, opcode, data_tvbr, isencrypted)
+        -- TODO simple packet.data_tvbr, opcode_len = 1 always
+        local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
+        if data_tvbr then
+            decode:data(subtree, data_tvbr, opcode, isencrypted, isserver)
+        end
     end
 
     if subpacket_count_cache[pinfo.number] <= last_subpacket_number then
@@ -168,6 +178,10 @@ function proto.init()
 end
 
 function proto.prefs_changed()
+    -- TODO select protocol by preference or by catch ProtocolVersion?
+    -- TODO select lang by preference
+    init_decode(proto.prefs.protocol)
+
     LOGIN_PORT = proto.prefs.login_port
     BLOWFISH_PK = ByteArray.new(proto.prefs.bf_pk_hex)
 end
@@ -180,7 +194,9 @@ function proto.dissector(tvb, pinfo, tree)
     pinfo.cols.info = ""
 
     -- TODO multi instance by pinfo.src_port
-    local subtree = tree:add(proto, tvb(), "Lineage2 Login Protocol")
+    local ver = string.format("%x", proto.prefs.protocol)
+    local subtree = tree:add(proto, tvb(),
+                             "Lineage2 Login Protocol " .. "(" .. ver .. ")")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
 
