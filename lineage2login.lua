@@ -56,11 +56,10 @@ local function version_str(ver)
 end
 
 local decode
----@param ver string
+---@param ver integer
 local function init_decode(ver)
     local ver_str = version_str(ver)
-    decode = require("common.decode").init(pf, pe, false,
-        util.abs_path("content/login/packets/" .. ver_str .. ".ini"), "en")
+    decode = require("common.decode").init(pf, pe, false, ver_str, "en")
 end
 
 init_decode(DEFAULT_VERSION)

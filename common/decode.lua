@@ -278,15 +278,18 @@ end
 ---@param pf table Proto fields
 ---@param pe table Proto experts
 ---@param isgame boolean False - Login
----@param path string
+---@param ver string
 ---@param lang string Language: see content/game (en, ru)
-function _M.init(pf, pe, isgame, path, lang)
-    local op = require("common.opcode").load(path)
+function _M.init(pf, pe, isgame, ver, lang)
+    local name = isgame and "game" or "login"
+    local utils = require("common.utils")
+    local op = require("common.opcode").load(
+        utils.abs_path("content/" .. name .. "/packets/" .. ver .. ".ini"))
+
     local OPCODE_NAME = {}
     local OPCODE_FMT = {}
     OPCODE_NAME.server, OPCODE_FMT.server = op:opcode_name_format(true)
     OPCODE_NAME.client, OPCODE_FMT.client = op:opcode_name_format(false)
-    local name = isgame and "game" or "login"
     return {
         pf = pf,
         pe = pe,
