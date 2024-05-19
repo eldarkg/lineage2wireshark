@@ -32,26 +32,26 @@ local START_PNUM = 0
 local INIT_SERVER_XOR_KEY = ByteArray.new("00 00 00 00")
 local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
 
-local lineage2game = Proto("LINEAGE2GAME", "Lineage2 Game Protocol")
-local pf = require("common.protofields").init(lineage2game.name)
-lineage2game.fields = pf
-local pe = require("common.protoexperts").init(lineage2game.name)
-lineage2game.experts = pe
-lineage2game.prefs.protocol =
+local proto = Proto("LINEAGE2GAME", "Lineage2 Game Protocol")
+local pf = require("common.protofields").init(proto.name)
+proto.fields = pf
+local pe = require("common.protoexperts").init(proto.name)
+proto.experts = pe
+proto.prefs.protocol =
     Pref.enum("Protocol Version", DEFAULT_PROTOCOL,
               "Protocol Version", PROTOCOLS, false)
-lineage2game.prefs.game_port =
+proto.prefs.game_port =
     Pref.uint("Game server port", DEFAULT_GAME_PORT,
               "Default: " .. DEFAULT_GAME_PORT)
-lineage2game.prefs.static_xor_key_hex =
+proto.prefs.static_xor_key_hex =
     Pref.string("Static part of XOR key", DEFAULT_STATIC_XOR_KEY_HEX,
                 "Default: " .. DEFAULT_STATIC_XOR_KEY_HEX)
-lineage2game.prefs.start_pnum =
+proto.prefs.start_pnum =
     Pref.uint("Start packet number", START_PNUM,
               "Start analyze from selected packet number")
-lineage2game.prefs.init_server_xor_key_hex =
+proto.prefs.init_server_xor_key_hex =
     Pref.string("Init server part of XOR key", "", "Format: 00 00 00 00")
-lineage2game.prefs.init_client_xor_key_hex =
+proto.prefs.init_client_xor_key_hex =
     Pref.string("Init client part of XOR key", "", "Format: 00 00 00 00")
 
 local decode
@@ -185,7 +185,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     local opcode = packet.opcode(payload, opcode_len)
     update_last_opcode_stat(opcode)
 
-    local subtree = tree:add(lineage2game, tvb(),
+    local subtree = tree:add(proto, tvb(),
                              tostring(last_subpacket_number) .. ". " ..
                              opcode_str(opcode, isserver))
 
@@ -230,7 +230,7 @@ local function dissect(tvb, pinfo, tree)
                          or dissect_1pass(tvb, pinfo, tree, isserver)
 end
 
-function lineage2game.init()
+function proto.init()
     last_packet_number = nil
     last_subpacket_number = nil
     last_opcode_stat = nil
@@ -243,37 +243,37 @@ function lineage2game.init()
     client_xor_key = xor.create_key(INIT_CLIENT_XOR_KEY, STATIC_XOR_KEY)
 end
 
-function lineage2game.prefs_changed()
+function proto.prefs_changed()
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
-    init_decode(lineage2game.prefs.protocol)
+    init_decode(proto.prefs.protocol)
 
-    GAME_PORT = lineage2game.prefs.game_port
-    STATIC_XOR_KEY = ByteArray.new(lineage2game.prefs.static_xor_key_hex)
-    START_PNUM = lineage2game.prefs.start_pnum
+    GAME_PORT = proto.prefs.game_port
+    STATIC_XOR_KEY = ByteArray.new(proto.prefs.static_xor_key_hex)
+    START_PNUM = proto.prefs.start_pnum
     INIT_SERVER_XOR_KEY =
-        ByteArray.new(lineage2game.prefs.init_server_xor_key_hex)
+        ByteArray.new(proto.prefs.init_server_xor_key_hex)
     INIT_CLIENT_XOR_KEY =
-        ByteArray.new(lineage2game.prefs.init_client_xor_key_hex)
+        ByteArray.new(proto.prefs.init_client_xor_key_hex)
 end
 
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
-function lineage2game.dissector(tvb, pinfo, tree)
+function proto.dissector(tvb, pinfo, tree)
     if pinfo.number < START_PNUM then
         return
     end
 
-    pinfo.cols.protocol = lineage2game.name
+    pinfo.cols.protocol = proto.name
     pinfo.cols.info = ""
 
     -- TODO multi instance by pinfo.src_port
-    local subtree = tree:add(lineage2game, tvb(),
+    local subtree = tree:add(proto, tvb(),
                              "Lineage2 Game Protocol " .. "(" ..
-                             lineage2game.prefs.protocol .. ")")
+                             proto.prefs.protocol .. ")")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
-tcp_port:add(GAME_PORT, lineage2game)
+tcp_port:add(GAME_PORT, proto)

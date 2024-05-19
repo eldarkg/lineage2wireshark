@@ -33,12 +33,13 @@ local DEFAULT_BLOWFISH_PK_HEX =
 local LOGIN_PORT = DEFAULT_LOGIN_PORT
 local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
 
-local lineage2login = Proto("LINEAGE2LOGIN", "Lineage2 Login Protocol")
-lineage2login.fields = require("login.protofield").init()
-lineage2login.prefs.login_port =
+local proto = Proto("LINEAGE2LOGIN", "Lineage2 Login Protocol")
+-- TODO see lineage2game
+proto.fields = require("login.protofield").init()
+proto.prefs.login_port =
     Pref.uint("Login server port", DEFAULT_LOGIN_PORT,
               "Default: " .. tostring(DEFAULT_LOGIN_PORT))
-lineage2login.prefs.bf_pk_hex =
+proto.prefs.bf_pk_hex =
     Pref.string("Blowfish private key", DEFAULT_BLOWFISH_PK_HEX,
                 "Default: " .. DEFAULT_BLOWFISH_PK_HEX)
 
@@ -109,7 +110,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     local opcode = packet.opcode(payload, opcode_len)
     update_last_opcode_stat(opcode)
 
-    local subtree = tree:add(lineage2login, tvb(),
+    local subtree = tree:add(proto, tvb(),
                              tostring(last_subpacket_number) .. ". " ..
                              opcode_str(opcode, isserver))
     util.add_le(subtree, pf.u16, packet.length_tvbr(tvb), "Length", false)
@@ -132,7 +133,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     -- TODO simple packet.data_tvbr, opcode_len = 1 always
     local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
     if data_tvbr then
-        local data_st = util.generated(subtree:add(lineage2login, data_tvbr, "Data"),
+        local data_st = util.generated(subtree:add(proto, data_tvbr, "Data"),
                                        isencrypted)
         local decode_data = isserver and decode_server_data or decode_client_data
         decode_data(data_st, opcode, data_tvbr, isencrypted)
@@ -159,29 +160,29 @@ local function dissect(tvb, pinfo, tree)
                          or dissect_1pass(tvb, pinfo, tree, isserver)
 end
 
-function lineage2login.init()
+function proto.init()
     last_packet_number = nil
     last_subpacket_number = nil
     last_opcode_stat = nil
     subpacket_count_cache = {}
 end
 
-function lineage2login.prefs_changed()
-    LOGIN_PORT = lineage2login.prefs.login_port
-    BLOWFISH_PK = ByteArray.new(lineage2login.prefs.bf_pk_hex)
+function proto.prefs_changed()
+    LOGIN_PORT = proto.prefs.login_port
+    BLOWFISH_PK = ByteArray.new(proto.prefs.bf_pk_hex)
 end
 
 ---@param tvb Tvb
 ---@param pinfo Pinfo
 ---@param tree TreeItem
-function lineage2login.dissector(tvb, pinfo, tree)
-    pinfo.cols.protocol = lineage2login.name
+function proto.dissector(tvb, pinfo, tree)
+    pinfo.cols.protocol = proto.name
     pinfo.cols.info = ""
 
     -- TODO multi instance by pinfo.src_port
-    local subtree = tree:add(lineage2login, tvb(), "Lineage2 Login Protocol")
+    local subtree = tree:add(proto, tvb(), "Lineage2 Login Protocol")
     dissect_tcp_pdus(tvb, subtree, packet.HEADER_LEN, packet.get_len, dissect)
 end
 
 local tcp_port = DissectorTable.get("tcp.port")
-tcp_port:add(LOGIN_PORT, lineage2login)
+tcp_port:add(LOGIN_PORT, proto)
