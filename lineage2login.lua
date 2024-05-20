@@ -28,8 +28,11 @@ local VERSIONS = {
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 local DEFAULT_PORT = 2106
-local DEFAULT_BLOWFISH_PK_HEX =
-    "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00"
+local BLOWFISH_PK_HEX = {
+    [0x785A] = "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00",
+    [0xC621] = "2D BB 10 02 41 11 AF FF 61 18 BB 51 11 FD DD 33 1D 1D 22 76 00",
+}
+local DEFAULT_BLOWFISH_PK_HEX = ""
 
 local PORT = DEFAULT_PORT
 local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
@@ -45,9 +48,9 @@ proto.prefs.version = Pref.enum("Protocol Version",
 proto.prefs.port = Pref.uint("Server port",
                              DEFAULT_PORT,
                              "Default: " .. DEFAULT_PORT)
-proto.prefs.bf_pk_hex = Pref.string("Blowfish private key",
+proto.prefs.bf_pk_hex = Pref.string("Blowfish Private Key",
                                     DEFAULT_BLOWFISH_PK_HEX,
-                                    "Default: " .. DEFAULT_BLOWFISH_PK_HEX)
+                                    "Length: 21. If empty then use protocol standart one")
 
 ---@param ver integer
 ---@return string
@@ -193,7 +196,9 @@ function proto.prefs_changed()
     init_decode(proto.prefs.version)
 
     PORT = proto.prefs.port
-    BLOWFISH_PK = ByteArray.new(proto.prefs.bf_pk_hex)
+    BLOWFISH_PK = ByteArray.new(proto.prefs.bf_pk_hex:len() == 0
+                                    and BLOWFISH_PK_HEX[proto.prefs.version]
+                                    or proto.prefs.bf_pk_hex)
 end
 
 ---@param tvb Tvb
