@@ -27,6 +27,7 @@ function _M.init(name)
         double = ProtoField.double(name .. ".double", " "),
         utf16z = ProtoField.string(name .. ".utf16z", " ", base.ASCII),
         asciiz = ProtoField.stringz(name .. ".asciiz", " ", base.ASCII),
+        ascii = ProtoField.string(name .. ".ascii", " ", base.ASCII),
         ipv4 = ProtoField.ipv4(name .. ".ipv4", " "),
     }
 end

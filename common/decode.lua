@@ -114,11 +114,12 @@ local function parse_field(self, tvbr, fmt)
         f = self.pf.utf16z
         len = 2 -- min length of empty zero terminated UTF16 string
     elseif type == "S" then
-        f = self.pf.asciiz
         if fmt.action == "len" then
             len = tonumber(fmt.param, 10)
+            f = tvbr(0, len):strsize() <= len and self.pf.asciiz or self.pf.ascii
         else
             len = 1 -- min length of empty zero terminated ASCII string
+            f = self.pf.asciiz
         end
     elseif type == "z" then
         f = self.pf.bytes
