@@ -20,6 +20,8 @@ local util = require("common.utils")
 local packet = require("common.packet")
 local xor = require("decrypt.xor")
 
+local INIT_COUNT = 2
+
 -- TODO generate by list of names vs protocol version
 local VERSIONS = {
     {1, "C4 Update 1 (660)", 660},
@@ -34,6 +36,8 @@ local STATIC_XOR_KEY = ByteArray.new(DEFAULT_STATIC_XOR_KEY_HEX)
 local START_PNUM = 0
 local INIT_SERVER_XOR_KEY = ByteArray.new("00 00 00 00")
 local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
+
+local tap = Listener.new("tcp", "tcp")
 
 local proto = Proto(NAME, DESC)
 local pf = require("common.protofields").init(proto.name)
@@ -85,6 +89,10 @@ local last_subpacket_number
 local last_opcode_stat
 ---Key: pinfo.number. Value: sub packet count
 local subpacket_count_cache
+---Server send SYN,ACK to Client. Next count number of init packets
+local init_count
+---Init packet numbers
+local init_packet_number_cache
 
 ---Accumulator XOR decrypt length in current pinfo.number
 local xor_accum_len
@@ -93,6 +101,22 @@ local client_xor_key
 -- TODO save only dynamic part
 ---Key: pinfo.number. Value: XOR key
 local xor_key_cache
+
+---@param pinfo Pinfo
+---@return boolean isserver
+local function is_server(pinfo)
+    return pinfo.src_port == PORT
+end
+
+---@param pinfo Pinfo
+---@param tvb Tvb
+---@param tapinfo table
+function tap.packet(pinfo, tvb, tapinfo)
+    local TH_SYN_ACK = 0x0012
+    if is_server(pinfo) and tapinfo.th_flags == TH_SYN_ACK then
+        init_count = INIT_COUNT
+    end
+end
 
 ---@param opcode integer
 ---@param isserver boolean
@@ -130,8 +154,6 @@ end
 ---@param tree TreeItem
 ---@param isserver boolean
 local function dissect_1pass(tvb, pinfo, tree, isserver)
-    local isencrypted = packet.is_encrypted_game_packet(tvb, decode.OPCODE_NAME,
-                                                        isserver)
     if pinfo.number == last_packet_number then
         subpacket_count_cache[pinfo.number] =
             subpacket_count_cache[pinfo.number] + 1
@@ -139,13 +161,17 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
         subpacket_count_cache[pinfo.number] = 1
         last_packet_number = pinfo.number
 
-        if isencrypted then
+        if 0 < init_count then
+            init_packet_number_cache[pinfo.number] = true
+            init_count = init_count - 1
+        else
             xor_accum_len = 0
             xor_key_cache[pinfo.number] = isserver and server_xor_key
                                                     or client_xor_key
         end
     end
 
+    local isencrypted = not init_packet_number_cache[pinfo.number]
     local payload = packet.payload(tvb)
     if isencrypted then
         update_xor_key(payload:len(), isserver)
@@ -180,7 +206,8 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
         xor_accum_len = 0
     end
 
-    local isencrypted = (xor_key_cache[pinfo.number] ~= nil)
+    local isencrypted = not init_packet_number_cache[pinfo.number]
+
     local xor_key
     local payload
     if isencrypted then
@@ -201,7 +228,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
 
     decode:length(subtree, packet.length_tvbr(tvb))
 
-    if xor_key then
+    if isencrypted then
         decode:bytes(subtree, xor_key, "XOR key")
     end
 
@@ -231,11 +258,12 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 local function dissect(tvb, pinfo, tree)
+    -- FIXME is it need?
     if tvb:len() == 0 then
         return 0
     end
 
-    local isserver = (pinfo.src_port == PORT)
+    local isserver = is_server(pinfo)
     return pinfo.visited and dissect_2pass(tvb, pinfo, tree, isserver)
                          or dissect_1pass(tvb, pinfo, tree, isserver)
 end
@@ -245,6 +273,8 @@ function proto.init()
     last_subpacket_number = nil
     last_opcode_stat = nil
     subpacket_count_cache = {}
+    init_count = 0
+    init_packet_number_cache = {}
 
     xor_accum_len = nil
     xor_key_cache = {}

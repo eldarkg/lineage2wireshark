@@ -114,23 +114,4 @@ function _M.xor_key(data)
     return data(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
 end
 
--- TODO take len and opcode_name as input instead tvb
----@param tvb Tvb Packet
----@param opcode_name table
----@param isserver boolean
----@return boolean
-function _M.is_encrypted_game_packet(tvb, opcode_name, isserver)
-    -- TODO move to method: return len, opcode
-    local len = _M.length(tvb)
-    local payload = _M.payload_tvbr(tvb):bytes()
-    local opcode = _M.opcode(payload, _M.opcode_len(payload, isserver))
-    -- TODO use len from content example packetsc5.ini
-    -- TODO test by opcode number 0x00 ?
-    if isserver then
-        return not (len == 16 and opcode_name.server[opcode] == "KeyInit")
-    else
-        return not (len == 263 and opcode_name.client[opcode] == "ProtocolVersion")
-    end
-end
-
 return _M
