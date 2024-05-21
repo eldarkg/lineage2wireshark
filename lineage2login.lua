@@ -21,6 +21,8 @@ local bf = require("decrypt.blowfish")
 local util = require("common.utils")
 local packet = require("common.packet")
 
+local INIT_COUNT = 1
+
 -- TODO generate by list of names vs protocol version
 local VERSIONS = {
     {1, "Without GG (785a)", 0x785A},
@@ -37,6 +39,8 @@ local DEFAULT_BLOWFISH_PK_HEX = ""
 
 local PORT = DEFAULT_PORT
 local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
+
+local tap = Listener.new("tcp", "tcp")
 
 local proto = Proto(NAME, DESC)
 local pf = require("common.protofields").init(proto.name)
@@ -78,6 +82,26 @@ local last_subpacket_number
 local last_opcode_stat
 ---Key: pinfo.number. Value: sub packet count
 local subpacket_count_cache
+---Server send SYN,ACK to Client. Next count number of init packets
+local init_count
+---Init packet numbers
+local init_packet_number_cache
+
+---@param pinfo Pinfo
+---@return boolean isserver
+local function is_server(pinfo)
+    return pinfo.src_port == PORT
+end
+
+---@param pinfo Pinfo
+---@param tvb Tvb
+---@param tapinfo table
+function tap.packet(pinfo, tvb, tapinfo)
+    local TH_SYN_ACK = 0x0012
+    if is_server(pinfo) and tapinfo.th_flags == TH_SYN_ACK then
+        init_count = INIT_COUNT
+    end
+end
 
 ---@param opcode integer
 ---@param isserver boolean
@@ -103,6 +127,11 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
     else
         subpacket_count_cache[pinfo.number] = 1
         last_packet_number = pinfo.number
+
+        if 0 < init_count then
+            init_packet_number_cache[pinfo.number] = true
+            init_count = init_count - 1
+        end
     end
 
     return tvb:len()
@@ -125,9 +154,8 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
         last_opcode_stat = {}
     end
 
-    local isencrypted = packet.is_encrypted_login_packet(tvb, decode.OPCODE_NAME,
-                                                         proto.prefs.version,
-                                                         isserver)
+    local isencrypted = not init_packet_number_cache[pinfo.number]
+
     local payload
     if isencrypted then
         payload = bf.decrypt(packet.payload(tvb), BLOWFISH_PK:raw())
@@ -175,11 +203,12 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 local function dissect(tvb, pinfo, tree)
+    -- FIXME is it need?
     if tvb:len() == 0 then
         return 0
     end
 
-    local isserver = (pinfo.src_port == PORT)
+    local isserver = is_server(pinfo)
     return pinfo.visited and dissect_2pass(tvb, pinfo, tree, isserver)
                          or dissect_1pass(tvb, pinfo, tree, isserver)
 end
@@ -189,6 +218,8 @@ function proto.init()
     last_subpacket_number = nil
     last_opcode_stat = nil
     subpacket_count_cache = {}
+    init_count = 0
+    init_packet_number_cache = {}
 end
 
 function proto.prefs_changed()

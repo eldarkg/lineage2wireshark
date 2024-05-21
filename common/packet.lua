@@ -114,7 +114,7 @@ function _M.xor_key(data)
     return data(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
 end
 
--- TODO use TCP SYN
+-- FIXME deprecated
 ---@param tvb Tvb Packet
 ---@param opcode_name table
 ---@param ver integer
