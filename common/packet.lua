@@ -114,27 +114,6 @@ function _M.xor_key(data)
     return data(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
 end
 
--- FIXME deprecated
----@param tvb Tvb Packet
----@param opcode_name table
----@param ver integer
----@param isserver boolean
----@return boolean
-function _M.is_encrypted_login_packet(tvb, opcode_name, ver, isserver)
-    if isserver then
-        local len = _M.length(tvb)
-        local payload = _M.payload_tvbr(tvb):bytes()
-        local opcode = _M.opcode(payload, _M.opcode_len(payload, isserver))
-        -- FIXME use opcode content info
-        return not ((ver == 0x785A and len == 11 or
-                     ver == 0xC621 and len == 155 or
-                     ver == 0xC621 and len == 172)
-                    and opcode_name.server[opcode] == "Init")
-    else
-        return true
-    end
-end
-
 -- TODO take len and opcode_name as input instead tvb
 ---@param tvb Tvb Packet
 ---@param opcode_name table
