@@ -24,7 +24,8 @@ local packet = require("common.packet")
 -- TODO generate by list of names vs protocol version
 local VERSIONS = {
     {1, "Without GG (785a)", 0x785A},
-    {2, "With GG (c621)", 0xC621}, -- TODO implement
+    {2, "With GG (c621)", 0xC621},
+    {3, "With GG+XOR (c621)", 0xC621}, -- FIXME
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 local DEFAULT_PORT = 2106

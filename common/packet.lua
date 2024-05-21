@@ -114,6 +114,7 @@ function _M.xor_key(data)
     return data(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
 end
 
+-- TODO use TCP SYN
 ---@param tvb Tvb Packet
 ---@param opcode_name table
 ---@param ver integer
@@ -125,7 +126,9 @@ function _M.is_encrypted_login_packet(tvb, opcode_name, ver, isserver)
         local payload = _M.payload_tvbr(tvb):bytes()
         local opcode = _M.opcode(payload, _M.opcode_len(payload, isserver))
         -- FIXME use opcode content info
-        return not ((ver == 0x785A and len == 11 or ver == 0xC621 and len == 155)
+        return not ((ver == 0x785A and len == 11 or
+                     ver == 0xC621 and len == 155 or
+                     ver == 0xC621 and len == 172)
                     and opcode_name.server[opcode] == "Init")
     else
         return true
