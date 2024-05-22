@@ -25,7 +25,7 @@
 * ?Switch between LINEAGE packet and TCP error packet break sequence crypt
 (to restore switch to LINEAGE packet)
 
-## Find client static BlowFish private key
+## Find client (C4, C5) static BlowFish private key
 ```
 system/engine.dll -> Ghidra -> Search call InitializeBlowfish -> Arg 2 -> Key
 ```
