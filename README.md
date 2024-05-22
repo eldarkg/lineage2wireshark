@@ -27,7 +27,7 @@
 
 ## Find client static BlowFish private key
 ```
-system/engine.dll -> Ghidra -> Search call InitializeBlowfish -> Arg 2 -> key
+system/engine.dll -> Ghidra -> Search call InitializeBlowfish -> Arg 2 -> Key
 ```
 * Try all found keys and find one valid.
 
@@ -38,7 +38,7 @@ convert -depth 8 -size 16x16+0 gray:in.bin out.png
 ```
 
 ## Dependency
-* Wireshark 4.2.2 (other not tested)
+* Wireshark 4.2.5 (last tested)
 * Lua 5.2
 * luarocks
 * luacrypto2
