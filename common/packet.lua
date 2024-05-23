@@ -114,4 +114,16 @@ function _M.xor_key(data)
     return data(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
 end
 
+---@param payload ByteArray
+---@return integer
+function _M.checksum(payload)
+    local DWORD_SIZE = 4
+    local chksum = 0
+    for i = 0, payload:len() - 1, DWORD_SIZE do
+        local dword = payload:le_uint(i, DWORD_SIZE)
+        chksum = bit32.bxor(chksum, dword)
+    end
+    return chksum
+end
+
 return _M
