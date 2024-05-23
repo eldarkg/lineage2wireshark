@@ -24,8 +24,9 @@ local INIT_COUNT = 2
 
 -- TODO generate by list of names vs protocol version
 local VERSIONS = {
-    {1, "C4 Update 1 (660)", 660},
-    {2, "C5 Update 2 (709)", 709},
+    {1, "Chronicle 4: Scions of Destiny Update 1 (660)", 660},
+    {2, "Chronicle 5: Oath of Blood Update 2 (709)", 709},
+    {3, "CT0: Interlude Update 2 (746)", 746},
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 local DEFAULT_PORT = 7777
