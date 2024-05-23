@@ -25,16 +25,16 @@ local INIT_COUNT = 1
 
 -- TODO generate by list of names vs protocol version
 local VERSIONS = {
-    {1, "Without GG (785a)", 0x785A},
-    {2, "With GG (c621)", 0xC621},
-    {3, "With GG+Blowfish (c621)", 0x1000C621}, -- FIXME
+    {1, "Blowfish static (785a)", 0x785A},
+    {2, "Blowfish static + RSA (c621)", 0xC621},
+    {3, "Blowfish dynamic + RSA (c621)", 0x1000C621}, -- FIXME
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 local DEFAULT_PORT = 2106
 local BLOWFISH_PK_HEX = {
     [0x785A] = "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00",
     [0xC621] = "2D BB 10 02 41 11 AF FF 61 18 BB 51 11 FD DD 33 1D 1D 22 76 00",
-    -- TODO use PK from Init packet instead
+    -- FIXME use PK from Init packet instead
     [0x1000C621] = "6B 60 CB 5B 82 CE 90 B1 CC 2B 6C 55 6C 6C 6C 6C",
 }
 local DEFAULT_BLOWFISH_PK_HEX = ""
