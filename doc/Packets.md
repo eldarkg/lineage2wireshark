@@ -45,5 +45,6 @@ Type(Name[:Action[.Param]])
 | Get    | Get description by `value` index from accordance content file to `Param` |
 | Hex    | Show `value` as hex |
 | Len    | Limit length `Param` for string |
+| Unscramble | Unscramble `value` |
 
 * Action is case insensetive.
