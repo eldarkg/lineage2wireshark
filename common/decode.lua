@@ -195,9 +195,10 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
             end
         end
 
+        local field_tvbr = tvbr(offset, len)
         local add = le and TreeItem.add_le or TreeItem.add
-        local item = val and add(tree, f, tvbr(offset, len), val)
-                         or add(tree, f, tvbr(offset, len))
+        local item = val and add(tree, f, field_tvbr, val)
+                        or add(tree, f, field_tvbr)
         item:prepend_text(field_fmt.name)
 
         -- TODO warn if action not found
@@ -211,6 +212,11 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
 
         if isencrypted then
             item:set_generated()
+        end
+
+        if act == "unscramble" then
+            local unscr = require("rsa").unscramble_mod(field_tvbr:bytes())
+            self:bytes(tree, unscr, "Unscrambled " .. field_fmt.name)
         end
 
         offset = offset + len
