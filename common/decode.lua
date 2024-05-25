@@ -167,87 +167,107 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
             return nil
         end
 
-        local f
-        local len
-        local val
-        local le
-        f, len, val, le = parse_field(self, tvbr(offset), field_fmt)
-        if not len then
-            tree:add_proto_expert_info(self.pe.undecoded, "parse field \"" ..
-                                       field_fmt.name ..
-                                       "(" .. field_fmt.type .. ")\"")
-            return nil
-        end
-
-        if field_fmt.type == "b" then
-            local item = tree:add_le(self.pf.i32, tvbr(offset, ICON_SIZE_LEN))
-            item:prepend_text("Icon size")
-            if isencrypted then
-                item:set_generated()
-            end
-            offset = offset + ICON_SIZE_LEN
-
-            if tvbr:len() < offset + len then
-                tree:add_proto_expert_info(self.pe.undecoded,
-                                           "incomplete icon \"" ..
-                                           field_fmt.name .. "\"")
-                return nil
-            end
-        end
-
-        local field_tvbr = tvbr(offset, len)
-        local add = le and TreeItem.add_le or TreeItem.add
-        local item = val and add(tree, f, field_tvbr, val)
-                        or add(tree, f, field_tvbr)
-        item:prepend_text(field_fmt.name)
-
-        -- TODO warn if action not found
-        local act = field_fmt.action
-        local param = field_fmt.param
-        if act == "get" and param ~= "FCol" then
-            local id = self.ID[field_fmt.param]
-            local desc = id and id[val] or nil
-            item:append_text(" (" .. tostring(desc) .. ")")
-        end
-
-        if isencrypted then
-            item:set_generated()
-        end
-
-        if act == "unscramble" then
-            local unscr = require("rsa").unscramble_mod(field_tvbr:bytes())
-            self:bytes(tree, unscr, "Unscrambled " .. field_fmt.name)
-        end
-
-        offset = offset + len
-
-        if act == "for" then
-            local iend = i + tonumber(field_fmt.param, 10)
-            for j = 1, val, 1 do
-                if tvbr:len() <= offset then
-                    tree:add_proto_expert_info(self.pe.undecoded,
-                                        "not found repeat #" .. tostring(j) ..
-                                        " of group " .. field_fmt.name)
-                    return nil
-                end
-
-                local subtree = tree:add(tvbr(offset), tostring(j))
+        if field_fmt.type == "*" then
+            if field_fmt.action == "struct" then
+                local iend = i + tonumber(field_fmt.param, 10)
+                local subtree = tree:add(tvbr(offset), field_fmt.name)
                 if isencrypted then
                     subtree:set_generated()
                 end
 
-                len = decode_data(self, subtree, tvbr(offset),
-                                  {table.unpack(data_fmt, i + 1, iend)},
-                                  isencrypted)
+                local len = decode_data(self, subtree, tvbr(offset),
+                                        {table.unpack(data_fmt, i + 1, iend)},
+                                        isencrypted)
                 if len then
                     subtree:set_len(len)
                     offset = offset + len
                 else
                     return nil
                 end
+
+                i = iend
+            end
+        else
+            local f
+            local len
+            local val
+            local le
+            f, len, val, le = parse_field(self, tvbr(offset), field_fmt)
+            if not len then
+                tree:add_proto_expert_info(self.pe.undecoded, "parse field \"" ..
+                                        field_fmt.name ..
+                                        "(" .. field_fmt.type .. ")\"")
+                return nil
             end
 
-            i = iend
+            if field_fmt.type == "b" then
+                local item = tree:add_le(self.pf.i32, tvbr(offset, ICON_SIZE_LEN))
+                item:prepend_text("Icon size")
+                if isencrypted then
+                    item:set_generated()
+                end
+                offset = offset + ICON_SIZE_LEN
+
+                if tvbr:len() < offset + len then
+                    tree:add_proto_expert_info(self.pe.undecoded,
+                                            "incomplete icon \"" ..
+                                            field_fmt.name .. "\"")
+                    return nil
+                end
+            end
+
+            local field_tvbr = tvbr(offset, len)
+            local add = le and TreeItem.add_le or TreeItem.add
+            local item = val and add(tree, f, field_tvbr, val)
+                            or add(tree, f, field_tvbr)
+            item:prepend_text(field_fmt.name)
+
+            -- TODO warn if action not found
+            if field_fmt.action == "get" and field_fmt.param ~= "FCol" then
+                local id = self.ID[field_fmt.param]
+                local desc = id and id[val] or nil
+                item:append_text(" (" .. tostring(desc) .. ")")
+            end
+
+            if isencrypted then
+                item:set_generated()
+            end
+
+            if field_fmt.action == "unscramble" then
+                local unscr = require("rsa").unscramble_mod(field_tvbr:bytes())
+                self:bytes(tree, unscr, "Unscrambled " .. field_fmt.name)
+            end
+
+            offset = offset + len
+
+            if field_fmt.action == "for" then
+                local iend = i + tonumber(field_fmt.param, 10)
+                for j = 1, val, 1 do
+                    if tvbr:len() <= offset then
+                        tree:add_proto_expert_info(self.pe.undecoded,
+                                            "not found repeat #" .. tostring(j) ..
+                                            " of group " .. field_fmt.name)
+                        return nil
+                    end
+
+                    local subtree = tree:add(tvbr(offset), tostring(j))
+                    if isencrypted then
+                        subtree:set_generated()
+                    end
+
+                    len = decode_data(self, subtree, tvbr(offset),
+                                    {table.unpack(data_fmt, i + 1, iend)},
+                                    isencrypted)
+                    if len then
+                        subtree:set_len(len)
+                        offset = offset + len
+                    else
+                        return nil
+                    end
+                end
+
+                i = iend
+            end
         end
 
         i = i + 1

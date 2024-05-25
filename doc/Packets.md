@@ -25,6 +25,7 @@ Type(Name[:Action[.Param]])
 #### Type
 | Type     | Description |
 |:--------:|-------------|
+| *        | action without data |
 | -        | script decoded |
 | `number` | bytes array with size equal `number` |
 | b        | bitmap: icon size (4 bytes) + data |
@@ -38,7 +39,7 @@ Type(Name[:Action[.Param]])
 | S        | zero terminated string ASCII |
 | z        | bytes array with size equal `Name` number (like 256fixed or 32) |
 
-#### Action
+#### Action with data
 | Action | Description |
 |:------:|-------------|
 | For    | Repeat field `value` times next `Param` fields |
@@ -46,5 +47,10 @@ Type(Name[:Action[.Param]])
 | Hex    | Show `value` as hex |
 | Len    | Limit length `Param` for string |
 | Unscramble | Unscramble `value` |
+
+#### Action without data
+| Action | Description |
+|:------:|-------------|
+| Struct | Struct next `Param` fields |
 
 * Action is case insensetive.
