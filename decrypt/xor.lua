@@ -4,7 +4,6 @@
     Email: eldar.khayrullin@mail.ru
     Date: 2024
     Description: XOR crypto
-    Protocol: 709
 ]]--
 
 local _M = {}
@@ -20,13 +19,25 @@ end
 
 ---@param key ByteArray
 ---@param plen integer Previous crypt data length
+---@param pos integer Dynamic part position -- TODO use as xor.new() param
 ---@return ByteArray
-function _M.next_key(key, plen)
-    local dkey = key:le_uint(0, DYNAMIC_KEY_LEN)
+function _M.next_key(key, plen, pos)
+    local dkey = key:le_uint(pos, DYNAMIC_KEY_LEN)
     dkey = dkey + plen
     local fmt = "<I" .. tostring(DYNAMIC_KEY_LEN)
     local dkey_b = ByteArray.new(Struct.pack(fmt, dkey), true)
-    return dkey_b .. key(DYNAMIC_KEY_LEN, key:len() - DYNAMIC_KEY_LEN)
+
+    local res = dkey_b
+    if pos ~= 0 then
+        local pre = key(0, pos)
+        res = pre .. res
+    end
+    local post_pos = pos + DYNAMIC_KEY_LEN
+    if post_pos < key:len() then
+        local post = key(post_pos, key:len() - post_pos)
+        res = res .. post
+    end
+    return res
 end
 
 ---@param data ByteArray

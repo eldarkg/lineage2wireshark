@@ -30,13 +30,14 @@ local VERSIONS = {
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 local DEFAULT_PORT = 7777
-local DEFAULT_STATIC_XOR_KEY_HEX = "A1 6C 54 87"
 
+local XOR_KEY_LEN
+local DYNAMIC_XOR_KEY_POS
 local PORT = DEFAULT_PORT
-local STATIC_XOR_KEY = ByteArray.new(DEFAULT_STATIC_XOR_KEY_HEX)
+local HI_XOR_KEY
 local START_PNUM = 0
-local INIT_SERVER_XOR_KEY = ByteArray.new("00 00 00 00")
-local INIT_CLIENT_XOR_KEY = ByteArray.new("00 00 00 00")
+local INIT_SERVER_XOR_KEY
+local INIT_CLIENT_XOR_KEY
 
 local tap = Listener.new("tcp", "tcp")
 
@@ -51,17 +52,16 @@ proto.prefs.version = Pref.enum("Protocol Version",
 proto.prefs.port = Pref.uint("Server port",
                              DEFAULT_PORT,
                              "Default: " .. DEFAULT_PORT)
-proto.prefs.static_xor_key_hex = Pref.string("Static part of XOR key",
-                                             DEFAULT_STATIC_XOR_KEY_HEX,
-                                             "Default: " ..
-                                             DEFAULT_STATIC_XOR_KEY_HEX)
+proto.prefs.static_xor_key_hex = Pref.string("High part of XOR Key",
+                                             "", "Format: hex stream")
 proto.prefs.start_pnum = Pref.uint("Start packet number",
                                    START_PNUM,
                                    "Start analyze from selected packet number")
-proto.prefs.init_server_xor_key_hex = Pref.string("Init server part of XOR key",
-                                                  "", "Format: 00 00 00 00")
-proto.prefs.init_client_xor_key_hex = Pref.string("Init client part of XOR key",
-                                                  "", "Format: 00 00 00 00")
+-- FIXME use full XOR Key
+proto.prefs.init_server_xor_key_hex = Pref.string("Init server part of XOR Key",
+                                                  "", "Format: hex stream")
+proto.prefs.init_client_xor_key_hex = Pref.string("Init client part of XOR Key",
+                                                  "", "Format: hex stream")
 
 ---@param ver integer
 ---@return string
@@ -128,7 +128,7 @@ end
 
 ---@param key ByteArray Server XOR key
 local function init_xor_keys(key)
-    server_xor_key = xor.create_key(key, STATIC_XOR_KEY)
+    server_xor_key = xor.create_key(key, HI_XOR_KEY)
     client_xor_key = server_xor_key
 end
 
@@ -138,9 +138,9 @@ local function update_xor_key(plen, isserver)
     xor_accum_len = xor_accum_len + plen
 
     if isserver then
-        server_xor_key = xor.next_key(server_xor_key, plen)
+        server_xor_key = xor.next_key(server_xor_key, plen, DYNAMIC_XOR_KEY_POS)
     else
-        client_xor_key = xor.next_key(client_xor_key, plen)
+        client_xor_key = xor.next_key(client_xor_key, plen, DYNAMIC_XOR_KEY_POS)
     end
 end
 
@@ -181,7 +181,9 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
         local opcode = packet.opcode(payload, opcode_len)
         -- TODO test by opcode number "0x00" KeyInit ?
         if opcode_str(opcode, isserver) == "KeyInit" then
-            init_xor_keys(packet.xor_key(packet.data(payload, opcode_len)))
+            -- TODO get XOR key from decoder
+            init_xor_keys(packet.xor_key(packet.data(payload, opcode_len),
+                                         XOR_KEY_LEN))
         end
     end
 
@@ -212,7 +214,8 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     local xor_key
     local payload
     if isencrypted then
-        xor_key = xor.next_key(xor_key_cache[pinfo.number], xor_accum_len)
+        xor_key = xor.next_key(xor_key_cache[pinfo.number], xor_accum_len,
+                               DYNAMIC_XOR_KEY_POS)
         payload = xor.decrypt(packet.payload(tvb), xor_key)
         xor_accum_len = xor_accum_len + payload:len()
     else
@@ -280,22 +283,39 @@ function proto.init()
     xor_accum_len = nil
     xor_key_cache = {}
 
-    server_xor_key = xor.create_key(INIT_SERVER_XOR_KEY, STATIC_XOR_KEY)
-    client_xor_key = xor.create_key(INIT_CLIENT_XOR_KEY, STATIC_XOR_KEY)
+    local ver = proto.prefs.version
+    if HI_XOR_KEY:len() == 0 then
+        if ver == 746 then
+            HI_XOR_KEY = ByteArray.new("C8 27 93 01 A1 6C 31 97")
+        else
+            HI_XOR_KEY = ByteArray.new("A1 6C 54 87")
+        end
+    end
+
+    -- TODO set to xor on init?
+    if ver == 746 then
+        XOR_KEY_LEN = 8
+        DYNAMIC_XOR_KEY_POS = 8
+    else
+        XOR_KEY_LEN = 4
+        DYNAMIC_XOR_KEY_POS = 0
+    end
+
+    server_xor_key = xor.create_key(INIT_SERVER_XOR_KEY, HI_XOR_KEY)
+    client_xor_key = xor.create_key(INIT_CLIENT_XOR_KEY, HI_XOR_KEY)
 end
 
 function proto.prefs_changed()
+    local ver = proto.prefs.version
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
-    init_decode(proto.prefs.version)
+    init_decode(ver)
 
     PORT = proto.prefs.port
-    STATIC_XOR_KEY = ByteArray.new(proto.prefs.static_xor_key_hex)
+    HI_XOR_KEY = ByteArray.new(proto.prefs.static_xor_key_hex)
     START_PNUM = proto.prefs.start_pnum
-    INIT_SERVER_XOR_KEY =
-        ByteArray.new(proto.prefs.init_server_xor_key_hex)
-    INIT_CLIENT_XOR_KEY =
-        ByteArray.new(proto.prefs.init_client_xor_key_hex)
+    INIT_SERVER_XOR_KEY = ByteArray.new(proto.prefs.init_server_xor_key_hex)
+    INIT_CLIENT_XOR_KEY = ByteArray.new(proto.prefs.init_client_xor_key_hex)
 end
 
 ---@param tvb Tvb

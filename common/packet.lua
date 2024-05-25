@@ -16,7 +16,6 @@ local _M = {}
 _M.HEADER_LEN = 2
 
 local LENGTH_LEN = _M.HEADER_LEN
-local XOR_KEY_LEN = 4
 
 local LENGTH_OFFSET = 0
 
@@ -102,16 +101,19 @@ function _M.data(payload, op_len)
             or ByteArray.new()
 end
 
+-- FIXME receive from decoder
 ---@param data TvbRange Data
+---@param len integer XOR Key Length
 ---@return TvbRange
-function _M.xor_key_tvbr(data)
-    return data(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
+function _M.xor_key_tvbr(data, len)
+    return data(XOR_KEY_DATA_OFFSET, len)
 end
 
 ---@param data ByteArray Data
+---@param len integer XOR Key Length
 ---@return ByteArray
-function _M.xor_key(data)
-    return data(XOR_KEY_DATA_OFFSET, XOR_KEY_LEN)
+function _M.xor_key(data, len)
+    return data(XOR_KEY_DATA_OFFSET, len)
 end
 
 ---@param payload ByteArray
