@@ -4,7 +4,6 @@
     Email: eldar.khayrullin@mail.ru
     Date: 2024
     Description: Wireshark Dissector for Lineage2Login
-    Protocol: 785a
 ]]--
 
 local DESC = "Lineage2 Login Protocol"
@@ -38,6 +37,7 @@ local BLOWFISH_PK_HEX = {
     [0x1000C621] = "6B 60 CB 5B 82 CE 90 B1 CC 2B 6C 55 6C 6C 6C 6C",
 }
 local DEFAULT_BLOWFISH_PK_HEX = ""
+-- TODO Add pref: RSA PK
 
 local PORT = DEFAULT_PORT
 local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
