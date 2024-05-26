@@ -32,8 +32,6 @@ local VERSIONS = {
 local DEFAULT_VERSION = VERSIONS[1][3]
 
 local START_PNUM = 0
-local INIT_SERVER_XOR_KEY
-local INIT_CLIENT_XOR_KEY
 
 local tap = Listener.new("tcp", "tcp")
 
@@ -45,15 +43,14 @@ proto.experts = pe
 proto.prefs.version = Pref.enum("Protocol Version",
                                 DEFAULT_VERSION,
                                 "Protocol Version", VERSIONS, false)
-proto.prefs.high_xor_key_hex = Pref.string("High part of XOR Key",
+proto.prefs.high_xor_key_hex = Pref.string("Init high part of XOR Key",
                                            "", "Format: hex stream")
 proto.prefs.start_pnum = Pref.uint("Start packet number",
                                    START_PNUM,
                                    "Start analyze from selected packet number")
--- FIXME use full XOR Key
-proto.prefs.init_server_xor_key_hex = Pref.string("Init server part of XOR Key",
+proto.prefs.init_server_xor_key_hex = Pref.string("Init server XOR Key",
                                                   "", "Format: hex stream")
-proto.prefs.init_client_xor_key_hex = Pref.string("Init client part of XOR Key",
+proto.prefs.init_client_xor_key_hex = Pref.string("Init client XOR Key",
                                                   "", "Format: hex stream")
 
 ---@param ver integer
@@ -290,11 +287,15 @@ function proto.init()
         high_xor_key = ByteArray.new(high_xor_key_hex)
     end
 
-    INIT_SERVER_XOR_KEY = ByteArray.new(proto.prefs.init_server_xor_key_hex)
-    INIT_CLIENT_XOR_KEY = ByteArray.new(proto.prefs.init_client_xor_key_hex)
+    local init_server_xor_key_hex = proto.prefs.init_server_xor_key_hex
+    if #init_server_xor_key_hex ~= 0 then
+        server_xor_key = ByteArray.new(init_server_xor_key_hex)
+    end
 
-    server_xor_key = xor.create_key(INIT_SERVER_XOR_KEY, high_xor_key)
-    client_xor_key = xor.create_key(INIT_CLIENT_XOR_KEY, high_xor_key)
+    local init_client_xor_key_hex = proto.prefs.init_client_xor_key_hex
+    if #init_client_xor_key_hex ~= 0 then
+        client_xor_key = ByteArray.new(init_client_xor_key_hex)
+    end
 end
 
 function proto.prefs_changed()
@@ -308,6 +309,7 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 function proto.dissector(tvb, pinfo, tree)
+    -- TODO move to dissect ?
     if pinfo.number < START_PNUM then
         return
     end

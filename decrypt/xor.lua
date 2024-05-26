@@ -9,10 +9,10 @@
 local _M = {}
 
 ---@param server_key ByteArray Server XOR key
----@param static_key ByteArray Static XOR key
+---@param high_key ByteArray High XOR key
 ---@return ByteArray
-function _M.create_key(server_key, static_key)
-    return server_key .. static_key
+function _M.create_key(server_key, high_key)
+    return server_key .. high_key
 end
 
 ---@param key ByteArray
