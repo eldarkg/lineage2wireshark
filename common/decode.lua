@@ -14,7 +14,8 @@ end
 local uniconv = require("unistring.uniconv")
 
 local ICON_SIZE_LEN = 4
-local UTF16Z_MIN_LEN = 2 -- min length of empty zero terminated UTF16 string
+local ASCII_CHAR_SIZE = 1
+local UTF16_CHAR_SIZE = 2
 
 local _M = {}
 
@@ -47,15 +48,16 @@ local function opcode(self, tree, tvbr, isencrypted)
     return item
 end
 
----@param bs ByteArray
+---@param data ByteArray
+---@param char_sz integer
 ---@return integer len
-local function utf16len(bs)
+local function strlen(data, char_sz)
     local len = 0
-    for i = 0, bs:len() - 1, UTF16Z_MIN_LEN do
-        len = len + UTF16Z_MIN_LEN
-        if bs:uint(i, UTF16Z_MIN_LEN) == 0 then
+    for i = 0, data:len() - 1, char_sz do
+        if data:le_uint(i, char_sz) == 0 then
             break
         end
+        len = len + char_sz
     end
     return len
 end
@@ -80,8 +82,10 @@ local function get_value_refine_len(data, typ, len)
     elseif typ == "q" then
         val = data(0, len):le_int64()
     elseif typ == "s" then
-        len = utf16len(data)
-        val = uniconv.from_encoding("UTF16", nil, data(0, len - 1):raw())
+        len = strlen(data, UTF16_CHAR_SIZE)
+        val = len == 0 and ""
+                       or uniconv.from_encoding("UTF16", nil, data(0, len):raw())
+        len = len + UTF16_CHAR_SIZE
     end
     return val, len
 end
@@ -129,14 +133,15 @@ local function parse_field(self, data, fmt)
         len = 8
     elseif typ == "s" then
         f = self.pf.utf16z
-        len = UTF16Z_MIN_LEN
+        len = UTF16_CHAR_SIZE -- min length of zero-terminated UTF16 string
     elseif typ == "S" then
         if fmt.action == "len" then
             len = tonumber(fmt.param, 10)
-            f = data(0, len):strsize() <= len and self.pf.asciiz or self.pf.ascii
+            f = strlen(data(0, len), ASCII_CHAR_SIZE) < len
+                and self.pf.asciiz or self.pf.ascii
         else
-            len = 1 -- min length of empty zero terminated ASCII string
             f = self.pf.asciiz
+            len = ASCII_CHAR_SIZE -- min length of zero-terminated ASCII string
         end
     elseif typ == "z" then
         f = self.pf.bytes
