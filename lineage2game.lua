@@ -31,8 +31,6 @@ local VERSIONS = {
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 
-local START_PNUM = 0
-
 local tap = Listener.new("tcp", "tcp")
 
 local proto = Proto(NAME, DESC)
@@ -46,8 +44,9 @@ proto.prefs.version = Pref.enum("Protocol Version",
 proto.prefs.high_xor_key_hex = Pref.string("Init high part of XOR Key",
                                            "", "Format: hex stream")
 proto.prefs.start_pnum = Pref.uint("Start packet number",
-                                   START_PNUM,
-                                   "Start analyze from selected packet number")
+                                   0,
+                                   "Start analyze from selected packet number\n"
+                                   .. "0 - ignore")
 proto.prefs.init_server_xor_key_hex = Pref.string("Init server XOR Key",
                                                   "", "Format: hex stream")
 proto.prefs.init_client_xor_key_hex = Pref.string("Init client XOR Key",
@@ -71,6 +70,7 @@ init_decode(DEFAULT_VERSION)
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)?
 
 ---Init by proto.init
+local start_pnum
 local high_xor_key
 ---Last packet pinfo.number
 local last_packet_number
@@ -273,7 +273,7 @@ function proto.init()
     xor_accum_len = nil
     xor_key_cache = {}
 
-    START_PNUM = proto.prefs.start_pnum
+    start_pnum = proto.prefs.start_pnum
 
     local high_xor_key_hex = proto.prefs.high_xor_key_hex
     if #high_xor_key_hex == 0 then
@@ -310,7 +310,7 @@ end
 ---@param tree TreeItem
 function proto.dissector(tvb, pinfo, tree)
     -- TODO move to dissect ?
-    if pinfo.number < START_PNUM then
+    if pinfo.number < start_pnum then
         return
     end
 
