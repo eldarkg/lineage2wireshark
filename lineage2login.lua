@@ -47,8 +47,7 @@ proto.prefs.version = Pref.enum("Protocol Version",
                                 DEFAULT_VERSION,
                                 "Protocol Version", VERSIONS, false)
 proto.prefs.bf_pk_hex = Pref.string("Blowfish Private Key",
-                                    "",
-                                    "If empty then use protocol standart one")
+                                    "", "If empty then use protocol standart one")
 
 ---@param ver integer
 ---@return string
@@ -231,7 +230,8 @@ function proto.init()
     init_packet_number_cache = {}
 
     if proto.prefs.bf_pk_hex:len() == 0 then
-        local bf_pk_hex = BLOWFISH_PK_HEX[proto.prefs.version]
+        local ver = proto.prefs.version
+        local bf_pk_hex = BLOWFISH_PK_HEX[ver]
         if bf_pk_hex then
             blowfish_pk = ByteArray.new(bf_pk_hex)
         end
@@ -241,10 +241,11 @@ function proto.init()
 end
 
 function proto.prefs_changed()
+    local ver = proto.prefs.version
     -- TODO move to init?
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
-    init_decode(proto.prefs.version)
+    init_decode(ver)
 end
 
 ---@param tvb Tvb
