@@ -31,7 +31,6 @@ local VERSIONS = {
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 
-local HI_XOR_KEY
 local START_PNUM = 0
 local INIT_SERVER_XOR_KEY
 local INIT_CLIENT_XOR_KEY
@@ -46,8 +45,8 @@ proto.experts = pe
 proto.prefs.version = Pref.enum("Protocol Version",
                                 DEFAULT_VERSION,
                                 "Protocol Version", VERSIONS, false)
-proto.prefs.static_xor_key_hex = Pref.string("High part of XOR Key",
-                                             "", "Format: hex stream")
+proto.prefs.high_xor_key_hex = Pref.string("High part of XOR Key",
+                                           "", "Format: hex stream")
 proto.prefs.start_pnum = Pref.uint("Start packet number",
                                    START_PNUM,
                                    "Start analyze from selected packet number")
@@ -75,6 +74,7 @@ init_decode(DEFAULT_VERSION)
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)?
 
 ---Init by proto.init
+local high_xor_key
 ---Last packet pinfo.number
 local last_packet_number
 ---Last sub packet number
@@ -122,7 +122,7 @@ end
 
 ---@param key ByteArray Server XOR key
 local function init_xor_keys(key)
-    server_xor_key = xor.create_key(key, HI_XOR_KEY)
+    server_xor_key = xor.create_key(key, high_xor_key)
     client_xor_key = server_xor_key
 end
 
@@ -276,17 +276,25 @@ function proto.init()
     xor_accum_len = nil
     xor_key_cache = {}
 
-    if HI_XOR_KEY:len() == 0 then
+    START_PNUM = proto.prefs.start_pnum
+
+    local high_xor_key_hex = proto.prefs.high_xor_key_hex
+    if #high_xor_key_hex == 0 then
         local ver = proto.prefs.version
         if ver == 746 then
-            HI_XOR_KEY = ByteArray.new("C8 27 93 01 A1 6C 31 97")
+            high_xor_key = ByteArray.new("C8 27 93 01 A1 6C 31 97")
         else
-            HI_XOR_KEY = ByteArray.new("A1 6C 54 87")
+            high_xor_key = ByteArray.new("A1 6C 54 87")
         end
+    else
+        high_xor_key = ByteArray.new(high_xor_key_hex)
     end
 
-    server_xor_key = xor.create_key(INIT_SERVER_XOR_KEY, HI_XOR_KEY)
-    client_xor_key = xor.create_key(INIT_CLIENT_XOR_KEY, HI_XOR_KEY)
+    INIT_SERVER_XOR_KEY = ByteArray.new(proto.prefs.init_server_xor_key_hex)
+    INIT_CLIENT_XOR_KEY = ByteArray.new(proto.prefs.init_client_xor_key_hex)
+
+    server_xor_key = xor.create_key(INIT_SERVER_XOR_KEY, high_xor_key)
+    client_xor_key = xor.create_key(INIT_CLIENT_XOR_KEY, high_xor_key)
 end
 
 function proto.prefs_changed()
@@ -294,11 +302,6 @@ function proto.prefs_changed()
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
     init_decode(ver)
-
-    HI_XOR_KEY = ByteArray.new(proto.prefs.static_xor_key_hex)
-    START_PNUM = proto.prefs.start_pnum
-    INIT_SERVER_XOR_KEY = ByteArray.new(proto.prefs.init_server_xor_key_hex)
-    INIT_CLIENT_XOR_KEY = ByteArray.new(proto.prefs.init_client_xor_key_hex)
 end
 
 ---@param tvb Tvb
