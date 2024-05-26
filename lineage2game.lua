@@ -31,7 +31,6 @@ local VERSIONS = {
 local DEFAULT_VERSION = VERSIONS[1][3]
 local DEFAULT_PORT = 7777
 
-local XOR_KEY_LEN
 local PORT = DEFAULT_PORT
 local HI_XOR_KEY
 local START_PNUM = 0
@@ -180,9 +179,9 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
         local opcode = packet.opcode(payload, opcode_len)
         -- TODO test by opcode number "0x00" KeyInit ?
         if opcode_str(opcode, isserver) == "KeyInit" then
-            -- TODO get XOR key from decoder
-            init_xor_keys(packet.xor_key(packet.data(payload, opcode_len),
-                                         XOR_KEY_LEN))
+            local data = packet.data(payload, opcode_len)
+            local values = decode:get_values(data, opcode, isserver)
+            init_xor_keys(values.Key)
         end
     end
 
@@ -231,7 +230,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     decode:length(subtree, packet.length_tvbr(tvb))
 
     if isencrypted then
-        decode:bytes(subtree, xor_key, "XOR key")
+        decode:bytes(subtree, xor_key, "XOR Key")
     end
 
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
@@ -288,13 +287,6 @@ function proto.init()
         else
             HI_XOR_KEY = ByteArray.new("A1 6C 54 87")
         end
-    end
-
-    -- TODO set to xor on init?
-    if ver == 746 then
-        XOR_KEY_LEN = 8
-    else
-        XOR_KEY_LEN = 4
     end
 
     server_xor_key = xor.create_key(INIT_SERVER_XOR_KEY, HI_XOR_KEY)

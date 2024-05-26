@@ -21,8 +21,6 @@ local LENGTH_OFFSET = 0
 
 local OPCODE_PAYLOAD_OFFSET = 0
 
-local XOR_KEY_DATA_OFFSET = 1
-
 ---@param tvb Tvb Packet
 ---@return TvbRange
 function _M.length_tvbr(tvb)
@@ -99,21 +97,6 @@ function _M.data(payload, op_len)
     return op_len < payload:len()
             and payload(op_len, payload:len() - op_len)
             or ByteArray.new()
-end
-
--- FIXME receive from decoder
----@param data TvbRange Data
----@param len integer XOR Key Length
----@return TvbRange
-function _M.xor_key_tvbr(data, len)
-    return data(XOR_KEY_DATA_OFFSET, len)
-end
-
----@param data ByteArray Data
----@param len integer XOR Key Length
----@return ByteArray
-function _M.xor_key(data, len)
-    return data(XOR_KEY_DATA_OFFSET, len)
 end
 
 ---@param payload ByteArray

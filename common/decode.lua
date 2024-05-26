@@ -86,6 +86,8 @@ local function get_value_refine_len(data, typ, len)
         val = len == 0 and ""
                        or uniconv.from_encoding("UTF16", nil, data(0, len):raw())
         len = len + UTF16_CHAR_SIZE
+    elseif tonumber(typ, 10) then
+        val = data(0, len)
     end
     return val, len
 end
@@ -172,6 +174,42 @@ local function parse_field(self, data, fmt)
 end
 
 ---@param self table
+---@param data ByteArray Data
+---@param opcode integer
+---@param isserver boolean
+---@return table|nil values
+local function get_values(self, data, opcode, isserver)
+    local data_fmt = self.OPCODE_FMT[isserver and "server" or "client"][opcode]
+    if data_fmt then
+        local values = {}
+        local offset = 0
+        local remain_len = data:len()
+        for i = 1, #data_fmt, 1 do
+            local field_fmt = data_fmt[i]
+
+            if data:len() <= offset then
+                break
+            end
+
+            local len
+            local val
+            _, len, val = parse_field(self, data(offset, remain_len), field_fmt)
+
+            if not len then
+                break
+            end
+
+            values[field_fmt.name] = val
+            offset = offset + len
+            remain_len = remain_len - len
+        end
+        return values
+    else
+        return nil
+    end
+end
+
+---@param self table
 ---@param tree TreeItem
 ---@param tvbr TvbRange Data
 ---@param data_fmt table Data format
@@ -240,8 +278,9 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
 
             local field_tvbr = tvbr(offset, len)
             local add = le and TreeItem.add_le or TreeItem.add
-            local item = val and add(tree, f, field_tvbr, val)
-                            or add(tree, f, field_tvbr)
+            local item = val and f ~= self.pf.bytes
+                             and add(tree, f, field_tvbr, val)
+                             or add(tree, f, field_tvbr)
             item:prepend_text(field_fmt.name)
 
             -- TODO warn if action not found
@@ -345,6 +384,7 @@ function _M.init(pf, pe, isgame, ver, lang)
         OPCODE_FMT = OPCODE_FMT,
         ID = require(name .. ".id").init(lang),
 
+        get_values = get_values,
         length = length,
         bytes = bytes,
         opcode = opcode,
