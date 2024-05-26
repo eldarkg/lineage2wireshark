@@ -175,12 +175,12 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
     if isencrypted then
         update_xor_key(payload:len(), isserver)
     elseif isserver then
-        local opcode_len = packet.opcode_len(payload, isserver)
+        local opcode_len = packet.opcode_len(payload, true)
         local opcode = packet.opcode(payload, opcode_len)
         -- TODO test by opcode number "0x00" KeyInit ?
-        if opcode_str(opcode, isserver) == "KeyInit" then
+        if opcode_str(opcode, true) == "KeyInit" then
             local data = packet.data(payload, opcode_len)
-            local values = decode:get_values(data, opcode, isserver)
+            local values = decode:get_values(data, opcode, true)
             init_xor_keys(values.Key)
         end
     end
