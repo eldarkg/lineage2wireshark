@@ -25,9 +25,9 @@ local INIT_COUNT = 1
 
 -- TODO generate by list of names vs protocol version
 local VERSIONS = {
-    {1, "Blowfish static (785a)", 0x785A},
-    {2, "Blowfish static + RSA (c621)", 0xC621},
-    {3, "Blowfish dynamic + RSA (c621)", 0x1000C621}, -- FIXME
+    {1, "Static Blowfish (785a)", 0x785A},
+    {2, "Static Blowfish + RSA (c621)", 0xC621},
+    {3, "Dynamic Blowfish + RSA (c621)", 0x1000C621}, -- FIXME
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 local BLOWFISH_PK_HEX = {
