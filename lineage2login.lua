@@ -229,14 +229,15 @@ function proto.init()
     init_count = 0
     init_packet_number_cache = {}
 
-    if proto.prefs.bf_pk_hex:len() == 0 then
+    local bf_pk_hex = proto.prefs.bf_pk_hex
+    if #bf_pk_hex == 0 then
         local ver = proto.prefs.version
-        local bf_pk_hex = BLOWFISH_PK_HEX[ver]
+        bf_pk_hex = BLOWFISH_PK_HEX[ver]
         if bf_pk_hex then
             blowfish_pk = ByteArray.new(bf_pk_hex)
         end
     else
-        blowfish_pk = ByteArray.new(proto.prefs.bf_pk_hex)
+        blowfish_pk = ByteArray.new(bf_pk_hex)
     end
 end
 
