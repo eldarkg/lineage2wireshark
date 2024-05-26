@@ -43,11 +43,10 @@ local pf = require("common.protofields").init(proto.name)
 proto.fields = pf
 local pe = require("common.protoexperts").init(proto.name)
 proto.experts = pe
-proto.prefs.version = Pref.enum("Protocol Version",
-                                DEFAULT_VERSION,
+proto.prefs.version = Pref.enum("Protocol Version", DEFAULT_VERSION,
                                 "Protocol Version", VERSIONS, false)
-proto.prefs.bf_pk_hex = Pref.string("Blowfish Private Key",
-                                    "", "If empty then use protocol standart one")
+proto.prefs.bf_pk_hex = Pref.string("Init Blowfish Private Key",
+                                    "", "Format: hex stream")
 
 ---@param ver integer
 ---@return string

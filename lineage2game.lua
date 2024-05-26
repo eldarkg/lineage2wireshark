@@ -38,8 +38,7 @@ local pf = require("common.protofields").init(proto.name)
 proto.fields = pf
 local pe = require("common.protoexperts").init(proto.name)
 proto.experts = pe
-proto.prefs.version = Pref.enum("Protocol Version",
-                                DEFAULT_VERSION,
+proto.prefs.version = Pref.enum("Protocol Version", DEFAULT_VERSION,
                                 "Protocol Version", VERSIONS, false)
 proto.prefs.high_xor_key_hex = Pref.string("Init high part of XOR Key",
                                            "", "Format: hex stream")
