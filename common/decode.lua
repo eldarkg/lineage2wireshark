@@ -180,28 +180,23 @@ end
 ---@return table|nil values
 local function get_values(self, data, opcode, isserver)
     local data_fmt = self.OPCODE_FMT[isserver and "server" or "client"][opcode]
-    if data_fmt then
+    if data_fmt and 0 < data:len() then
         local values = {}
-        local offset = 0
-        local remain_len = data:len()
         for i = 1, #data_fmt, 1 do
-            local field_fmt = data_fmt[i]
-
-            if data:len() <= offset then
-                break
-            end
-
             local len
             local val
-            _, len, val = parse_field(self, data(offset, remain_len), field_fmt)
-
+            local field_fmt = data_fmt[i]
+            _, len, val = parse_field(self, data, field_fmt)
             if not len then
                 break
             end
 
             values[field_fmt.name] = val
-            offset = offset + len
-            remain_len = remain_len - len
+
+            if data:len() <= len then
+                break
+            end
+            data = data(len, data:len() - len)
         end
         return values
     else
