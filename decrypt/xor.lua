@@ -8,8 +8,6 @@
 
 local _M = {}
 
-local DYNAMIC_KEY_LEN = 4
-
 ---@param server_key ByteArray Server XOR key
 ---@param static_key ByteArray Static XOR key
 ---@return ByteArray
@@ -19,9 +17,18 @@ end
 
 ---@param key ByteArray
 ---@param plen integer Previous crypt data length
----@param pos integer Dynamic part position -- TODO use as xor.new() param
 ---@return ByteArray
-function _M.next_key(key, plen, pos)
+function _M.next_key(key, plen)
+    local DYNAMIC_KEY_LEN = 4
+    local pos
+    if key:len() == 8 then
+        pos = 0
+    elseif key:len() == 16 then
+        pos = 8
+    else
+        return nil
+    end
+
     local dkey = key:le_uint(pos, DYNAMIC_KEY_LEN)
     dkey = dkey + plen
     local fmt = "<I" .. tostring(DYNAMIC_KEY_LEN)

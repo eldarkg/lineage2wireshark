@@ -32,7 +32,6 @@ local DEFAULT_VERSION = VERSIONS[1][3]
 local DEFAULT_PORT = 7777
 
 local XOR_KEY_LEN
-local DYNAMIC_XOR_KEY_POS
 local PORT = DEFAULT_PORT
 local HI_XOR_KEY
 local START_PNUM = 0
@@ -138,9 +137,9 @@ local function update_xor_key(plen, isserver)
     xor_accum_len = xor_accum_len + plen
 
     if isserver then
-        server_xor_key = xor.next_key(server_xor_key, plen, DYNAMIC_XOR_KEY_POS)
+        server_xor_key = xor.next_key(server_xor_key, plen)
     else
-        client_xor_key = xor.next_key(client_xor_key, plen, DYNAMIC_XOR_KEY_POS)
+        client_xor_key = xor.next_key(client_xor_key, plen)
     end
 end
 
@@ -214,8 +213,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     local xor_key
     local payload
     if isencrypted then
-        xor_key = xor.next_key(xor_key_cache[pinfo.number], xor_accum_len,
-                               DYNAMIC_XOR_KEY_POS)
+        xor_key = xor.next_key(xor_key_cache[pinfo.number], xor_accum_len)
         payload = xor.decrypt(packet.payload(tvb), xor_key)
         xor_accum_len = xor_accum_len + payload:len()
     else
@@ -295,10 +293,8 @@ function proto.init()
     -- TODO set to xor on init?
     if ver == 746 then
         XOR_KEY_LEN = 8
-        DYNAMIC_XOR_KEY_POS = 8
     else
         XOR_KEY_LEN = 4
-        DYNAMIC_XOR_KEY_POS = 0
     end
 
     server_xor_key = xor.create_key(INIT_SERVER_XOR_KEY, HI_XOR_KEY)
