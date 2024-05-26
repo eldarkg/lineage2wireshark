@@ -42,12 +42,16 @@ convert -depth 8 -size 16x16+0 gray:in.bin out.png
 * Lua 5.2
 * luarocks
 * luacrypto2
+* lua-unistring
 
 ## Thirdparty
 * lua-ini (modified)
 
 ```shell
 sudo luarocks install luacrypto2
+
+sudo apt install libunistring-dev
+sudo luarocks install --server=https://luarocks.org/dev unistring
 ```
 
 INFO: http://mkottman.github.io/luacrypto/manual.html#reference

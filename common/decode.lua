@@ -11,7 +11,10 @@ if not package.searchpath("common.decode", package.path) then
     return
 end
 
+local uniconv = require("unistring.uniconv")
+
 local ICON_SIZE_LEN = 4
+local UTF16Z_MIN_LEN = 2 -- min length of empty zero terminated UTF16 string
 
 local _M = {}
 
@@ -44,103 +47,117 @@ local function opcode(self, tree, tvbr, isencrypted)
     return item
 end
 
+---@param bs ByteArray
+---@return integer len
+local function utf16len(bs)
+    local len = 0
+    for i = 0, bs:len() - 1, UTF16Z_MIN_LEN do
+        len = len + UTF16Z_MIN_LEN
+        if bs:uint(i, UTF16Z_MIN_LEN) == 0 then
+            break
+        end
+    end
+    return len
+end
+
 -- TODO use capital case for Big endian or HEX values or field_fmt.action: Len.{n}?
 
----@param tvbr TvbRange Field data
----@param type string Field type
+---@param data ByteArray Field data
+---@param typ string Field type
 ---@param len integer
 ---@return any val
 ---@return integer len Refined length
-local function get_value_len(tvbr, type, len)
+local function get_value_refine_len(data, typ, len)
     local val
-    if type == "b" then
-        len = tvbr(0, len):le_uint()
-    elseif type == "c" then
-        val = tvbr(0, len):le_uint()
-    elseif type == "d" then
-        val = tvbr(0, len):le_int()
-    elseif type == "h" then
-        val = tvbr(0, len):le_uint()
-    elseif type == "q" then
-        val = tvbr(0, len):le_int64()
-    elseif type == "s" then
-        val, len = tvbr:le_ustringz()
+    if typ == "b" then
+        len = data(0, len):le_uint()
+    elseif typ == "c" then
+        val = data(0, len):le_uint()
+    elseif typ == "d" then
+        val = data(0, len):le_int()
+    elseif typ == "h" then
+        val = data(0, len):le_uint()
+    elseif typ == "q" then
+        val = data(0, len):le_int64()
+    elseif typ == "s" then
+        len = utf16len(data)
+        val = uniconv.from_encoding("UTF16", nil, data(0, len - 1):raw())
     end
     return val, len
 end
 
 ---@param self table
----@param tvbr TvbRange Field data
+---@param data ByteArray Field data
 ---@param fmt table Field format
 ---@return ProtoField f
 ---@return integer|nil len Length. nil - memory range is out of bounds
 ---@return any val
 ---@return boolean le Is Little Endian else Big Endian
-local function parse_field(self, tvbr, fmt)
+local function parse_field(self, data, fmt)
     local f
     local len
     local val
     local le = true
 
     -- TODO use Param: Hex
-    local type = fmt.type
-    if type == "b" then
+    local typ = fmt.type
+    if typ == "b" then
         f = self.pf.bytes
         len = ICON_SIZE_LEN
-    elseif type == "c" then
+    elseif typ == "c" then
         f = self.pf.u8
         len = 1
-    elseif type == "d" then
+    elseif typ == "d" then
         if fmt.action == "hex" or fmt.param == "FCol" then
             f = self.pf.r32
         else
             f = self.pf.i32
         end
         len = 4
-    elseif type == "f" then
+    elseif typ == "f" then
         f = self.pf.double
         len = 8
-    elseif type == "h" then
+    elseif typ == "h" then
         f = self.pf.u16
         len = 2
-    elseif type == "i" then
+    elseif typ == "i" then
         f = self.pf.ipv4
         len = 4
         le = false
-    elseif type == "q" then
+    elseif typ == "q" then
         f = self.pf.i64
         len = 8
-    elseif type == "s" then
+    elseif typ == "s" then
         f = self.pf.utf16z
-        len = 2 -- min length of empty zero terminated UTF16 string
-    elseif type == "S" then
+        len = UTF16Z_MIN_LEN
+    elseif typ == "S" then
         if fmt.action == "len" then
             len = tonumber(fmt.param, 10)
-            f = tvbr(0, len):strsize() <= len and self.pf.asciiz or self.pf.ascii
+            f = data(0, len):strsize() <= len and self.pf.asciiz or self.pf.ascii
         else
             len = 1 -- min length of empty zero terminated ASCII string
             f = self.pf.asciiz
         end
-    elseif type == "z" then
+    elseif typ == "z" then
         f = self.pf.bytes
         local s = fmt.name:match("(%d+)")
         len = tonumber(s, 10)
-    elseif type == "-" then
+    elseif typ == "-" then
         -- TODO decode Script:
         -- implement to ini operator Switch, Case.{scope}[.{n}]
         -- implement to ini For.{scope}[.{count_field}]
         f = self.pf.bytes
         len = -1
     else
-        len = tonumber(type, 10)
+        len = tonumber(typ, 10)
         if len then
             f = self.pf.bytes
         end
     end
 
     if len then
-        if len <= tvbr:len() then
-            val, len = get_value_len(tvbr, type, len)
+        if len <= data:len() then
+            val, len = get_value_refine_len(data, typ, len)
         else
             len = nil
         end
@@ -192,7 +209,7 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
             local len
             local val
             local le
-            f, len, val, le = parse_field(self, tvbr(offset), field_fmt)
+            f, len, val, le = parse_field(self, tvbr(offset):bytes(), field_fmt)
             if not len then
                 tree:add_proto_expert_info(self.pe.undecoded, "parse field \"" ..
                                         field_fmt.name ..
