@@ -43,10 +43,6 @@ proto.prefs.version = Pref.enum("Protocol Version",
                                 "Protocol Version", VERSIONS, false)
 proto.prefs.high_xor_key_hex = Pref.string("Init high part of XOR Key",
                                            "", "Format: hex stream")
-proto.prefs.start_pnum = Pref.uint("Start packet number",
-                                   0,
-                                   "Start analyze from selected packet number\n"
-                                   .. "0 - ignore")
 proto.prefs.init_server_xor_key_hex = Pref.string("Init server XOR Key",
                                                   "", "Format: hex stream")
 proto.prefs.init_client_xor_key_hex = Pref.string("Init client XOR Key",
@@ -70,7 +66,6 @@ init_decode(DEFAULT_VERSION)
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)?
 
 ---Init by proto.init
-local start_pnum
 local high_xor_key
 ---Last packet pinfo.number
 local last_packet_number
@@ -273,8 +268,6 @@ function proto.init()
     xor_accum_len = nil
     xor_key_cache = {}
 
-    start_pnum = proto.prefs.start_pnum
-
     local high_xor_key_hex = proto.prefs.high_xor_key_hex
     if #high_xor_key_hex == 0 then
         local ver = proto.prefs.version
@@ -309,11 +302,6 @@ end
 ---@param pinfo Pinfo
 ---@param tree TreeItem
 function proto.dissector(tvb, pinfo, tree)
-    -- TODO move to dissect ?
-    if pinfo.number < start_pnum then
-        return
-    end
-
     pinfo.cols.protocol = proto.name
     pinfo.cols.info = ""
 
