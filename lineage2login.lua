@@ -20,6 +20,7 @@ local bf = require("decrypt.blowfish")
 local util = require("common.utils")
 local packet = require("common.packet")
 
+local PORT = 2106
 local INIT_COUNT = 1
 
 -- TODO generate by list of names vs protocol version
@@ -29,13 +30,11 @@ local VERSIONS = {
     {3, "Blowfish dynamic + RSA (c621)", 0x1000C621}, -- FIXME
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
-local DEFAULT_PORT = 2106
 local BLOWFISH_PK_HEX = {
     [0x785A] = "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00",
     [0xC621] = "2D BB 10 02 41 11 AF FF 61 18 BB 51 11 FD DD 33 1D 1D 22 76 00",
 }
 -- TODO Add pref: RSA PK
-local PORT = DEFAULT_PORT
 
 local tap = Listener.new("tcp", "tcp")
 
@@ -47,9 +46,6 @@ proto.experts = pe
 proto.prefs.version = Pref.enum("Protocol Version",
                                 DEFAULT_VERSION,
                                 "Protocol Version", VERSIONS, false)
-proto.prefs.port = Pref.uint("Server port",
-                             DEFAULT_PORT,
-                             "Default: " .. DEFAULT_PORT)
 proto.prefs.bf_pk_hex = Pref.string("Blowfish Private Key",
                                     "",
                                     "If empty then use protocol standart one")
@@ -249,9 +245,6 @@ function proto.prefs_changed()
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
     init_decode(proto.prefs.version)
-
-    -- TODO move to init?
-    PORT = proto.prefs.port
 end
 
 ---@param tvb Tvb
