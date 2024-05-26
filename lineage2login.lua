@@ -242,7 +242,6 @@ end
 
 function proto.prefs_changed()
     local ver = proto.prefs.version
-    -- TODO move to init?
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
     init_decode(ver)
