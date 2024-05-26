@@ -33,14 +33,9 @@ local DEFAULT_PORT = 2106
 local BLOWFISH_PK_HEX = {
     [0x785A] = "64 10 30 10 AE 06 31 10 16 95 30 10 32 65 30 10 71 44 30 10 00",
     [0xC621] = "2D BB 10 02 41 11 AF FF 61 18 BB 51 11 FD DD 33 1D 1D 22 76 00",
-    -- FIXME use PK from Init packet instead
-    [0x1000C621] = "6B 60 CB 5B 82 CE 90 B1 CC 2B 6C 55 6C 6C 6C 6C",
 }
-local DEFAULT_BLOWFISH_PK_HEX = ""
 -- TODO Add pref: RSA PK
-
 local PORT = DEFAULT_PORT
-local BLOWFISH_PK = ByteArray.new(DEFAULT_BLOWFISH_PK_HEX)
 
 local tap = Listener.new("tcp", "tcp")
 
@@ -56,7 +51,7 @@ proto.prefs.port = Pref.uint("Server port",
                              DEFAULT_PORT,
                              "Default: " .. DEFAULT_PORT)
 proto.prefs.bf_pk_hex = Pref.string("Blowfish Private Key",
-                                    DEFAULT_BLOWFISH_PK_HEX,
+                                    "",
                                     "If empty then use protocol standart one")
 
 ---@param ver integer
@@ -75,6 +70,7 @@ end
 init_decode(DEFAULT_VERSION)
 
 ---Init by proto.init
+local blowfish_pk
 ---Last packet pinfo.number
 local last_packet_number
 ---Last sub packet number
@@ -136,6 +132,21 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
         end
     end
 
+    local isencrypted = not init_packet_number_cache[pinfo.number]
+    local payload = packet.payload(tvb)
+    if not isencrypted and isserver then
+        local opcode_len = packet.opcode_len(payload, true)
+        local opcode = packet.opcode(payload, opcode_len)
+        -- TODO test by opcode number "0x00" Init ?
+        if opcode_str(opcode, true) == "Init" then
+            local data = packet.data(payload, opcode_len)
+            local values = decode:get_values(data, opcode, true)
+            if values.BlowfishPK then
+                blowfish_pk = values.BlowfishPK
+            end
+        end
+    end
+
     return tvb:len()
 end
 
@@ -160,7 +171,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
 
     local payload
     if isencrypted then
-        payload = bf.decrypt(packet.payload(tvb), BLOWFISH_PK:raw())
+        payload = bf.decrypt(packet.payload(tvb), blowfish_pk:raw())
     else
         payload = packet.payload(tvb)
     end
@@ -176,7 +187,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
     decode:length(subtree, packet.length_tvbr(tvb))
 
     if isencrypted then
-        decode:bytes(subtree, BLOWFISH_PK, "Blowfish PK")
+        decode:bytes(subtree, blowfish_pk, "Blowfish PK")
     end
 
     local payload_tvbr = isencrypted and payload:tvb("Decrypted")()
@@ -222,17 +233,25 @@ function proto.init()
     subpacket_count_cache = {}
     init_count = 0
     init_packet_number_cache = {}
+
+    if proto.prefs.bf_pk_hex:len() == 0 then
+        local bf_pk_hex = BLOWFISH_PK_HEX[proto.prefs.version]
+        if bf_pk_hex then
+            blowfish_pk = ByteArray.new(bf_pk_hex)
+        end
+    else
+        blowfish_pk = ByteArray.new(proto.prefs.bf_pk_hex)
+    end
 end
 
 function proto.prefs_changed()
+    -- TODO move to init?
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
     init_decode(proto.prefs.version)
 
+    -- TODO move to init?
     PORT = proto.prefs.port
-    BLOWFISH_PK = ByteArray.new(proto.prefs.bf_pk_hex:len() == 0
-                                    and BLOWFISH_PK_HEX[proto.prefs.version]
-                                    or proto.prefs.bf_pk_hex)
 end
 
 ---@param tvb Tvb
