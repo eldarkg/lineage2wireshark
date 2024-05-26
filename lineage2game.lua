@@ -20,6 +20,7 @@ local util = require("common.utils")
 local packet = require("common.packet")
 local xor = require("decrypt.xor")
 
+local PORT = 7777
 local INIT_COUNT = 2
 
 -- TODO generate by list of names vs protocol version
@@ -29,9 +30,7 @@ local VERSIONS = {
     {3, "CT0: Interlude Update 2 (746)", 746},
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
-local DEFAULT_PORT = 7777
 
-local PORT = DEFAULT_PORT
 local HI_XOR_KEY
 local START_PNUM = 0
 local INIT_SERVER_XOR_KEY
@@ -47,9 +46,6 @@ proto.experts = pe
 proto.prefs.version = Pref.enum("Protocol Version",
                                 DEFAULT_VERSION,
                                 "Protocol Version", VERSIONS, false)
-proto.prefs.port = Pref.uint("Server port",
-                             DEFAULT_PORT,
-                             "Default: " .. DEFAULT_PORT)
 proto.prefs.static_xor_key_hex = Pref.string("High part of XOR Key",
                                              "", "Format: hex stream")
 proto.prefs.start_pnum = Pref.uint("Start packet number",
@@ -280,8 +276,8 @@ function proto.init()
     xor_accum_len = nil
     xor_key_cache = {}
 
-    local ver = proto.prefs.version
     if HI_XOR_KEY:len() == 0 then
+        local ver = proto.prefs.version
         if ver == 746 then
             HI_XOR_KEY = ByteArray.new("C8 27 93 01 A1 6C 31 97")
         else
@@ -299,7 +295,6 @@ function proto.prefs_changed()
     -- TODO select lang by preference
     init_decode(ver)
 
-    PORT = proto.prefs.port
     HI_XOR_KEY = ByteArray.new(proto.prefs.static_xor_key_hex)
     START_PNUM = proto.prefs.start_pnum
     INIT_SERVER_XOR_KEY = ByteArray.new(proto.prefs.init_server_xor_key_hex)
