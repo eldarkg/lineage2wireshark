@@ -213,16 +213,13 @@ end
 local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
     local offset = 0
     local i = 1
+    local ismandatory = true
     while i <= #data_fmt do
         local field_fmt = data_fmt[i]
 
-        if tvbr:len() <= offset then
-            tree:add_proto_expert_info(self.pe.undecoded, "not found field \"" ..
-                                       field_fmt.name .. "\"")
-            return nil
-        end
-
-        if field_fmt.type == "*" then
+        if field_fmt.type == "?" then
+            ismandatory = false
+        elseif field_fmt.type == "*" then
             if field_fmt.action == "struct" then
                 local iend = i + tonumber(field_fmt.param, 10)
                 local subtree = tree:add(tvbr(offset), field_fmt.name)
@@ -243,6 +240,16 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
                 i = iend
             end
         else
+            if tvbr:len() <= offset then
+                if ismandatory then
+                    tree:add_proto_expert_info(self.pe.undecoded,
+                        "not found field \"" .. field_fmt.name .. "\"")
+                    return nil
+                else
+                    break
+                end
+            end
+
             local f
             local len
             local val
@@ -250,8 +257,7 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
             f, len, val, le = parse_field(self, tvbr(offset):bytes(), field_fmt)
             if not len then
                 tree:add_proto_expert_info(self.pe.undecoded, "parse field \"" ..
-                                        field_fmt.name ..
-                                        "(" .. field_fmt.type .. ")\"")
+                    field_fmt.name .. "(" .. field_fmt.type .. ")\"")
                 return nil
             end
 
@@ -300,10 +306,14 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
                 local iend = i + tonumber(field_fmt.param, 10)
                 for j = 1, val, 1 do
                     if tvbr:len() <= offset then
-                        tree:add_proto_expert_info(self.pe.undecoded,
-                                            "not found repeat #" .. tostring(j) ..
-                                            " of group " .. field_fmt.name)
-                        return nil
+                        if ismandatory then
+                            tree:add_proto_expert_info(self.pe.undecoded,
+                                "not found repeat #" .. tostring(j) ..
+                                " of group " .. field_fmt.name)
+                            return nil
+                        else
+                            break
+                        end
                     end
 
                     local subtree = tree:add(tvbr(offset), tostring(j))

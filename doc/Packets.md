@@ -25,6 +25,7 @@ Type(Name[:Action[.Param]])
 #### Type
 | Type     | Description |
 |:--------:|-------------|
+| ?        | Next fields are not mandatory |
 | *        | action without data |
 | -        | script decoded |
 | `number` | bytes array with size equal `number` |
