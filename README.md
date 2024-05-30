@@ -1,8 +1,8 @@
 # lineage2wireshark
 
 ## Support Protocols
-* Login server: 785a
-* Game server: 660, 709
+* Login server: 785a, c621
+* Game server: 660, 709, 746
 
 ## Wireshark Filters
 * Login server: lineage2login (tcp.srcport == 2106 || tcp.dstport == 2106)
