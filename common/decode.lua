@@ -183,9 +183,13 @@ local function get_values(self, data, opcode, isserver)
     if data_fmt and 0 < data:len() then
         local values = {}
         for i = 1, #data_fmt, 1 do
+            local field_fmt = data_fmt[i]
+            if field_fmt.type == "?" or field_fmt.type == "*" then
+                goto continue
+            end
+
             local len
             local val
-            local field_fmt = data_fmt[i]
             _, len, val = parse_field(self, data, field_fmt)
             if not len then
                 break
@@ -197,6 +201,7 @@ local function get_values(self, data, opcode, isserver)
                 break
             end
             data = data(len, data:len() - len)
+            ::continue::
         end
         return values
     else
