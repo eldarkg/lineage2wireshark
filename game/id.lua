@@ -27,6 +27,7 @@ function _M.init(lang)
     ID["Func01"] = id.load(content_abs_path .. "ItemsId.ini", 0)
     ID["Func02"] = id.load(content_abs_path .. "TextType.ini", 0)
     ID["GMCmd"] = id.load(content_abs_path .. "GMCmds.ini", 0)
+    ID["Location"] = id.load(content_abs_path .. "Location.ini", 0)
     ID["Macro"] = id.load(content_abs_path .. "MacroTypes.ini", 0)
     ID["MsgID"] = id.load(content_abs_path .. "SysMsgId.ini", 0)
     -- TODO offset from protocol version
