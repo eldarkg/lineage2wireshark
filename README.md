@@ -1,5 +1,9 @@
 # lineage2wireshark
 
+## Limitations
+* manual protocol select
+* one client-server connection protocol decode at the same time
+
 ## Support Protocols
 * Login server: 785a, c621
 * Game server: 660, 709, 746
@@ -25,11 +29,15 @@
 * ?Switch between LINEAGE packet and TCP error packet break sequence crypt
 (to restore switch to LINEAGE packet)
 
-## Find client (C4, C5) static BlowFish private key
+## Decrypt
+### Find client (C4, C5) static BlowFish private key
 ```
 system/engine.dll -> Ghidra -> Search call InitializeBlowfish -> Arg 2 -> Key
 ```
 * Try all found keys and find one valid.
+### XOR Key
+Found by selection based on known data of the first crypted packet
+(for example packet `RequestAuthLogin`).
 
 ## Utility
 Convert binary to image
