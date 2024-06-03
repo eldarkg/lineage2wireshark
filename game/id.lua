@@ -21,6 +21,7 @@ function _M.init(lang)
 
     local id = require("common.id")
     local ID = {}
+    ID["Action"] = id.load(content_abs_path .. "Actions.ini", 0)
     ID["Block"] = id.load(content_abs_path .. "Blocks.ini", 0)
     ID["CharType"] = id.load(content_abs_path .. "CharacterType.ini", 0)
     ID["ClassID"] = id.load(content_abs_path .. "ClassId.ini", 0)
