@@ -47,6 +47,8 @@ Type(Name[:Action[.Param]])
 | Get    | Get description by `value` index from accordance content file to `Param` |
 | Hex    | Show `value` as hex |
 | Len    | Limit length `Param` for string |
+| Switch | Begin switch block (`Name` - any) of next field `value` |
+| Case   | Case `Name` values list (comma separated) of previous switch next `Param` size block. `Name` == `default` - default case |
 | Unscramble | Unscramble `value` |
 
 #### Action without data

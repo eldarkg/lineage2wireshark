@@ -19,6 +19,20 @@ local UTF16_CHAR_SIZE = 2
 
 local _M = {}
 
+---@param str string List string
+---@param sep string Separator
+---@param isnum boolean Is decimal number or string
+---@return table set
+local function parse_list(str, sep, isnum)
+    local set = {}
+    for match in str:gmatch("([^" .. sep .. "%s]+)") do
+        local val = isnum and tonumber(match, 10) or match
+        -- table.insert(list, val)
+        set[val] = true
+    end
+    return set
+end
+
 ---@param self table
 ---@param tree TreeItem
 ---@param tvbr TvbRange Length
@@ -219,6 +233,8 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
     local offset = 0
     local i = 1
     local ismandatory = true
+    local switch_beg
+    local switch_val
     while i <= #data_fmt do
         local field_fmt = data_fmt[i]
 
@@ -243,6 +259,37 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
                 end
 
                 i = iend
+            elseif field_fmt.action == "switch" then
+                switch_beg = true
+            elseif field_fmt.action == "case" then
+                if switch_val == nil then
+                    -- TODO syntax error
+                    return nil
+                end
+
+                local iend = i + tonumber(field_fmt.param, 10)
+
+                -- TODO parse list
+                -- local val = tonumber(field_fmt.name, 10)
+                -- if val == switch_val or
+                local set = parse_list(field_fmt.name, ",", true)
+                if set[switch_val] or
+                   field_fmt.name == "default" and switch_beg ~= nil then
+
+                    local len = decode_data(self, tree, tvbr(offset),
+                        {table.unpack(data_fmt, i + 1, iend)},
+                        isencrypted)
+                    if len then
+                        offset = offset + len
+                    else
+                        return nil
+                    end
+
+                    switch_beg = nil
+                    switch_val = nil
+                end
+
+                i = iend
             end
         else
             if tvbr:len() <= offset then
@@ -264,6 +311,11 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
                 tree:add_proto_expert_info(self.pe.undecoded, "parse field \"" ..
                     field_fmt.name .. "(" .. field_fmt.type .. ")\"")
                 return nil
+            end
+
+            if switch_beg == true then
+                switch_beg = false
+                switch_val = val
             end
 
             if field_fmt.type == "b" then
