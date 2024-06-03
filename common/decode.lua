@@ -269,9 +269,6 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
 
                 local iend = i + tonumber(field_fmt.param, 10)
 
-                -- TODO parse list
-                -- local val = tonumber(field_fmt.name, 10)
-                -- if val == switch_val or
                 local set = parse_list(field_fmt.name, ",", true)
                 if set[switch_val] or
                    field_fmt.name == "default" and switch_beg ~= nil then
