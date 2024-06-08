@@ -44,7 +44,6 @@ Type(Name[:Action[.Param]])
 | Action | Description |
 |:------:|-------------|
 | AddObjID | Add object ID to objects cache |
-| AddObjInfo | Add as object info to objects cache |
 | For    | Repeat field `value` times next `Param` fields |
 | Get    | Get description by `value` index from accordance content file to `Param` |
 | Hex    | Show `value` as hex |

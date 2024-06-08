@@ -316,28 +316,6 @@ local function decode_data(self, pinfo, tree, tvbr, opcode, data_fmt, isencrypte
                 return nil
             end
 
-            if field_fmt.action == "addobjid" then
-                obj_id = val
-            elseif field_fmt.action == "addobjinfo" then
-                -- FIXME
-                obj_info = obj_info and obj_info .. ", " .. val
-                                    or opcode .. ": " .. val
-            elseif field_fmt.action == "objid" then
-                local obj = self.objects[val]
-                if obj then
-                    tree:add(self.pf.framenum, obj.framenum)
-                        :prepend_text("Link " .. field_fmt.name)
-                        :append_text(" (" .. obj.info .. ")")
-                else
-                    print("warning:", pinfo.number, "object not found")
-                end
-            end
-
-            if obj_id and obj_info then
-                self.objects[obj_id] = {framenum = pinfo.number, info = obj_info}
-                obj_info = nil
-            end
-
             if switch_beg == true then
                 switch_beg = false
                 switch_val = val
@@ -369,8 +347,33 @@ local function decode_data(self, pinfo, tree, tvbr, opcode, data_fmt, isencrypte
             -- TODO warn if action not found
             if field_fmt.action == "get" and field_fmt.param ~= "FCol" then
                 local id = self.ID[field_fmt.param]
-                local desc = id and id[val] or nil
-                item:append_text(" (" .. tostring(desc) .. ")")
+                local desc = tostring(id and id[val] or nil)
+                item:append_text(" (" .. desc .. ")")
+
+                if obj_id then
+                    obj_info = desc
+                end
+            end
+
+            if field_fmt.action == "addobjid" then
+                obj_id = val
+            elseif field_fmt.action == "objid" then
+                local obj = self.objects[val]
+                if obj then
+                    tree:add(self.pf.framenum, obj.framenum)
+                        :prepend_text("Link " .. field_fmt.name)
+                        :append_text(" (" .. obj.info .. ")")
+                else
+                    print("warning:", pinfo.number, "object not found")
+                end
+            elseif obj_id and type(val) == "string" then
+                obj_info = val
+            end
+
+            if obj_id and obj_info then
+                local info = opcode .. ": " .. obj_info
+                self.objects[obj_id] = {framenum = pinfo.number, info = info}
+                obj_id = nil
             end
 
             if isencrypted then
