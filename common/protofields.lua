@@ -29,6 +29,7 @@ function _M.init(name)
         asciiz = ProtoField.stringz(name .. ".asciiz", " ", base.ASCII),
         ascii = ProtoField.string(name .. ".ascii", " ", base.ASCII),
         ipv4 = ProtoField.ipv4(name .. ".ipv4", " "),
+        framenum = ProtoField.framenum(name .. ".framenum", " "),
     }
 end
 

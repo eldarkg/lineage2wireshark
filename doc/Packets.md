@@ -43,10 +43,13 @@ Type(Name[:Action[.Param]])
 #### Action with data
 | Action | Description |
 |:------:|-------------|
+| AddObjID | Add object ID to objects cache |
+| AddObjInfo | Add as object info to objects cache |
 | For    | Repeat field `value` times next `Param` fields |
 | Get    | Get description by `value` index from accordance content file to `Param` |
 | Hex    | Show `value` as hex |
 | Len    | Limit length `Param` for string |
+| ObjID  | Get object from objects cache |
 | Switch | Begin switch block (`Name` - any) of next field `value` |
 | Case   | Case `Name` values list (comma separated) of previous switch next `Param` size block. `Name` == `default` - default case |
 | Unscramble | Unscramble `value` |

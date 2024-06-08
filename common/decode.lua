@@ -224,15 +224,19 @@ local function get_values(self, data, opcode, isserver)
 end
 
 ---@param self table
+---@param pinfo Pinfo
 ---@param tree TreeItem
 ---@param tvbr TvbRange Data
+---@param opcode string
 ---@param data_fmt table Data format
 ---@param isencrypted boolean
 ---@return integer|nil len Decode length. nil - memory range is out of bounds
-local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
+local function decode_data(self, pinfo, tree, tvbr, opcode, data_fmt, isencrypted)
     local offset = 0
     local i = 1
     local ismandatory = true
+    local obj_id
+    local obj_info
     local switch_beg
     local switch_val
     while i <= #data_fmt do
@@ -248,7 +252,8 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
                     subtree:set_generated()
                 end
 
-                local len = decode_data(self, subtree, tvbr(offset),
+                local len = decode_data(self, pinfo, subtree, tvbr(offset),
+                                        opcode,
                                         {table.unpack(data_fmt, i + 1, iend)},
                                         isencrypted)
                 if len then
@@ -273,7 +278,8 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
                 if set[switch_val] or
                    field_fmt.name == "default" and switch_beg ~= nil then
 
-                    local len = decode_data(self, tree, tvbr(offset),
+                    local len = decode_data(self, pinfo, tree, tvbr(offset),
+                        opcode,
                         {table.unpack(data_fmt, i + 1, iend)},
                         isencrypted)
                     if len then
@@ -308,6 +314,28 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
                 tree:add_proto_expert_info(self.pe.undecoded, "parse field \"" ..
                     field_fmt.name .. "(" .. field_fmt.type .. ")\"")
                 return nil
+            end
+
+            if field_fmt.action == "addobjid" then
+                obj_id = val
+            elseif field_fmt.action == "addobjinfo" then
+                -- FIXME
+                obj_info = obj_info and obj_info .. ", " .. val
+                                    or opcode .. ": " .. val
+            elseif field_fmt.action == "objid" then
+                local obj = self.objects[val]
+                if obj then
+                    tree:add(self.pf.framenum, obj.framenum)
+                        :prepend_text("Link " .. field_fmt.name)
+                        :append_text(" (" .. obj.info .. ")")
+                else
+                    print("warning:", pinfo.number, "object not found")
+                end
+            end
+
+            if obj_id and obj_info then
+                self.objects[obj_id] = {framenum = pinfo.number, info = obj_info}
+                obj_info = nil
             end
 
             if switch_beg == true then
@@ -375,9 +403,10 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
                         subtree:set_generated()
                     end
 
-                    len = decode_data(self, subtree, tvbr(offset),
-                                    {table.unpack(data_fmt, i + 1, iend)},
-                                    isencrypted)
+                    len = decode_data(self, pinfo, subtree, tvbr(offset),
+                                      opcode,
+                                      {table.unpack(data_fmt, i + 1, iend)},
+                                      isencrypted)
                     if len then
                         subtree:set_len(len)
                         offset = offset + len
@@ -396,24 +425,25 @@ local function decode_data(self, tree, tvbr, data_fmt, isencrypted)
     return offset
 end
 
--- TODO save ID from CharInfo, NpcInfo and etc for later link ID by packet number
-
 ---@param self table
+---@param pinfo Pinfo
 ---@param tree TreeItem
 ---@param tvbr TvbRange Data
 ---@param opcode integer
 ---@param isencrypted boolean
 ---@param isserver boolean
 ---@return integer|nil len Decode length. nil - error
-local function data(self, tree, tvbr, opcode, isencrypted, isserver)
+local function data(self, pinfo, tree, tvbr, opcode, isencrypted, isserver)
     local subtree = tree:add(tvbr, "Data")
     if isencrypted then
         subtree:set_generated()
     end
 
+    local opcode_str = self.OPCODE_NAME[isserver and "server" or "client"][opcode]
     local data_fmt = self.OPCODE_FMT[isserver and "server" or "client"][opcode]
     if data_fmt then
-        return decode_data(self, subtree, tvbr, data_fmt, isencrypted)
+        return decode_data(self, pinfo, subtree, tvbr, opcode_str, data_fmt,
+                           isencrypted)
     else
         tree:add_proto_expert_info(self.pe.unk_opcode, "unknown opcode \"" ..
                                    string.format("0x%X", opcode) .. "\"")
@@ -442,6 +472,7 @@ function _M.init(pf, pe, isgame, ver, lang)
         OPCODE_NAME = OPCODE_NAME,
         OPCODE_FMT = OPCODE_FMT,
         ID = require(name .. ".id").init(lang),
+        objects = {},
 
         get_values = get_values,
         length = length,

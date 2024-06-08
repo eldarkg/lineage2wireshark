@@ -193,7 +193,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
         -- TODO simple packet.data_tvbr, opcode_len = 1 always
         local data_tvbr = packet.data_tvbr(payload_tvbr, 1)
         if data_tvbr then
-            decode:data(subtree, data_tvbr, opcode, isencrypted, isserver)
+            decode:data(pinfo, subtree, data_tvbr, opcode, isencrypted, isserver)
         end
     end
 
