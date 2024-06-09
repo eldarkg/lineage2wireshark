@@ -6,3 +6,11 @@
 * StatusUpdate (?)
 * Die
 * ListPartyWating
+
+## Add
+Relation
+Social Actions
+Actions
+
+## Fix
+C4: NpcsId.ini. Example: 30351 should be 7351
