@@ -6,7 +6,3 @@
 * StatusUpdate (?)
 * Die
 * ListPartyWating
-
-## Object
-AllyID
-*CrestID
