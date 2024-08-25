@@ -46,13 +46,8 @@ function _M.decrypt(enc, pk)
     local bs = 4
     local enc_be = swap_endian(enc, bs)
 
-    local cipher = crypto.decrypt.new("bf-ecb", pk)
-    local dec_be_raw = cipher:update(enc_be:raw())
-    local dec_be_next_raw = cipher:final() and cipher:final() or ""
-    local dec_be = ByteArray.new(dec_be_raw .. dec_be_next_raw, true)
-
-    -- FIXME not work?
-    -- local dec_be = ByteArray.new(crypto.decrypt("bf-ecb", enc_be:raw(), pk), true)
+    local dec_be_raw = crypto.decrypt("bf-ecb", enc_be:raw(), pk, '', false)
+    local dec_be = ByteArray.new(dec_be_raw, true)
 
     local dec = swap_endian(dec_be, bs)
     return dec
