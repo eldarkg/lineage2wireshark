@@ -30,11 +30,13 @@
 (to restore switch to LINEAGE packet)
 
 ## Decrypt
-### Find client (C4, C5 with ProtocolVersion 785a) static BlowFish private key
+### Find client (C1, C4, C5 with ProtocolVersion 785a) static BlowFish private key
 ```
 system/engine.dll -> Ghidra -> Search call InitializeBlowfish -> Arg 2 -> Key
 ```
+* For C1: need move last 8 bytes (without last 0x00) of private key to begin.
 * Try all found keys and find one valid.
+
 ### XOR Key
 Found by selection based on known data of the first crypted packet
 (for example packet `RequestAuthLogin`).
