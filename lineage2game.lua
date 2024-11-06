@@ -258,8 +258,8 @@ end
 
 function proto.init()
     last_packet_number = nil
-    last_subpacket_number = nil
-    last_opcode_stat = nil
+    last_subpacket_number = 1
+    last_opcode_stat = {}
     subpacket_count_cache = {}
     init_count = 0
     init_packet_number_cache = {}
