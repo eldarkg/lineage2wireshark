@@ -47,21 +47,30 @@ Convert binary to image
 convert -depth 8 -size 16x16+0 gray:in.bin out.png
 ```
 
-## Dependency
-* Wireshark 4.2.5 (last tested)
-* Lua 5.2
+## Dependencies
+* Wireshark 4.4.0 (last tested)
+* Lua 5.3
 * luarocks
-* luacrypto2
 * lua-unistring
+* luaossl (https://github.com/eldarkg/luaossl)
 
-## Thirdparty
-* lua-ini (modified)
+### Install dependencies
+```sh
+sudo apt install wireshark
 
-```shell
-sudo luarocks install luacrypto2
+sudo apt install lua5.3
+sudo apt install luarocks
 
 sudo apt install libunistring-dev
 sudo luarocks install --server=https://luarocks.org/dev unistring
 ```
 
-INFO: http://mkottman.github.io/luacrypto/manual.html#reference
+### Build luaossl
+```sh
+# cd to root of luaossl source directory
+make all5.3
+sudo make install5.3
+```
+
+## Thirdparty (builtin)
+* lua-ini (modified)

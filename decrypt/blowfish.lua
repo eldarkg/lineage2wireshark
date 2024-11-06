@@ -6,7 +6,7 @@
     Description: Blowfish ECB crypto
 ]]--
 
-local crypto = require("crypto")
+local cipher = require("openssl.cipher")
 
 local _M = {}
 
@@ -46,7 +46,8 @@ function _M.decrypt(enc, pk)
     local bs = 4
     local enc_be = swap_endian(enc, bs)
 
-    local dec_be_raw = crypto.decrypt("bf-ecb", enc_be:raw(), pk, '', false)
+    -- TODO move cipher new to instance contructor
+    local dec_be_raw = cipher.new("bf-ecb"):decrypt(pk, nil, false):final(enc_be:raw())
     local dec_be = ByteArray.new(dec_be_raw, true)
 
     local dec = swap_endian(dec_be, bs)
