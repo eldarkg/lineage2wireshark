@@ -48,7 +48,7 @@ convert -depth 8 -size 16x16+0 gray:in.bin out.png
 ```
 
 ## Dependencies
-* Wireshark 4.4.0 (last tested)
+* Wireshark 4.4 (last tested)
 * Lua 5.3
 * luarocks
 * lua-unistring
