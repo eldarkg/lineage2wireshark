@@ -25,9 +25,10 @@ local INIT_COUNT = 2
 
 -- TODO generate by list of names vs protocol version
 local VERSIONS = {
-    {1, "Chronicle 4: Scions of Destiny Update 1 (660)", 660},
-    {2, "Chronicle 5: Oath of Blood Update 2 (709)", 709},
-    {3, "CT0: Interlude Update 2 (746)", 746},
+    {1, "Chronicle 1: Harbingers of War (419)", 419},
+    {2, "Chronicle 4: Scions of Destiny Update 1 (660)", 660},
+    {3, "Chronicle 5: Oath of Blood Update 2 (709)", 709},
+    {4, "CT0: Interlude Update 2 (746)", 746},
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 
@@ -270,7 +271,10 @@ function proto.init()
     local high_xor_key_hex = proto.prefs.high_xor_key_hex
     if #high_xor_key_hex == 0 then
         local ver = proto.prefs.version
-        if ver == 746 then
+        -- TODO get high xor key from KeyInit
+        if ver == 419 then
+            high_xor_key = ByteArray.new("")
+        elseif ver == 746 then
             high_xor_key = ByteArray.new("C8 27 93 01 A1 6C 31 97")
         else
             high_xor_key = ByteArray.new("A1 6C 54 87")
