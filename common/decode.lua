@@ -2,7 +2,7 @@
     License: GPL3
     Author: Eldar Khayrullin
     Email: eldar.khayrullin@mail.ru
-    Date: 2024
+    Date: 2024-2025
     Description: Decode data
 ]]--
 
@@ -11,7 +11,12 @@ if not package.searchpath("common.decode", package.path) then
     return
 end
 
-local uniconv = require("unistring.uniconv")
+local from_utf16, err = require("iconv").new("UTF8", "UTF16")
+if err ~= nil then
+    -- ERROR
+    return
+end
+
 
 local ICON_SIZE_LEN = 4
 local ASCII_CHAR_SIZE = 1
@@ -97,8 +102,15 @@ local function get_value_refine_len(data, typ, len)
         val = data(0, len):le_int64()
     elseif typ == "s" then
         len = strlen(data, UTF16_CHAR_SIZE)
-        val = len == 0 and ""
-                       or uniconv.from_encoding("UTF16", nil, data(0, len):raw())
+        if len == 0 then
+            val = ""
+        else
+            val, err = from_utf16:iconv(data(0, len):raw())
+            if err ~= nil then
+                -- TODO print error
+                val = "nil"
+            end
+        end
         len = len + UTF16_CHAR_SIZE
     elseif tonumber(typ, 10) then
         val = data(0, len)

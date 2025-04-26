@@ -42,7 +42,7 @@ Found by selection based on known data of the first crypted packet
 (for example packet `RequestAuthLogin`).
 
 ## Utility
-Convert binary to image
+Convert binary to image (FIXME: not tested)
 ```sh
 convert -depth 8 -size 16x16+0 gray:in.bin out.png
 ```
@@ -51,29 +51,28 @@ convert -depth 8 -size 16x16+0 gray:in.bin out.png
 * Wireshark 4.4.6 (last tested)
 * Lua 5.4
 * luarocks
-* lua-unistring
-* luaossl (https://github.com/eldarkg/luaossl)
+* lua-iconv
+* luaossl (need patched from https://github.com/eldarkg/luaossl)
 
 ### Install dependencies
 ```sh
 sudo apt install wireshark
 
 sudo apt install lua5.4
-# Build luarocks:
-# git clone git://github.com/luarocks/luarocks.git
-# cd luarocks
-# ./configure
-# make
-# sudo make install
 
-sudo apt install libunistring-dev
-# TODO try lua-iconv, cldr
-sudo luarocks install --server=https://luarocks.org/dev unistring
-```
+# Build and install luarocks
+git clone https://github.com/luarocks/luarocks
+cd luarocks
+./configure
+make
+sudo make install
+cd ..
 
-### Build luaossl
-```sh
-# cd to root of luaossl source directory
+sudo luarocks install lua-iconv
+
+# Build and install luaossl
+git clone https://github.com/eldarkg/luaossl
+cd luaossl
 make all5.4
 sudo make install5.4
 ```
@@ -93,6 +92,6 @@ openssl version -d  # dir
 # [legacy_sect]
 # activate = 1
 openssl list -providers # check legacy exist
-# INFO: https://www.iclarified.com/92617/how-to-fix-error-0308010c-digital-envelope-routines-unsupported
 ```
+INFO: https://www.iclarified.com/92617/how-to-fix-error-0308010c-digital-envelope-routines-unsupported
 
