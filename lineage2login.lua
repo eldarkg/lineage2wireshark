@@ -10,7 +10,7 @@ local DESC = "Lineage2 Login Protocol"
 local NAME = "LINEAGE2LOGIN"
 
 set_plugin_info({
-    version = "0.5.0",
+    version = "0.6.0",
     description = DESC,
     author = "Eldar Khayrullin",
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
