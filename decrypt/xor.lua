@@ -59,7 +59,7 @@ local function crypt(data, key, isenc)
     for i = 0, data:len() - 1 do
         local benc = data:get_index(i)
         local bkey = key:get_index(i % key:len())
-        local bxor = bit32.bxor(benc, bkey, btmp)
+        local bxor = benc ~ bkey ~ btmp
         dec:set_index(i, bxor)
 
         btmp = isenc and bxor or benc

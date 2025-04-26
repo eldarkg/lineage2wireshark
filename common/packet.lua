@@ -106,7 +106,7 @@ function _M.checksum(payload)
     local chksum = 0
     for i = 0, payload:len() - 1, DWORD_SIZE do
         local dword = payload:le_uint(i, DWORD_SIZE)
-        chksum = bit32.bxor(chksum, dword)
+        chksum = chksum ~ dword
     end
     return chksum
 end
