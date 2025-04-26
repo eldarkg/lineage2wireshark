@@ -2,7 +2,7 @@
     License: GPL3
     Author: Eldar Khayrullin
     Email: eldar.khayrullin@mail.ru
-    Date: 2024
+    Date: 2024-2025
     Description: XOR crypto
 ]]--
 
