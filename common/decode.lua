@@ -11,7 +11,7 @@ if not package.searchpath("common.decode", package.path) then
     return
 end
 
-local from_utf16, err = require("iconv").new("UTF8", "UTF16")
+local from_utf16, err = require("iconv").new("UTF8", "UTF16LE")
 if err ~= nil then
     -- ERROR
     return
@@ -498,3 +498,4 @@ function _M.init(pf, pe, isgame, ver, lang)
 end
 
 return _M
+
