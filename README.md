@@ -52,7 +52,7 @@ convert -depth 8 -size 16x16+0 gray:in.bin out.png
 * Lua 5.4
 * luarocks
 * lua-iconv
-* luaossl (need patched from https://github.com/eldarkg/luaossl)
+* luaossl
 
 ### Install dependencies
 ```sh
@@ -65,16 +65,10 @@ git clone https://github.com/luarocks/luarocks
 cd luarocks
 ./configure
 make
-sudo make install
-cd ..
+sudo checkinstall
 
 sudo luarocks install lua-iconv
-
-# Build and install luaossl
-git clone https://github.com/eldarkg/luaossl
-cd luaossl
-make all5.4
-sudo make install5.4
+sudo luarocks --dev install luaossl
 ```
 
 ## Thirdparty (builtin)
