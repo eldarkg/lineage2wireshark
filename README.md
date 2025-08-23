@@ -1,5 +1,7 @@
 # lineage2wireshark
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/eldarkg/lineage2wireshark)
+
 ## Limitations
 * manual protocol select
 * one client-server connection protocol decode at the same time
