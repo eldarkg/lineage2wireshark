@@ -254,7 +254,43 @@ local function decode_data(self, pinfo, tree, tvbr, opcode, data_fmt, isencrypte
     while i <= #data_fmt do
         local field_fmt = data_fmt[i]
 
-        if field_fmt.type == "?" then
+        local loop = #self.m_loop ~= 0 and self.m_loop[#self.m_loop] or nil
+        if loop and loop.counter == loop.from then
+            table.remove(self.m_loop)
+            print(loop.from, loop.size, loop.count)
+
+            local iend = i + loop.size - 1
+            for j = 1, loop.count do
+                if tvbr:len() <= offset then
+                    if ismandatory then
+                        tree:add_proto_expert_info(self.pe.undecoded,
+                            "not found repeat #" .. tostring(j) ..
+                            " of group " .. field_fmt.name)
+                        return nil
+                    else
+                        break
+                    end
+                end
+
+                local subtree = tree:add(tvbr(offset), tostring(j))
+                if isencrypted then
+                    subtree:set_generated()
+                end
+
+                local len = decode_data(self, pinfo, subtree, tvbr(offset),
+                                        opcode,
+                                        { table.unpack(data_fmt, i, iend) },
+                                        isencrypted)
+                if len then
+                    subtree:set_len(len)
+                    offset = offset + len
+                else
+                    return nil
+                end
+            end
+
+            i = iend
+        elseif field_fmt.type == "?" then
             ismandatory = false
         elseif field_fmt.type == "*" then
             if field_fmt.action == "struct" then
@@ -397,41 +433,30 @@ local function decode_data(self, pinfo, tree, tvbr, opcode, data_fmt, isencrypte
                 self:bytes(tree, unscr, "Unscrambled " .. field_fmt.name)
             end
 
-            offset = offset + len
-
             if field_fmt.action == "for" then
-                local iend = i + tonumber(field_fmt.params[1], 10)
-                for j = 1, val, 1 do
-                    if tvbr:len() <= offset then
-                        if ismandatory then
-                            tree:add_proto_expert_info(self.pe.undecoded,
-                                "not found repeat #" .. tostring(j) ..
-                                " of group " .. field_fmt.name)
-                            return nil
-                        else
-                            break
-                        end
-                    end
-
-                    local subtree = tree:add(tvbr(offset), tostring(j))
-                    if isencrypted then
-                        subtree:set_generated()
-                    end
-
-                    len = decode_data(self, pinfo, subtree, tvbr(offset),
-                                      opcode,
-                                      {table.unpack(data_fmt, i + 1, iend)},
-                                      isencrypted)
-                    if len then
-                        subtree:set_len(len)
-                        offset = offset + len
-                    else
-                        return nil
-                    end
-                end
-
-                i = iend
+                table.insert(self.m_loop,
+                    {
+                        from = 1,
+                        size = tonumber(field_fmt.params[1], 10),
+                        count = val,
+                        counter = 0,
+                    })
+            elseif field_fmt.action == "loop" then
+                table.insert(self.m_loop,
+                    {
+                        from = tonumber(field_fmt.params[1], 10),
+                        size = tonumber(field_fmt.params[2], 10),
+                        count = val,
+                        counter = 0,
+                    })
             end
+
+            offset = offset + len
+        end
+
+        if #self.m_loop ~= 0 then
+            self.m_loop[#self.m_loop].counter =
+                self.m_loop[#self.m_loop].counter + 1
         end
 
         i = i + 1
@@ -488,6 +513,8 @@ function _M.init(pf, pe, isgame, ver, lang)
         OPCODE_FMT = OPCODE_FMT,
         ID = require(name .. ".id").init(lang),
         objects = {},
+
+        m_loop = {},
 
         get_values = get_values,
         length = length,

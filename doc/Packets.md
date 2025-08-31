@@ -45,6 +45,7 @@ Type(Name[:Action[.Param[....Param]]])
 |:------:|-------------|
 | AddObjID | Add object ID to objects cache. Use first of next found `string` or `Get.` as info |
 | For    | Repeat field `value` times next `Param` fields |
+| Loop   | Repeat field `value` times from `Param1` field next `Param2` fields |
 | Get    | Get description by `value` index from accordance content file to `Param` |
 | Hex    | Show `value` as hex |
 | Len    | Limit length `Param` for string |
