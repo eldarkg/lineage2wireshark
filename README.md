@@ -8,7 +8,9 @@
 
 ## Support Protocols
 * Login server: 785a, c621
-* Game server: 660, 709, 746
+* Game server: 660, 709, 746, 851
+
+Note: if not found supported Game server version try to use nearest one.
 
 ## Wireshark Filters
 * Login server: lineage2login (tcp.srcport == 2106 || tcp.dstport == 2106)
@@ -32,16 +34,17 @@
 (to restore switch to LINEAGE packet)
 
 ## Decrypt
-### Find client (C1-C5 with ProtocolVersion 785a) static BlowFish private key
+### Login: find client (C1-C5 with ProtocolVersion 785a) static BlowFish private key
 ```
 system/engine.dll -> Ghidra -> Search call InitializeBlowfish -> Arg 2 -> Key
 ```
 * For C1: need move last 8 bytes (without last 0x00) of private key to begin.
 * Try all found keys and find one valid.
 
-### XOR Key
+### Game: XOR Key
 Found by selection based on known data of the first crypted packet
-(for example packet `RequestAuthLogin`).
+(for example game packet `RequestAuthLogin` by use login packets `PlayOK` and
+`RequestServerLogin`).
 
 ## Utility
 Convert binary to image (FIXME: not tested)
