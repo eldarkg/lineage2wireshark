@@ -27,7 +27,7 @@ local function opcode_name_format(self, isserver)
         in pairs(self.packets[isserver and "server" or "client"]) do
 
         local opcode = tonumber(opcode_s, 16)
-        local opname = desc:match("^([^:]+):")
+        local opname = desc:match("^([^:]+):?")
         names[opcode] = opname
 
         local fmt_str = desc:sub(#opname + 2)

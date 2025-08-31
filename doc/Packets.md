@@ -14,7 +14,7 @@ Packet
 
 ## Packet
 ```ini
-OpcodeHex=OpcodeName:[Field[...Field]]
+OpcodeHex=OpcodeName[:[Field[...Field]]]
 ```
 
 ### Field
