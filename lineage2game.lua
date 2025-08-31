@@ -29,6 +29,7 @@ local VERSIONS = {
     {2, "Chronicle 4: Scions of Destiny Update 1 (660)", 660},
     {3, "Chronicle 5: Oath of Blood Update 2 (709)", 709},
     {4, "CT0: Interlude Update 2 (746)", 746},
+    {5, "CT2.1: The 2nd Throne - Gracia Part 1 (851)", 851},
 }
 local DEFAULT_VERSION = VERSIONS[1][3]
 
