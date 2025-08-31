@@ -140,7 +140,7 @@ local function parse_field(self, data, fmt)
         f = self.pf.u8
         len = 1
     elseif typ == "d" then
-        if fmt.action == "hex" or fmt.param == "FCol" then
+        if fmt.action == "hex" or fmt.params[1] == "FCol" then
             f = self.pf.r32
         else
             f = self.pf.i32
@@ -164,7 +164,7 @@ local function parse_field(self, data, fmt)
         len = UTF16_CHAR_SIZE -- min length of zero-terminated UTF16 string
     elseif typ == "S" then
         if fmt.action == "len" then
-            len = tonumber(fmt.param, 10)
+            len = tonumber(fmt.params[1], 10)
             f = strlen(data(0, len), ASCII_CHAR_SIZE) < len
                 and self.pf.asciiz or self.pf.ascii
         else
@@ -258,7 +258,7 @@ local function decode_data(self, pinfo, tree, tvbr, opcode, data_fmt, isencrypte
             ismandatory = false
         elseif field_fmt.type == "*" then
             if field_fmt.action == "struct" then
-                local iend = i + tonumber(field_fmt.param, 10)
+                local iend = i + tonumber(field_fmt.params[1], 10)
                 local subtree = tree:add(tvbr(offset), field_fmt.name)
                 if isencrypted then
                     subtree:set_generated()
@@ -284,7 +284,7 @@ local function decode_data(self, pinfo, tree, tvbr, opcode, data_fmt, isencrypte
                     return nil
                 end
 
-                local iend = i + tonumber(field_fmt.param, 10)
+                local iend = i + tonumber(field_fmt.params[1], 10)
 
                 local set = parse_list(field_fmt.name, ",", true)
                 if set[switch_val] or
@@ -357,8 +357,8 @@ local function decode_data(self, pinfo, tree, tvbr, opcode, data_fmt, isencrypte
             item:prepend_text(field_fmt.name)
 
             -- TODO warn if action not found
-            if field_fmt.action == "get" and field_fmt.param ~= "FCol" then
-                local id = self.ID[field_fmt.param]
+            if field_fmt.action == "get" and field_fmt.params[1] ~= "FCol" then
+                local id = self.ID[field_fmt.params[1]]
                 local desc = tostring(id and id[val] or nil)
                 item:append_text(" (" .. desc .. ")")
 
@@ -400,7 +400,7 @@ local function decode_data(self, pinfo, tree, tvbr, opcode, data_fmt, isencrypte
             offset = offset + len
 
             if field_fmt.action == "for" then
-                local iend = i + tonumber(field_fmt.param, 10)
+                local iend = i + tonumber(field_fmt.params[1], 10)
                 for j = 1, val, 1 do
                     if tvbr:len() <= offset then
                         if ismandatory then

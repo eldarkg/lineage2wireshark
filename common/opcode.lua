@@ -35,14 +35,16 @@ local function opcode_name_format(self, isserver)
         for type, content in fmt_str:gmatch("([^(]+)%(([^)]+)%)") do
             local name = content:match("^([^:.]+)")
             local action
-            local param
+            local params = {}
             if name then
                 local pos = #name + 1
                 action = content:match("^:([^.]+)", pos)
                 if action then
                     action = string.lower(action)
                     pos = pos + #action + 1
-                    param = content:match("^%.([^.]+)", pos)
+                    for param in content:gmatch("%.([^.]+)", pos) do
+                        table.insert(params, param)
+                    end
                 end
             end
 
@@ -50,7 +52,7 @@ local function opcode_name_format(self, isserver)
             field_fmt.type = type
             field_fmt.name = name
             field_fmt.action = action
-            field_fmt.param = param
+            field_fmt.params = params
             table.insert(data_fmt, field_fmt)
         end
 
