@@ -164,7 +164,6 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
     elseif isserver then
         local opcode_len = packet.opcode_len(payload, true)
         local opcode = packet.opcode(payload, opcode_len)
-        -- TODO test by opcode number "0x00" KeyInit ?
         if opcode_str(opcode, true) == "KeyInit" then
             local data = packet.data(payload, opcode_len)
             local values = decode:get_values(data, opcode, true)
@@ -273,7 +272,7 @@ function proto.init()
         -- TODO get high xor key from KeyInit
         if ver == 419 then
             high_xor_key = ByteArray.new("")
-        elseif ver == 746 then
+        elseif 746 <= ver then
             high_xor_key = ByteArray.new("C8 27 93 01 A1 6C 31 97")
         else
             high_xor_key = ByteArray.new("A1 6C 54 87")
