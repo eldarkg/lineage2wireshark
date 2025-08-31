@@ -2,7 +2,7 @@
     License: GPL3
     Author: Eldar Khayrullin
     Email: eldar.khayrullin@mail.ru
-    Date: 2024
+    Date: 2024-2025
     Description: Wireshark Dissector for Lineage2Game
 ]]--
 
@@ -10,7 +10,7 @@ local DESC = "Lineage2 Game Protocol"
 local NAME = "LINEAGE2GAME"
 
 set_plugin_info({
-    version = "0.6.0",
+    version = "0.7.0",
     description = DESC,
     author = "Eldar Khayrullin",
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
@@ -60,8 +60,6 @@ local function init_decode(ver)
     local ver_str = version_str(ver)
     decode = require("common.decode").init(pf, pe, true, ver_str, "en")
 end
-
-init_decode(DEFAULT_VERSION)
 
 -- TODO implement module cache. Methods: new, set(number, val), last, get(number)?
 
@@ -294,11 +292,15 @@ function proto.init()
     end
 end
 
+local prev_proto_ver
 function proto.prefs_changed()
     local ver = proto.prefs.version
     -- TODO select protocol by preference or by catch ProtocolVersion?
     -- TODO select lang by preference
-    init_decode(ver)
+    if ver ~= prev_proto_ver then
+        prev_proto_ver = ver
+        init_decode(ver)
+    end
 end
 
 ---@param tvb Tvb
