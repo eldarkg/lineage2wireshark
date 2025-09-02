@@ -152,7 +152,7 @@ local function parse_field(self, data, fmt)
     elseif typ == "h" then
         f = self.pf.u16
         len = 2
-    elseif typ == "i" then
+    elseif typ == "I" then
         f = self.pf.ipv4
         len = 4
         le = false

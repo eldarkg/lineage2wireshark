@@ -34,7 +34,7 @@ Type(Name[:Action[.Param[....Param]]])
 | d        | i32 (Exception: `FCol` - r32) |
 | f        | double |
 | h        | u16 |
-| i        | IPv4 |
+| I        | IPv4 |
 | q        | i64 |
 | s        | zero terminated string UTF-16 |
 | S        | zero terminated string ASCII |
