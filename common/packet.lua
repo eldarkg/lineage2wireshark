@@ -66,7 +66,8 @@ end
 function _M.opcode(payload, opcode_name)
     local opcode
     local op_len
-    for l = 1, payload:len() do
+    local max_len = math.min(4, payload:len())
+    for l = 1, max_len do
         opcode = payload:uint(OPCODE_PAYLOAD_OFFSET, l)
         if opcode_name[opcode] then
             op_len = l
