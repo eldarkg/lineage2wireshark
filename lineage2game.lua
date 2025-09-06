@@ -10,7 +10,7 @@ local DESC = "Lineage2 Game Protocol"
 local NAME = "LINEAGE2GAME"
 
 set_plugin_info({
-    version = "0.7.0",
+    version = "0.8.0",
     description = DESC,
     author = "Eldar Khayrullin",
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
@@ -153,7 +153,7 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
         else
             xor_accum_len = 0
             xor_key_cache[pinfo.number] = isserver and server_xor_key
-                                                    or client_xor_key
+                                                   or client_xor_key
         end
     end
 
@@ -162,8 +162,8 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
     if isencrypted then
         update_xor_key(payload:len(), isserver)
     elseif isserver then
-        local opcode_len = packet.opcode_len(payload, true)
-        local opcode = packet.opcode(payload, opcode_len)
+        local opcode, opcode_len =
+            packet.opcode(payload, decode.OPCODE_NAME["server"])
         if opcode_str(opcode, true) == "KeyInit" then
             local data = packet.data(payload, opcode_len)
             local values = decode:get_values(data, opcode, true)
@@ -205,8 +205,9 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
         payload = packet.payload(tvb)
     end
 
-    local opcode_len = packet.opcode_len(payload, isserver)
-    local opcode = packet.opcode(payload, opcode_len)
+    local opcode, opcode_len =
+        packet.opcode(payload,
+                      decode.OPCODE_NAME[isserver and "server" or "client"])
     update_last_opcode_stat(opcode)
 
     local subtree = tree:add(proto, tvb(),

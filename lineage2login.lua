@@ -10,7 +10,7 @@ local DESC = "Lineage2 Login Protocol"
 local NAME = "LINEAGE2LOGIN"
 
 set_plugin_info({
-    version = "0.7.0",
+    version = "0.8.0",
     description = DESC,
     author = "Eldar Khayrullin",
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
@@ -136,8 +136,8 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
     local isencrypted = not init_packet_number_cache[pinfo.number]
     local payload = packet.payload(tvb)
     if not isencrypted and isserver then
-        local opcode_len = packet.opcode_len(payload, true)
-        local opcode = packet.opcode(payload, opcode_len)
+        local opcode, opcode_len =
+            packet.opcode(payload, decode.OPCODE_NAME["server"])
         -- TODO test by opcode number "0x00" Init ?
         if opcode_str(opcode, true) == "Init" then
             local data = packet.data(payload, opcode_len)
@@ -177,8 +177,9 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
         payload = packet.payload(tvb)
     end
 
-    local opcode_len = packet.opcode_len(payload, isserver)
-    local opcode = packet.opcode(payload, opcode_len)
+    local opcode, opcode_len =
+        packet.opcode(payload,
+                      decode.OPCODE_NAME[isserver and "server" or "client"])
     update_last_opcode_stat(opcode)
 
     local subtree = tree:add(proto, tvb(),

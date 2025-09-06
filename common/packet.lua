@@ -52,23 +52,6 @@ function _M.payload(tvb)
     return _M.payload_tvbr(tvb):bytes()
 end
 
----@param payload ByteArray Payload
----@param isserver boolean
----@return integer
-function _M.opcode_len(payload, isserver)
-    local len = 1
-    local opcode1 = payload:uint(OPCODE_PAYLOAD_OFFSET, len)
-    -- TODO generate extended opcode1 list from *_OPCODE table
-    if isserver then
-        if opcode1 == 0xFE then
-            len = 2
-        end
-    elseif opcode1 == 0x39 or opcode1 == 0xD0 then
-        len = 2
-    end
-    return len
-end
-
 ---@param tvbr TvbRange Payload
 ---@param op_len integer Opcode length
 ---@return TvbRange
@@ -77,10 +60,20 @@ function _M.opcode_tvbr(tvbr, op_len)
 end
 
 ---@param payload ByteArray Payload
----@param op_len integer Opcode length
----@return integer
-function _M.opcode(payload, op_len)
-    return payload:uint(OPCODE_PAYLOAD_OFFSET, op_len)
+---@param opcode_name table Opcode names
+---@return integer opcode Opcode
+---@return integer op_len Opcode length
+function _M.opcode(payload, opcode_name)
+    local opcode
+    local op_len
+    for l = 1, payload:len() do
+        opcode = payload:uint(OPCODE_PAYLOAD_OFFSET, l)
+        if opcode_name[opcode] then
+            op_len = l
+            break
+        end
+    end
+    return opcode, op_len
 end
 
 ---@param tvbr TvbRange Payload
