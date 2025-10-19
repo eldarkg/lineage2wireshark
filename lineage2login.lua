@@ -10,7 +10,7 @@ local DESC = "Lineage2 Login Protocol"
 local NAME = "LINEAGE2LOGIN"
 
 set_plugin_info({
-    version = "0.8.0",
+    version = "0.9.0",
     description = DESC,
     author = "Eldar Khayrullin",
     repository = "https://gitlab.com/eldarkg/lineage2wireshark"
@@ -144,6 +144,7 @@ local function dissect_1pass(tvb, pinfo, tree, isserver)
             local values = decode:get_values(data, opcode, true)
             if values.BlowfishPK then
                 blowfish_pk = values.BlowfishPK
+                bf.set_key(blowfish_pk)
             end
         end
     end
@@ -172,7 +173,7 @@ local function dissect_2pass(tvb, pinfo, tree, isserver)
 
     local payload
     if isencrypted then
-        payload = bf.decrypt(packet.payload(tvb), blowfish_pk:raw())
+        payload = bf.decrypt(packet.payload(tvb))
     else
         payload = packet.payload(tvb)
     end
@@ -242,9 +243,11 @@ function proto.init()
         bf_pk_hex = BLOWFISH_PK_HEX[ver]
         if bf_pk_hex then
             blowfish_pk = ByteArray.new(bf_pk_hex)
+            bf.set_key(blowfish_pk)
         end
     else
         blowfish_pk = ByteArray.new(bf_pk_hex)
+        bf.set_key(blowfish_pk)
     end
 end
 

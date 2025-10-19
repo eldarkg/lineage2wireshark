@@ -53,11 +53,10 @@ convert -depth 8 -size 16x16+0 gray:in.bin out.png
 ```
 
 ## Dependencies
-* Wireshark 4.4.8 (last tested)
+* Wireshark 4.6.0 (last tested)
 * Lua 5.4
 * luarocks
 * lua-iconv
-* luaossl
 
 ### Install dependencies
 ```sh
@@ -73,24 +72,7 @@ make
 sudo checkinstall
 
 sudo luarocks install lua-iconv
-sudo luarocks --dev install luaossl
 ```
 
 ## Thirdparty (builtin)
 * lua-ini (modified)
-
-## FAQ
-### Fix Error 0308010C Digital Envelope Routines Unsupported
-```sh
-openssl version -d  # dir
-# Edit $(dir)/openssl.cnf
-# Under [provider_sect] add the following line:
-# legacy = legacy_sect
-# [default_sect]
-# activate = 1
-# [legacy_sect]
-# activate = 1
-openssl list -providers # check legacy exist
-```
-INFO: https://www.iclarified.com/92617/how-to-fix-error-0308010c-digital-envelope-routines-unsupported
-
